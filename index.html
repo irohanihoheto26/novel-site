@@ -263,7 +263,7 @@ input:checked + .slider:before {
     // マイページ（自分の作品一覧）
     async function loadUserContent() {
         if (!currentUser) return;
-        let { data: novels, error } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+        let { data: novels, error } = await api.from('novels').select('*').eq('user_name', currentUser.id).order('created_at', {ascending: false});
         if (error) return;
 
         // 枠組みを表示
@@ -309,7 +309,7 @@ input:checked + .slider:before {
     function openRules() {
         document.getElementById('read-title').innerText = "必ずお読みください（必読）";
         document.getElementById('read-author').innerText = "運営";
-        document.getElementById('read-body').innerText = "マナーを守って楽しく使いましょう。二次創作作品は原作のガイドラインに従ってください。";
+        document.getElementById('read-body').innerText = "【当サイトについて】 当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。 以下のルールを守ってご利用ください。 1. 二次創作の取り扱いについて ・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。 ・公式関係者の目に触れぬよう、節度ある運用をお願いします。 2. 禁止事項 ・公序良俗に反する内容の投稿。 ・特定の個人や団体を誹謗中傷する内容。 ・無断転載および自作発言。 ・商業利用目的の投稿。 3. 作品の明記と免責事項 ・ハッピーエンド、バッドエンド等の傾向がある場合、特殊設定がある場合やR指定が必要な場合は、あらすじやタグでの明記をお願いします。 ・閲覧は自己責任となります。 ルールを守って、創作活動を楽しみましょう。";
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.add('hidden');
     }
@@ -341,7 +341,7 @@ input:checked + .slider:before {
     async function loadComments(id) {
         const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
         document.getElementById('comment-list').innerHTML = (data || []).map(c => `
-            <div class="comment-item"><strong>${c.author_name}</strong>: ${c.body}</div>`).join('') || "コメントはまだありません";
+            <div class="comment-item"><strong>${c.user_name}</strong>: ${c.body}</div>`).join('') || "コメントはまだありません";
     }
 
 // コメント送信（修正版）
@@ -358,7 +358,7 @@ async function postComment() {
     const { error } = await api.from('comments').insert({ 
         novel_id: currentReadingId, 
         user_id: currentUser.id, 
-        author_name: senderName, 
+        user_name: senderName, 
         body: body 
     });
 
