@@ -1,52 +1,55 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>小説投稿サイトテスト</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-        #status-box { padding: 15px; background: white; border-radius: 5px; border: 1px solid #ccc; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二次創作小説サイト</title>
+<style>
+body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; background-color: #f9f9f9; }
+section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+input, textarea { width: 100%; margin-bottom: 10px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+button { background-color: #333; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+button:hover { background-color: #555; }
+.novel-card { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+#auth-status { font-size: 0.9em; color: #666; text-align: right; margin-bottom: 10px; }
+</style>
 </head>
 <body>
 
-    <h1>接続テスト</h1>
-    <div id="status-box">
-        状態: <span id="status">通信準備中...</span>
-    </div>
+<header>
+<h1>マイ・ノベル・プラットフォーム</h1>
+<div id="auth-status">読み込み中...</div>
+</header>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<main>
+<section id="auth-section">
+<h2>ログイン / 会員登録</h2>
+<p>投稿するには登録が必要です（閲覧は自由にできます）。</p>
+<input type="email" id="email" placeholder="メールアドレス">
+<input type="password" id="password" placeholder="パスワード">
+<div style="display: flex; gap: 10px;">
+<button onclick="signUp()">新規登録</button>
+<button onclick="logIn()">ログイン</button>
+</div>
+</section>
 
-    <script>
-        // 設定値
-        const SUPABASE_URL = 'https://fnobmngpstzolphexluc.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
+<section id="post-section" style="display:none;">
+<h2>小説を投稿する</h2>
+<input type="text" id="title" placeholder="作品タイトル">
+<input type="text" id="author_name" placeholder="作者名">
+<textarea id="content" placeholder="本文を書いてください" rows="10"></textarea>
+<div style="display: flex; gap: 10px;">
+<button onclick="postNovel()">投稿する</button>
+<button onclick="logOut()" style="background-color: #ccc; color: black;">ログアウト</button>
+</div>
+</section>
 
-        async function runTest() {
-            const statusEl = document.getElementById('status');
-            
-            try {
-                // 1. Supabaseの初期化
-                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                statusEl.innerText = "接続開始...";
+<hr>
 
-                // 2. データの取得テスト（novelsテーブルから）
-                const { data, error } = await supabase.from('novels').select('*').limit(1);
+<section id="list-section">
+<h2>最新の作品一覧</h2>
+<div id="novel-list">作品を読み込んでいます...</div>
+</section>
+</main>
 
-                if (error) {
-                    statusEl.innerText = "失敗: " + error.message;
-                    console.error(error);
-                } else {
-                    statusEl.innerText = "成功！データベースと繋がりました。";
-                }
-            } catch (err) {
-                statusEl.innerText = "プログラムエラー: " + err.message;
-                console.error(err);
-            }
-        }
-
-        // 実行
-        runTest();
-    </script>
-</body>
-</html>
+<script
