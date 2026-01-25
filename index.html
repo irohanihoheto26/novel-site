@@ -145,36 +145,58 @@
         if(data) document.getElementById('prof-name').value = data.display_name || "";
     }
 
+// ライブラリ（他人の作品一覧）
 async function getList() {
     const sw = document.getElementById('search-input').value.toLowerCase();
-    // 作品と一緒に「いいね」と「コメント」の数を取得
-    let { data: novels, error } = await api
-        .from('novels')
-        .select('*, likes(count), comments(count)')
-        .eq('is_private', false)
-        .order('created_at', { ascending: false });
-
+    let { data: novels, error } = await api.from('novels').select('*').eq('is_private', false).order('created_at', {ascending: false});
     if (error) return;
 
     let filtered = novels || [];
-    if (currentUser) {
-        filtered = filtered.filter(n => n.author_id !== currentUser.id);
-    }
-    if (sw) {
-        filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
-    }
+    if (currentUser) filtered = filtered.filter(n => n.author_id !== currentUser.id);
+    if (sw) filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
 
+    // 1. まずは枠組みだけ先に表示（これで「読み込み中」が消えます）
     document.getElementById('list').innerHTML = filtered.map(n => `
         <div class="novel-row">
             <div class="novel-info">
                 <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                 <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
             </div>
-            <div class="novel-stats">
-                <span class="stat-item">♥ ${n.likes[0]?.count || 0}</span>
-                <span class="stat-item">💬 ${n.comments[0]?.count || 0}</span>
-            </div>
+            <div class="novel-stats" id="stats-${n.id}">...</div>
         </div>`).join('') || "作品がありません";
+
+    // 2. 後から数字を個別に取ってきて書き換える
+    filtered.forEach(async (n) => {
+        const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        const statsEl = document.getElementById(`stats-${n.id}`);
+        if(statsEl) statsEl.innerHTML = `<span class="stat-item">♥ ${lCount || 0}</span> <span class="stat-item">💬 ${cCount || 0}</span>`;
+    });
+}
+
+// マイページ（自分の作品一覧）
+async function loadUserContent() {
+    if (!currentUser) return;
+    let { data: novels, error } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+    if (error) return;
+
+    // 1. まず枠組みを表示
+    document.getElementById('my-works-list').innerHTML = (novels || []).map(n => `
+        <div class="novel-row">
+            <div class="novel-info">
+                <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
+            </div>
+            <div class="novel-stats" id="my-stats-${n.id}">...</div>
+        </div>`).join('') || "投稿した作品はありません";
+
+    // 2. 後から数字を反映
+    novels.forEach(async (n) => {
+        const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        const statsEl = document.getElementById(`my-stats-${n.id}`);
+        if(statsEl) statsEl.innerHTML = `<span class="stat-item">♥ ${lCount || 0}</span> <span class="stat-item">💬 ${cCount || 0}</span>`;
+    });
 }
 
     async function loadUserContent() {
