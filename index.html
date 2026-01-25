@@ -109,6 +109,17 @@ input:checked + .slider:before {
     font-weight: bold;
     cursor: pointer;
 }
+        /* 閉じるボタンを画面右上に固定 */
+.sticky-close {
+    position: sticky;
+    top: 0;
+    background: rgba(255, 255, 255, 0.9); /* 少し透けさせる */
+    padding: 10px 0;
+    z-index: 2100;
+    display: flex;
+    justify-content: flex-start;
+    border-bottom: 1px solid #eee;
+}
     </style>
 
 
@@ -156,32 +167,76 @@ input:checked + .slider:before {
     </div>
     <div id="list">読み込み中...</div>
 </main>
-
 <div id="reader-overlay">
     <div class="overlay-content">
-        <button class="btn-outline" onclick="closeReader()" style="width:auto">閉じる</button>
+        <div class="sticky-close">
+            <button class="btn-outline" onclick="closeReader()" style="width:auto">← 閉じる</button>
+        </div>
+
         <h2 id="read-title" style="font-size: 2.2em; margin: 30px 0 10px;"></h2>
-        <div id="read-author" style="text-align: right; font-weight: bold;"></div>
+        <div id="read-author" style="text-align: right; font-weight: bold; cursor: pointer; text-decoration: underline;"></div>
         <div id="read-body" style="white-space: pre-wrap; line-height: 2.2; margin: 40px 0;"></div>
         
         <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
-            <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">♥ いいね <span id="read-like-count">0</span></button>
-            <div style="margin-top: 40px; text-align: left;">
-    <h3>コメント</h3>
-    <div id="comment-list"></div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">♥ いいね <span id="read-like-count">0</span></button>
+                <span id="author-link-zone" style="font-size: 0.9em; color: #666;"></span>
+            </div>
+            ```
+
+---
+
+### 3. JavaScriptの修正（コメント編集と作者リンク）
+以下の関数をスクリプトエリアに追加・書き換えしてください。
+
+```javascript
+// コメント読み込み（編集ボタンを追加）
+async function loadComments(id) {
+    const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
     
-    <div id="comment-form-area" class="hidden" style="margin-top: 20px;">
-        <textarea id="comment-input" placeholder="感想を書く..." rows="3"></textarea>
-        <button onclick="postComment()" class="btn-outline" style="width:auto">コメントを送信</button>
-    </div>
+    document.getElementById('comment-list').innerHTML = (data || []).map(c => {
+        // 自分のコメントなら編集ボタンを出す
+        const isMyComment = currentUser && c.user_id === currentUser.id;
+        const editBtn = isMyComment ? `<span onclick="editComment('${c.id}', '${c.body}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>` : '';
+        
+        return `<div class="comment-item" id="comment-${c.id}">
+            <strong>${c.user_name || '読者'}</strong>: <span class="comment-body">${c.body}</span> ${editBtn}
+        </div>`;
+    }).join('') || "コメントはまだありません";
+}
+
+// コメント編集機能
+async function editComment(commentId, oldBody) {
+    const newBody = prompt("コメントを編集しますか？", oldBody);
+    if (newBody === null || newBody.trim() === "" || newBody === oldBody) return;
+
+    const { error } = await api.from('comments').update({ body: newBody }).eq('id', commentId);
+
+    if (error) {
+        alert("編集に失敗しました");
+    } else {
+        loadComments(currentReadingId);
+    }
+}
+
+// リーダーを開く際に作者リンクを表示
+async function openReader(id) {
+    currentReadingId = id;
+    const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+    if(!n) return;
+
+    document.getElementById('read-title').innerText = n.title;
+    document.getElementById('read-author').innerText = n.author_name;
+    // 作者リンクを表示（将来的にフォロー機能に繋げられます）
+    document.getElementById('author-link-zone').innerHTML = `作者: <strong>${n.author_name}</strong>`;
     
-    <div id="comment-guest-msg" style="margin-top: 20px; padding: 20px; background: #f9f9f9; text-align: center; border: 1px dashed #ccc;">
-        <p style="font-size: 0.9em; color: #666;">コメントを投稿するにはログインが必要です。</p>
-        <button onclick="closeReader(); toggleAuthForm();" class="btn-outline" style="width:auto; padding: 5px 20px; font-size: 0.8em;">ログイン / 登録</button>
-    </div>
-</div>
-        </div>
-    </div>
+    document.getElementById('read-body').innerText = n.content;
+    document.getElementById('reader-overlay').style.display = 'block';
+    
+    // ...中略（既存のコメント表示等の処理）...
+    loadComments(id);
+    loadLikeCount(id);
+}
 </div>
 
 <div id="editor-overlay">
