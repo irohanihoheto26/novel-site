@@ -1,28 +1,126 @@
 <!DOCTYPE html>
 <html lang="ja" translate="no">
-<head><meta charset="UTF-8"><title>Test</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二次創作小説サイト</title>
+    <style>
+        body{font-family:sans-serif;max-width:800px;margin:0 auto;padding:20px;line-height:1.6;background-color:#f9f9f9}
+        section{background:white;padding:20px;border-radius:8px;margin-bottom:20px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+        input,textarea{width:100%;margin-bottom:10px;padding:10px;box-sizing:border-box;border:1px solid #ccc;border-radius:4px}
+        button{background-color:#333;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer}
+        .novel-card{border-bottom:1px solid #eee;padding-bottom:15px;margin-bottom:15px}
+        #auth-status{font-size:0.9em;color:#666;text-align:right;margin-bottom:10px}
+    </style>
+</head>
 <body>
-  <button id="btn" style="padding:20px">ここをクリック</button>
-  <p id="msg">待機中...</p>
+    <div id="auth-status">読み込み中...</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // URLとKEYの前後からスペースを完全に除去して定義
-    const u = 'https://fnobmngpstzolphexluc.supabase.co'.replace(/\s/g,'');
-    const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.replace(/\s/g,'');
-    
-    const client = window.supabase.createClient(u, k);
+    <section id="auth-section">
+        <h2>ログイン / 新規登録</h2>
+        <input type="email" id="email" placeholder="メールアドレス">
+        <input type="password" id="password" placeholder="パスワード(6文字以上)">
+        <button onclick="signUp()">新規登録</button>
+        <button onclick="logIn()">ログイン</button>
+    </section>
 
-    document.getElementById('btn').onclick = async () => {
-      document.getElementById('msg').innerText = "通信中...";
-      const { error } = await client.auth.getUser();
-      if (error) {
-        document.getElementById('msg').innerText = "失敗: " + error.message;
-      } else {
-        document.getElementById('msg').innerText = "★大成功！★";
-        alert("接続成功しました！");
-      }
-    };
-  </script>
+    <section id="post-section" style="display:none">
+        <h2>小説を投稿する</h2>
+        <input type="text" id="title" placeholder="タイトル">
+        <input type="text" id="author_name" placeholder="作者名">
+        <textarea id="content" placeholder="本文" rows="10"></textarea>
+        <button onclick="postNovel()">投稿する</button>
+        <button onclick="logOut()" style="background:#ccc;color:#000">ログアウト</button>
+    </section>
+
+    <section>
+        <h2>作品一覧</h2>
+        <div id="novel-list">読み込み中...</div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const u = 'https://fnobmngpstzolphexluc.supabase.co'.replace(/\s/g,'');
+        const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.replace(/\s/g,'');
+        const supabase = window.supabase.createClient(u, k);
+
+        // ユーザー状態確認
+        async function checkUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            const authSection = document.getElementById('auth-section');
+            const postSection = document.getElementById('post-section');
+            const status = document.getElementById('auth-status');
+
+            if (user) {
+                authSection.style.display = 'none';
+                postSection.style.display = 'block';
+                status.innerText = 'ログイン中: ' + user.email;
+            } else {
+                authSection.style.display = 'block';
+                postSection.style.display = 'none';
+                status.innerText = '未ログイン';
+            }
+        }
+
+        // 新規登録
+        async function signUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) alert("エラー: " + error.message);
+            else alert("登録完了！ログインしてください。");
+        }
+
+        // ログイン
+        async function logIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) alert("ログイン失敗: " + error.message);
+            else location.reload();
+        }
+
+        // ログアウト
+        async function logOut() {
+            await supabase.auth.signOut();
+            location.reload();
+        }
+
+        // 投稿
+        async function postNovel() {
+            const title = document.getElementById('title').value;
+            const author_name = document.getElementById('author_name').value;
+            const content = document.getElementById('content').value;
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error } = await supabase.from('novels').insert([
+                { title, author_name, content, author_id: user.id }
+            ]);
+
+            if (error) alert("投稿エラー: " + error.message);
+            else { alert("投稿成功！"); location.reload(); }
+        }
+
+        // 一覧取得
+        async function getNovels() {
+            const { data, error } = await supabase.from('novels').select('*').order('created_at', { ascending: false });
+            const list = document.getElementById('novel-list');
+            if (data && data.length > 0) {
+                list.innerHTML = data.map(n => `
+                    <div class="novel-card">
+                        <h3>${n.title}</h3>
+                        <p><small>作者: ${n.author_name}</small></p>
+                        <div style="white-space:pre-wrap">${n.content}</div>
+                    </div>
+                `).join('');
+            } else {
+                list.innerText = "まだ投稿がありません。";
+            }
+        }
+
+        checkUser();
+        getNovels();
+    </script>
 </body>
 </html>
