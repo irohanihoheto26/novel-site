@@ -46,32 +46,83 @@ button:hover{background-color:#555}
 <div id="novel-list">作品を読み込んでいます...</div>
 </section>
 </main>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// --- 初期設定 ---
 const SUPABASE_URL = 'https://fnobmngpstzolphexluc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// --- 1. 状態チェック ---
 async function checkUser() {
-try {
-const { data: { user }, error } = await supabase.auth.getUser();
-const authSection = document.getElementById('auth-section');
-const postSection = document.getElementById('post-section');
-const authStatus = document.getElementById('auth-status');
-if (user) {
-authSection.style.display = 'none';
-postSection.style.display = 'block';
-authStatus.innerText = 'ログイン中: ' + user.email;
-} else {
-authSection.style.display = 'block';
-postSection.style.display = 'none';
-authStatus.innerText = '未ログイン（閲覧のみ）';
-}
-} catch (e) {
-document.getElementById('auth-status').innerText = 'エラー: ' + e.message;
-}
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('post-section').style.display = 'block';
+            document.getElementById('auth-status').innerText = 'ログイン中: ' + user.email;
+        } else {
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('post-section').style.display = 'none';
+            document.getElementById('auth-status').innerText = '未ログイン（閲覧のみ）';
+        }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
+// --- 2. 新規登録 ---
 async function signUp() {
-const email = document.getElementById('email').value;
-const password
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    if(!email || !password) return alert("入力してください");
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) alert("エラー: " + error.message);
+    else alert("確認メールを送りました！承認してください。");
+}
+
+// --- 3. ログイン ---
+async function logIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert("エラー: " + error.message);
+    else location.reload();
+}
+
+// --- 4. ログアウト ---
+async function logOut() {
+    await supabase.auth.signOut();
+    location.reload();
+}
+
+// --- 5. 投稿 ---
+async function postNovel() {
+    const title = document.getElementById('title').value;
+    const author_name = document.getElementById('author_name').value;
+    const content = document.getElementById('content').value;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!title || !content) return alert("未入力項目があります");
+    const { error } = await supabase.from('novels').insert([{ title, author_name, content, author_id: user.id }]);
+    if (error) alert("投稿失敗: " + error.message);
+    else { alert("投稿完了！"); location.reload(); }
+}
+
+// --- 6. 一覧表示 ---
+async function getNovels() {
+    const { data, error } = await supabase.from('novels').select('*').order('created_at', { ascending: false });
+    const list = document.getElementById('novel-list');
+    if (data) {
+        list.innerHTML = data.map(n => `<div class="novel-card"><h3>${n.title}</h3><p><small>作者: ${n.author_name || '名無し'}</small></p><div style="white-space:pre-wrap">${n.content}</div></div>`).join('');
+    } else {
+        list.innerText = "まだ投稿がありません。";
+    }
+}
+
+// --- 実行 ---
+checkUser();
+getNovels();
+</script>
+</body>
+</html>
