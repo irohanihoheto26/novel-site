@@ -3,73 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="google" content="notranslate">
-    <title>小説サイト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fragment Library</title>
     <style>
-        body{font-family:sans-serif;max-width:800px;margin:0 auto;padding:20px;background:#f9f9f9}
-        section{background:white;padding:20px;border-radius:8px;margin-bottom:20px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
-        input,textarea{width:100%;margin-bottom:10px;padding:10px;box-sizing:border-box}
-        button{background:#333;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer}
-        #auth-status{text-align:right;color:#666;font-size:0.9em}
+        /* 游ゴシックを優先的に指定 */
+        body {
+            font-family: "Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 0;
+            line-height: 1.7;
+        }
+        /* ヘッダー：シンプルに黒文字のみ */
+        header {
+            padding: 60px 20px;
+            text-align: center;
+            border-bottom: 1px solid #000;
+            margin-bottom: 40px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.2em;
+            letter-spacing: 0.15em;
+            font-weight: 500;
+        }
+        header p {
+            font-size: 0.9em;
+            margin-top: 10px;
+            letter-spacing: 0.1em;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 20px 100px;
+        }
+        #auth-status {
+            text-align: right;
+            font-size: 0.8em;
+            margin-bottom: 20px;
+        }
+        section {
+            border: 1px solid #000;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+        h2 {
+            font-size: 1.1em;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #000;
+            display: inline-block;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #000;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        button {
+            background-color: #000;
+            color: #fff;
+            border: 1px solid #000;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: #fff;
+            color: #000;
+        }
+        /* 作品一覧のデザイン */
+        .novel-card {
+            padding: 25px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .novel-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        .novel-card .author {
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+        .novel-card .caption {
+            font-size: 0.95em;
+            color: #333;
+        }
     </style>
 </head>
 <body>
-    <div id="auth-status">通信中...</div>
+
+<header>
+    <h1>Fragment Library</h1>
+    <p>A collection of story fragments.</p>
+</header>
+
+<div class="container">
+    <div id="auth-status">Checking session...</div>
+
     <section id="auth-form">
-        <h2>ログイン / 新規登録</h2>
-        <input type="email" id="email" placeholder="メールアドレス">
-        <input type="password" id="password" placeholder="パスワード(6文字以上)">
-        <button onclick="doSignUp()">新規登録</button>
-        <button onclick="doLogIn()">ログイン</button>
+        <h2>Member</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="doSignUp()">Register</button>
+        <button onclick="doLogIn()" style="background:none; color:#000; margin-left:10px">Login</button>
     </section>
+
     <section id="post-form" style="display:none">
-        <h2>小説を投稿する</h2>
-        <input type="text" id="title" placeholder="タイトル">
-        <input type="text" id="author" placeholder="作者名">
-        <textarea id="content" placeholder="本文" rows="10"></textarea>
-        <button onclick="doPost()">投稿する</button>
-        <button onclick="doLogOut()" style="background:#ccc;color:#000">ログアウト</button>
+        <h2>New Fragment</h2>
+        <input type="text" id="title" placeholder="Title">
+        <input type="text" id="author" placeholder="Author name">
+        <textarea id="caption" placeholder="Caption / Summary" rows="3"></textarea>
+        <textarea id="content" placeholder="Content" rows="12"></textarea>
+        <button onclick="doPost()">Archive</button>
+        <button onclick="doLogOut()" style="background:none; color:#666; border:none; margin-left:10px">Logout</button>
     </section>
-    <section><h2>作品一覧</h2><div id="list">読み込み中...</div></section>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // 変数名を 'api' にして衝突を完全回避
-        const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
-        const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
-        const api = window.supabase.createClient(u, k);
+    <div id="list">Loading fragments...</div>
+</div>
 
-        async function check() {
-            const { data: { user } } = await api.auth.getUser();
-            document.getElementById('auth-form').style.display = user ? 'none' : 'block';
-            document.getElementById('post-form').style.display = user ? 'block' : 'none';
-            document.getElementById('auth-status').innerText = user ? 'ログイン中: ' + user.email : '未ログイン';
-        }
-        async function doSignUp() {
-            const e = document.getElementById('email').value;
-            const p = document.getElementById('password').value;
-            const { error } = await api.auth.signUp({ email: e, password: p });
-            if (error) alert(error.message); else alert("登録成功！");
-        }
-        async function doLogIn() {
-            const e = document.getElementById('email').value;
-            const p = document.getElementById('password').value;
-            const { error } = await api.auth.signInWithPassword({ email: e, password: p });
-            if (error) alert(error.message); else location.reload();
-        }
-        async function doLogOut() { await api.auth.signOut(); location.reload(); }
-        async function doPost() {
-            const t = document.getElementById('title').value;
-            const a = document.getElementById('author').value;
-            const c = document.getElementById('content').value;
-            const { data: { user } } = await api.auth.getUser();
-            const { error } = await api.from('novels').insert([{ title: t, author_name: a, content: c, author_id: user.id }]);
-            if (error) alert(error.message); else { alert("投稿成功！"); location.reload(); }
-        }
-        async function getList() {
-            const { data } = await api.from('novels').select('*').order('created_at', { ascending: false });
-            document.getElementById('list').innerHTML = data?.length > 0 ? data.map(n => `<div style="border-bottom:1px solid #eee"><h3>${n.title}</h3><p><small>${n.author_name}</small></p><p>${n.content}</p></div>`).join('') : "投稿はありません。";
-        }
-        check(); getList();
-    </script>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const u = 'https
