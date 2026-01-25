@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>私の二次創作サイト</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>二次創作小説サイト（仮）</h1>
+        <nav>
+            <a href="#">ホーム</a> | <a href="#">投稿する</a>
+        </nav>
+    </header>
+
+    <main>
+        <article class="novel-content">
+            <h2 class="novel-title">作品タイトル：星空の冒険</h2>
+            <p class="novel-author">作者：ななしさん</p>
+            
+            <div class="novel-text">
+                ここには小説の本文が入ります。
+                GitHub Pagesなら、広告なしでスッキリと表示できます。
+                プログラミングを学べば、ここを自動で書き換えることもできます。
+            </div>
+        </article>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 私の二次創作サイト</p>
+    </footer>
+
+</body>
+</html>
