@@ -221,7 +221,7 @@
         document.getElementById('read-title').innerText = n.title;
         document.getElementById('read-author').innerText = n.author_name;
         document.getElementById('read-body').innerText = n.content;
-        document.getElementById('author-link-zone').innerHTML = `作者: <strong>${n.author_name}</strong>`;
+        `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>`;
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
         
