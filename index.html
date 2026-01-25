@@ -294,6 +294,14 @@ input:checked + .slider:before {
         document.getElementById('read-body').innerText = n.content;
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
+        // コメント入力欄の表示制御
+    if (currentUser) {
+        document.getElementById('comment-form-area').classList.remove('hidden');
+        document.getElementById('comment-guest-msg').classList.add('hidden');
+    } else {
+        document.getElementById('comment-form-area').classList.add('hidden');
+        document.getElementById('comment-guest-msg').classList.remove('hidden');
+    }
         loadComments(id);
         loadLikeCount(id);
     }
