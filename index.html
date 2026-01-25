@@ -29,6 +29,19 @@
         .btn-outline { background: #fff; color: #000; border: 1px solid #000; }
         .comment-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.9em; }
         .hidden { display: none !important; }
+        /* 数字（スタッツ）の見た目 */
+.novel-stats {
+    font-size: 0.85em;
+    color: #888;
+    margin-left: 10px;
+    display: inline-flex;
+    gap: 8px;
+}
+.stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
     </style>
 </head>
 <body>
@@ -132,43 +145,59 @@
         if(data) document.getElementById('prof-name').value = data.display_name || "";
     }
 
-    async function getList() {
-        const sw = document.getElementById('search-input').value.toLowerCase();
-        // エラーを防ぐため、まずはシンプルに取得
-        let query = api.from('novels').select('*').eq('is_private', false).order('created_at', {ascending: false});
-        
-        const { data: novels, error } = await query;
-        if(error) { console.error(error); return; }
+async function getList() {
+    const sw = document.getElementById('search-input').value.toLowerCase();
+    // 作品と一緒に「いいね」と「コメント」の数を取得
+    let { data: novels, error } = await api
+        .from('novels')
+        .select('*, likes(count), comments(count)')
+        .eq('is_private', false)
+        .order('created_at', { ascending: false });
 
-        let filtered = novels || [];
-        // 自分の作品を除外
-        if (currentUser) {
-            filtered = filtered.filter(n => n.author_id !== currentUser.id);
-        }
-        // 検索フィルタ
-        if(sw) {
-            filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
-        }
+    if (error) return;
 
-        document.getElementById('list').innerHTML = filtered.map(n => `
-            <div class="novel-row">
-                <div class="novel-info">
-                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                    <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
-                </div>
-            </div>`).join('') || "作品がありません";
+    let filtered = novels || [];
+    if (currentUser) {
+        filtered = filtered.filter(n => n.author_id !== currentUser.id);
     }
+    if (sw) {
+        filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
+    }
+
+    document.getElementById('list').innerHTML = filtered.map(n => `
+        <div class="novel-row">
+            <div class="novel-info">
+                <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
+            </div>
+            <div class="novel-stats">
+                <span class="stat-item">♥ ${n.likes[0]?.count || 0}</span>
+                <span class="stat-item">💬 ${n.comments[0]?.count || 0}</span>
+            </div>
+        </div>`).join('') || "作品がありません";
+}
 
     async function loadUserContent() {
-        const { data } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
-        document.getElementById('my-works-list').innerHTML = (data || []).map(n => `
-            <div class="novel-row">
-                <div class="novel-info">
-                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                    ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
-                </div>
-            </div>`).join('') || "投稿した作品はありません";
-    }
+    const { data: novels, error } = await api
+        .from('novels')
+        .select('*, likes(count), comments(count)')
+        .eq('author_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+    if (error) return;
+
+    document.getElementById('my-works-list').innerHTML = (novels || []).map(n => `
+        <div class="novel-row">
+            <div class="novel-info">
+                <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
+            </div>
+            <div class="novel-stats">
+                <span class="stat-item">♥ ${n.likes[0]?.count || 0}</span>
+                <span class="stat-item">💬 ${n.comments[0]?.count || 0}</span>
+            </div>
+        </div>`).join('') || "投稿した作品はありません";
+}
 
     async function openReader(id) {
         currentReadingId = id;
