@@ -1,53 +1,38 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" translate="no">
 <head>
 <meta charset="UTF-8">
-<title>小説サイト接続テスト</title>
-<style>
-body{font-family:sans-serif;max-width:800px;margin:0 auto;padding:20px;background:#f9f9f9}
-section{background:white;padding:20px;border-radius:8px;margin-bottom:20px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
-input{width:100%;margin-bottom:10px;padding:10px;box-sizing:border-box}
-button{background:#333;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer}
-#status{text-align:right;color:#666;font-size:0.8em}
-</style>
+<meta name="google" content="notranslate">
+<title>最終テスト</title>
 </head>
 <body>
-<div id="status">システム起動中...</div>
-<section>
-<h2>新規登録テスト</h2>
-<p>まずはアカウントが作れるか試しましょう</p>
-<input type="email" id="email" placeholder="メールアドレス">
-<input type="password" id="password" placeholder="パスワード（6文字以上）">
-<button onclick="signUpTest()">アカウント作成</button>
-</section>
-<div id="msg">ここに結果が出ます</div>
+    <h2>アカウント作成テスト</h2>
+    <input type="email" id="email" placeholder="メール" value="test@example.com">
+    <input type="password" id="password" placeholder="パスワード(6文字以上)" value="password123">
+    <button id="regBtn">登録ボタンを押す</button>
+    <p id="msg">翻訳をオフにしてからボタンを押してください</p>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// 変数名を「myApp」に変えました。これで「supabase」という名前の重複エラーは物理的に起きません！
-const URL = 'https://fnobmngpstzolphexluc.supabase.co';
-const KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
-const myApp = window.supabase.createClient(URL, KEY);
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const URL = 'https://fnobmngpstzolphexluc.supabase.co';
+        const KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
+        const myApp = window.supabase.createClient(URL, KEY);
 
-async function signUpTest() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('password').value;
-    
-    // myApp を使って通信します
-    const { data, error } = await myApp.auth.signUp({ email: e, password: p });
-    
-    if (error) {
-        alert("エラー: " + error.message);
-    } else {
-        alert("成功しました！");
-        document.getElementById('msg').innerText = e + " で登録成功。SupabaseのUsers画面を確認してください。";
-    }
-}
+        document.getElementById('regBtn').onclick = async () => {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            document.getElementById('msg').innerText = "通信中...";
 
-// 読み込み完了時に表示を変える
-window.onload = () => {
-    document.getElementById('status').innerText = "接続準備OK";
-};
-</script>
+            const { data, error } = await myApp.auth.signUp({ email: e, password: p });
+
+            if (error) {
+                alert("エラー: " + error.message);
+                document.getElementById('msg').innerText = "エラー: " + error.message;
+            } else {
+                alert("大成功！Usersを確認してください！");
+                document.getElementById('msg').innerText = "成功しました！";
+            }
+        };
+    </script>
 </body>
 </html>
