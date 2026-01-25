@@ -344,26 +344,30 @@ input:checked + .slider:before {
             <div class="comment-item"><strong>${c.author_name}</strong>: ${c.body}</div>`).join('') || "コメントはまだありません";
     }
 
-   // コメント送信
+// コメント送信（修正版）
 async function postComment() {
     if(!currentUser) return alert("ログインが必要です");
-    const body = document.getElementById('comment-input').value;
+    const bodyEl = document.getElementById('comment-input');
+    const body = bodyEl.value.trim();
     
-    // 中身が空なら何もしない
-    if(!body.trim()) return;
+    if(!body) return;
+
+    // 名前を確実に決定する（プロフ名 ＞ メールアドレスの頭 ＞ 名無し）
+    const senderName = userProfile?.display_name || currentUser.email.split('@')[0] || "名無し";
 
     const { error } = await api.from('comments').insert({ 
         novel_id: currentReadingId, 
         user_id: currentUser.id, 
-        author_name: userProfile?.display_name || "名無し", 
+        author_name: senderName, 
         body: body 
     });
 
     if(error) {
-        alert("コメント送信に失敗しました");
+        console.error("コメント失敗詳細:", error);
+        alert("送信に失敗しました。理由: " + error.message);
     } else {
-        document.getElementById('comment-input').value = ""; // 入力欄を空にする
-        loadComments(currentReadingId); // リストを更新
+        bodyEl.value = ""; 
+        loadComments(currentReadingId); 
     }
 }
 
@@ -404,6 +408,26 @@ async function toggleLike() {
 
     // --- ここまで ---
     init();
+    async function saveProfile() {
+    const name = document.getElementById('prof-name').value;
+    const bio = document.getElementById('prof-bio').value;
+    
+    if(!currentUser) return;
+
+    const { error } = await api.from('profiles').upsert({ 
+        id: currentUser.id, 
+        display_name: name, 
+        bio: bio 
+    });
+
+    if(error) {
+        alert("プロフィールの更新に失敗しました");
+    } else {
+        alert("プロフィールを更新しました！");
+        await loadProfile(); // データを再読み込み
+        toggleSettings(); // 窓を閉じる
+    }
+}
 </script>
 </body>
 </html>
