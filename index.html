@@ -135,4 +135,206 @@
     </div>
 </div>
 
-<script src="
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
+    const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
+    const api = window.supabase.createClient(u, k);
+    let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
+
+    async function init() {
+        const { data: { user } } = await api.auth.getUser();
+        currentUser = user;
+        if (user) {
+            document.getElementById('logged-in-nav').classList.remove('hidden');
+            document.getElementById('guest-nav').classList.add('hidden');
+            document.getElementById('user-page').classList.remove('hidden');
+            await loadProfile();
+            loadUserContent();
+        }
+        getList();
+    }
+
+    async function loadProfile() {
+        const { data } = await api.from('profiles').select('*').eq('id', currentUser.id).single();
+        userProfile = data;
+        if(data) document.getElementById('prof-name').value = data.display_name || "";
+    }
+
+    async function getList() {
+        let { data: novels, error } = await api.from('novels').select('*').eq('is_private', false).order('created_at', {ascending: false});
+        if (error) return;
+        let filtered = novels || [];
+        const sw = document.getElementById('search-input').value.toLowerCase();
+        
+        if (currentTab === 'liked' && currentUser) {
+            const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
+            const likedIds = (myLikes || []).map(l => l.novel_id);
+            filtered = filtered.filter(n => likedIds.includes(n.id));
+        }
+
+        if (sw) filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
+
+        document.getElementById('list').innerHTML = filtered.map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
+                </div>
+                <div class="novel-stats" id="stats-${n.id}">♥ - 💬 -</div>
+            </div>`).join('') || "作品がありません";
+
+        filtered.forEach(async (n) => {
+            const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const el = document.getElementById(`stats-${n.id}`);
+            if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
+        });
+    }
+
+    async function loadUserContent() {
+        if (!currentUser) return;
+        let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+        document.getElementById('my-works-list').innerHTML = (novels || []).map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
+                    ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
+                </div>
+                <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
+            </div>`).join('') || "作品はありません";
+        
+        (novels || []).forEach(async (n) => {
+            const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const el = document.getElementById(`my-stats-${n.id}`);
+            if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
+        });
+    }
+
+    async function openReader(id) {
+        currentReadingId = id;
+        const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+        if(!n) return;
+        document.getElementById('read-title').innerText = n.title;
+        document.getElementById('read-author').innerText = n.author_name;
+        document.getElementById('read-body').innerText = n.content;
+        document.getElementById('author-link-zone').innerHTML = `作者: <strong>${n.author_name}</strong>`;
+        document.getElementById('reader-overlay').style.display = 'block';
+        document.getElementById('reader-interactive-zone').classList.remove('hidden');
+        
+        if (currentUser) {
+            document.getElementById('comment-form-area').classList.remove('hidden');
+            document.getElementById('comment-guest-msg').classList.add('hidden');
+        } else {
+            document.getElementById('comment-form-area').classList.add('hidden');
+            document.getElementById('comment-guest-msg').classList.remove('hidden');
+        }
+        loadComments(id);
+        loadLikeCount(id);
+    }
+
+    async function loadComments(id) {
+        const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
+        document.getElementById('comment-list').innerHTML = (data || []).map(c => {
+            const isMine = currentUser && c.user_id === currentUser.id;
+            const editBtn = isMine ? `<span onclick="editComment('${c.id}', '${c.body}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>` : '';
+            return `<div class="comment-item"><strong>${c.user_name}</strong>: ${c.body} ${editBtn}</div>`;
+        }).join('') || "コメントはありません";
+    }
+
+    async function editComment(id, old) {
+        const b = prompt("コメントを編集:", old);
+        if(!b || b === old) return;
+        await api.from('comments').update({ body: b }).eq('id', id);
+        loadComments(currentReadingId);
+    }
+
+    async function postComment() {
+        const b = document.getElementById('comment-input').value.trim();
+        if(!b || !currentUser) return;
+        const name = userProfile?.display_name || currentUser.email.split('@')[0];
+        await api.from('comments').insert({ novel_id: currentReadingId, user_id: currentUser.id, user_name: name, body: b });
+        document.getElementById('comment-input').value = "";
+        loadComments(currentReadingId);
+    }
+
+    async function toggleLike() {
+        if(!currentUser) return alert("ログインが必要です");
+        await api.from('likes').upsert({ novel_id: currentReadingId, user_id: currentUser.id }, { onConflict: 'novel_id, user_id' });
+        loadLikeCount(currentReadingId);
+    }
+
+    async function loadLikeCount(id) {
+        const { count } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', id);
+        document.getElementById('read-like-count').innerText = count || 0;
+    }
+
+    async function doPost() {
+        const payload = {
+            title: document.getElementById('title-input').value,
+            content: document.getElementById('content-input').value,
+            caption: document.getElementById('caption-input').value,
+            tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()),
+            is_r18: document.getElementById('r18-check').checked,
+            is_private: document.getElementById('private-check').checked,
+            author_id: currentUser.id,
+            author_name: userProfile?.display_name || "名無し"
+        };
+        const { error } = await api.from('novels').insert(payload);
+        if(error) alert(error.message); else location.reload();
+    }
+
+    function switchTab(t) {
+        currentTab = t;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.id === 'tab-'+t));
+        getList();
+    }
+
+    function openRules() {
+        document.getElementById('read-title').innerText = "必ずお読みください（必読）";
+        document.getElementById('read-author').innerText = "運営";
+        // 文字列を ` (バッククォート) で囲むことで改行を許可します
+        document.getElementById('read-body').innerText = `【当サイトについて】
+当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
+以下のルールを守ってご利用ください。
+
+1. 二次創作の取り扱いについて
+・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。
+・公式関係者の目に触れぬよう、節度ある運用をお願いします。
+
+2. 禁止事項
+・公序良俗に反する内容の投稿。
+・特定の個人や団体を誹謗中傷する内容。
+・無断転載および自作発言。
+・商業利用目的の投稿。
+
+3. 作品の明記と免責事項
+・ハッピーエンド、バッドエンド等の傾向がある場合、特殊設定がある場合やR指定が必要な場合は、あらすじやタグでの明記をお願いします。
+・閲覧は自己責任となります。
+
+ルールを守って、創作活動を楽しみましょう。`;
+        
+        document.getElementById('reader-overlay').style.display = 'block';
+        document.getElementById('reader-interactive-zone').classList.add('hidden');
+    }
+
+    function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
+    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function openEditor() { document.getElementById('editor-overlay').style.display = 'block'; }
+    function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
+    function doLogOut() { api.auth.signOut(); location.reload(); }
+    function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
+    async function doLogIn() { await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); location.reload(); }
+    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
+    async function saveProfile() {
+        await api.from('profiles').upsert({ id: currentUser.id, display_name: document.getElementById('prof-name').value, bio: document.getElementById('prof-bio').value });
+        location.reload();
+    }
+
+    init();
+</script>
+</body>
+</html>
