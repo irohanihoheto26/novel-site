@@ -250,19 +250,40 @@
 
     async function openReader(id) {
         currentReadingId = id;
-        const { data: n } = await api.from('novels').select('*, profiles(bio)').eq('id', id).single();
-        if (!n) return;
-        if (n.is_r18 && !confirm("R18作品です。18歳以上ですか？")) return;
+        
+        // ローディング（一瞬真っ白になるのを防ぐため、仮の文字を入れる）
+        document.getElementById('read-title').innerText = "読み込み中...";
+        document.getElementById('read-body').innerText = "";
+        document.getElementById('reader-overlay').style.display = 'block';
 
+        // データの取得（profilesとの結合でエラーが出ないよう、まずはシンプルに取得）
+        const { data: n, error } = await api.from('novels').select('*').eq('id', id).single();
+        
+        if (error || !n) {
+            alert("作品の読み込みに失敗しました。");
+            closeReader();
+            return;
+        }
+
+        // R18チェック
+        if (n.is_r18 && !confirm("R18作品です。18歳以上ですか？")) {
+            closeReader();
+            return;
+        }
+
+        // 画面への反映
         document.getElementById('read-title').innerText = n.title;
         document.getElementById('read-author').innerText = n.author_name;
-        document.getElementById('read-author-bio').innerText = n.profiles?.bio || "";
         document.getElementById('read-body').innerText = n.content;
         
+        // 作者の自己紹介を別途取得（結合エラー対策）
+        const { data: p } = await api.from('profiles').select('bio').eq('id', n.author_id).single();
+        document.getElementById('read-author-bio').innerText = p?.bio || "";
+        
+        // インタラクティブ機能の表示
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
         document.getElementById('reader-footer').classList.toggle('hidden', !currentUser || n.author_id === currentUser.id);
         
-        document.getElementById('reader-overlay').style.display = 'block';
         window.scrollTo(0, 0);
     }
 
