@@ -257,10 +257,11 @@ input:checked + .slider:before {
         document.getElementById('list').innerHTML = filtered.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
-                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                 </div>
+                
                 <div class="novel-stats" id="stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品がありません";
 
@@ -283,8 +284,8 @@ input:checked + .slider:before {
         document.getElementById('my-works-list').innerHTML = (novels || []).map(n => `
             <div class="novel-row">
                 <div class="novel-info">
-                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                     ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
                 </div>
                 <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
