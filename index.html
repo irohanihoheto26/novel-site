@@ -1,103 +1,52 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>二次創作小説サイト</title>
-<style>
-body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; background-color: #f9f9f9; }
-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-input, textarea { width: 100%; margin-bottom: 10px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-button { background-color: #333; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
-.novel-card { border-bottom: 1px solid #eee; padding-bottom: 15px; }
-#auth-status { font-size: 0.9em; color: #666; text-align: right; }
-</style>
+    <meta charset="UTF-8">
+    <title>小説投稿サイトテスト</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+        #status-box { padding: 15px; background: white; border-radius: 5px; border: 1px solid #ccc; }
+    </style>
 </head>
 <body>
-<header>
-<h1>マイ・ノベル・プラットフォーム</h1>
-<div id="auth-status">確認中...</div>
-</header>
-<main>
-<section id="auth-section">
-<h2>ログイン / 会員登録</h2>
-<input type="email" id="email" placeholder="メールアドレス">
-<input type="password" id="password" placeholder="パスワード">
-<div style="display: flex; gap: 10px;">
-<button onclick="signUp()">新規登録</button>
-<button onclick="logIn()">ログイン</button>
-</div>
-</section>
-<section id="post-section" style="display:none;">
-<h2>小説を投稿する</h2>
-<input type="text" id="title" placeholder="作品タイトル">
-<input type="text" id="author_name" placeholder="作者名">
-<input type="text" id="tags" placeholder="タグ">
-<textarea id="content" placeholder="本文" rows="10"></textarea>
-<button onclick="postNovel()">投稿する</button>
-<button onclick="logOut()">ログアウト</button>
-</section>
-<hr>
-<section id="list-section">
-<h2>最新の作品一覧</h2>
-<div id="novel-list">読み込み中...</div>
-</section>
-</main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SUPABASE_URL = 'https://fnobmngpstzolphexluc.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-async function checkUser() {
-try {
-const { data: { user }, error } = await supabase.auth.getUser();
-const authStatus = document.getElementById('auth-status');
-if (user) {
-document.getElementById('auth-section').style.display = 'none';
-document.getElementById('post-section').style.display = 'block';
-authStatus.innerText = 'ログイン中: ' + user.email;
-} else {
-authStatus.innerText = '未ログイン';
-}
-} catch (e) {
-document.getElementById('auth-status').innerText = 'エラー: ' + e.message;
-}
-}
-async function signUp() {
-const email = document.getElementById('email').value;
-const password = document.getElementById('password').value;
-const { error } = await supabase.auth.signUp({ email, password });
-if (error) alert(error.message);
-else alert("確認メールを送信しました！");
-}
-async function logIn() {
-const email = document.getElementById('email').value;
-const password = document.getElementById('password').value;
-const { error } = await supabase.auth.signInWithPassword({ email, password });
-if (error) alert(error.message);
-else location.reload();
-}
-async function logOut() {
-await supabase.auth.signOut();
-location.reload();
-}
-async function postNovel() {
-const title = document.getElementById('title').value;
-const author_name = document.getElementById('author_name').value;
-const content = document.getElementById('content').value;
-const { data: { user } } = await supabase.auth.getUser();
-const { error } = await supabase.from('novels').insert([{ title, author_name, content, author_id: user.id }]);
-if (error) alert(error.message);
-else { alert("投稿完了！"); location.reload(); }
-}
-async function getNovels() {
-const { data, error } = await supabase.from('novels').select('*').order('created_at', { ascending: false });
-if (data) {
-document.getElementById('novel-list').innerHTML = data.map(n => `<div><h3>${n.title}</h3><p>${n.author_name}</p><p>${n.content}</p></div>`).join('<hr>');
-}
-}
-checkUser();
-getNovels();
-</script>
+
+    <h1>接続テスト</h1>
+    <div id="status-box">
+        状態: <span id="status">通信準備中...</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // 設定値
+        const SUPABASE_URL = 'https://fnobmngpstzolphexluc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
+
+        async function runTest() {
+            const statusEl = document.getElementById('status');
+            
+            try {
+                // 1. Supabaseの初期化
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                statusEl.innerText = "接続開始...";
+
+                // 2. データの取得テスト（novelsテーブルから）
+                const { data, error } = await supabase.from('novels').select('*').limit(1);
+
+                if (error) {
+                    statusEl.innerText = "失敗: " + error.message;
+                    console.error(error);
+                } else {
+                    statusEl.innerText = "成功！データベースと繋がりました。";
+                }
+            } catch (err) {
+                statusEl.innerText = "プログラムエラー: " + err.message;
+                console.error(err);
+            }
+        }
+
+        // 実行
+        runTest();
+    </script>
 </body>
 </html>
