@@ -1,34 +1,39 @@
 <!DOCTYPE html>
-<html lang="ja" translate="no">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragment Library</title>
     <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: "Yu Gothic", sans-serif; background: #fff; color: #000; margin: 0; line-height: 1.8; }
+        body { font-family: "Yu Gothic", "YuGothic", sans-serif; background: #fff; color: #000; margin: 0; line-height: 1.8; }
         header { padding: 40px 20px; text-align: center; border-bottom: 1px solid #000; }
-        header h1 { font-family: 'Antonio', sans-serif; font-size: 3em; margin: 0; }
+        header h1 { font-family: 'Antonio', sans-serif; font-size: 3em; margin: 0; text-transform: uppercase; }
+        
         .container { max-width: 700px; margin: 0 auto; padding: 20px 20px 100px; }
         
-        /* 一覧のコンパクト化 */
-        .novel-card { padding: 15px 0; border-bottom: 1px solid #eee; }
-        .novel-card h3 { margin: 0; font-size: 1.2em; cursor: pointer; display: inline-block; text-decoration: underline; }
-        .author-info { font-size: 0.75em; color: #888; margin-left: 10px; }
-        .caption-mini { font-size: 0.85em; color: #555; margin-top: 5px; }
+        /* 検索エリア */
+        .search-box { margin-bottom: 30px; display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 10px; border: 1px solid #000; }
 
-        /* 読書モード（別ページ風オーバーレイ） */
-        #reader-overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #fff; z-index: 1000; overflow-y: auto; 
-        }
-        .reader-content { max-width: 600px; margin: 40px auto; padding: 40px 20px; }
-        .back-btn { cursor: pointer; font-size: 0.9em; text-decoration: underline; margin-bottom: 20px; display: inline-block; }
+        /* 入力フォーム */
+        section { border: 1px solid #000; padding: 20px; margin-bottom: 30px; background: #fafafa; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
+        input:focus, textarea:focus { border-color: #000; outline: none; }
+        button { background: #000; color: #fff; border: 1px solid #000; padding: 10px 20px; cursor: pointer; }
+        .text-btn { background: none; color: #000; border: none; text-decoration: underline; cursor: pointer; font-size: 0.8em; margin-left: 10px; }
 
-        section { border: 1px solid #000; padding: 20px; margin-bottom: 30px; font-size: 0.9em; }
-        input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #000; box-sizing: border-box; }
-        button { background: #000; color: #fff; border: 1px solid #000; padding: 8px 20px; cursor: pointer; }
-        .text-btn { background: none; color: #000; border: none; text-decoration: underline; padding: 0; font-size: 0.8em; cursor: pointer; margin-left: 10px; }
+        /* 小説カード */
+        .novel-card { padding: 20px 0; border-bottom: 1px solid #eee; }
+        .novel-card h3 { margin: 0; font-size: 1.3em; cursor: pointer; color: #000; }
+        .author-info { font-size: 0.8em; color: #666; }
+        .tag-badge { display: inline-block; background: #eee; font-size: 0.7em; padding: 2px 8px; margin-right: 5px; border-radius: 3px; cursor: pointer; }
+        .tag-badge:hover { background: #000; color: #fff; }
+
+        /* 読書モード */
+        #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; overflow-y: auto; }
+        .reader-content { max-width: 600px; margin: 40px auto; padding: 20px; }
+        
         .hidden { display: none !important; }
     </style>
 </head>
@@ -36,41 +41,43 @@
 
 <div id="reader-overlay">
     <div class="reader-content">
-        <span class="back-btn" onclick="closeReader()">← Back to Library</span>
-        <h2 id="read-title" style="font-size: 2em; margin: 20px 0;"></h2>
-        <p id="read-author" style="border-bottom: 1px solid #000; padding-bottom: 10px;"></p>
-        <div id="read-body" style="white-space: pre-wrap; font-size: 1.1em; letter-spacing: 0.05em;"></div>
+        <span class="text-btn" onclick="closeReader()">← 図書館に戻る</span>
+        <h2 id="read-title" style="font-size: 2em; margin-top: 20px;"></h2>
+        <p id="read-author" style="text-align: right; border-bottom: 1px solid #000; padding-bottom: 10px;"></p>
+        <div id="read-body" style="white-space: pre-wrap; font-size: 1.1em; margin-top: 30px;"></div>
     </div>
 </div>
 
 <header><h1>Fragment Library</h1></header>
 
-<div class="container" id="main-content">
-    <div id="auth-status" style="text-align:right; font-size:0.75em; margin-bottom:10px;">Checking library...</div>
+<div class="container">
+    <div id="auth-status" style="text-align:right; font-size:0.7em; margin-bottom:10px;">接続中...</div>
+
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="タイトル、内容、タグで検索..." oninput="getList()">
+    </div>
 
     <section id="auth-form" class="hidden">
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="doLogIn()">Login</button>
-        <button onclick="doSignUp()" class="text-btn">Register</button>
+        <input type="email" id="email" placeholder="メールアドレス">
+        <input type="password" id="password" placeholder="パスワード">
+        <button onclick="doLogIn()">ログイン</button>
+        <button onclick="doSignUp()" class="text-btn">新規登録</button>
     </section>
 
     <section id="post-form" class="hidden">
-        <div style="font-size:0.8em; background:#f9f9f9; padding:10px; border:1px dashed #000; margin-bottom:15px;">
-            <strong>Your Archive</strong>
-            <div id="my-list"></div>
-        </div>
+        <div id="my-list" style="font-size:0.8em; margin-bottom:15px; border-bottom:1px solid #ddd; padding-bottom:10px;"></div>
         <input type="hidden" id="edit-id">
-        <input type="text" id="title" placeholder="Title">
-        <input type="text" id="author" placeholder="Author">
-        <textarea id="caption" placeholder="Caption" rows="2"></textarea>
-        <textarea id="content" placeholder="Content" rows="8"></textarea>
-        <button id="submit-btn" onclick="doPost()">Archive</button>
-        <button onclick="location.reload()" class="text-btn">Cancel</button>
-        <button onclick="doLogOut()" class="text-btn" style="float:right">Logout</button>
+        <input type="text" id="title" placeholder="タイトル">
+        <input type="text" id="author" placeholder="作者名">
+        <input type="text" id="tags" placeholder="タグ (カンマ区切り。例: 恋愛, SF, 短編)">
+        <textarea id="caption" placeholder="あらすじ（一覧に表示されます）" rows="2"></textarea>
+        <textarea id="content" placeholder="本文" rows="10"></textarea>
+        <button id="submit-btn" onclick="doPost()">アーカイブする</button>
+        <button onclick="location.reload()" class="text-btn">キャンセル</button>
+        <button onclick="doLogOut()" class="text-btn" style="float:right">ログアウト</button>
     </section>
 
-    <div id="list">Loading Fragments...</div>
+    <div id="list">読み込み中...</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -81,106 +88,122 @@
     let currentUser = null;
 
     async function init() {
-        try {
-            const { data: { user } } = await api.auth.getUser();
-            currentUser = user;
-            document.getElementById('auth-status').innerText = user ? `Member: ${user.email}` : "Guest Mode";
-            document.getElementById('auth-form').classList.toggle('hidden', !!user);
-            document.getElementById('post-form').classList.toggle('hidden', !user);
-            if (user) getMyList();
-            getList();
-        } catch(e) { console.error(e); }
+        const { data: { user } } = await api.auth.getUser();
+        currentUser = user;
+        document.getElementById('auth-status').innerText = user ? `ログイン中: ${user.email}` : "ゲストモード";
+        document.getElementById('auth-form').classList.toggle('hidden', !!user);
+        document.getElementById('post-form').classList.toggle('hidden', !user);
+        if (user) getMyList();
+        getList();
     }
 
     async function doPost() {
         const id = document.getElementById('edit-id').value;
+        const tagText = document.getElementById('tags').value;
+        // カンマ区切りの文字列を配列に変換
+        const tagArray = tagText ? tagText.split(',').map(t => t.trim()).filter(t => t !== "") : [];
+
         const payload = {
             title: document.getElementById('title').value,
             author_name: document.getElementById('author').value,
             caption: document.getElementById('caption').value,
             content: document.getElementById('content').value,
+            tags: tagArray,
             author_id: currentUser.id
         };
-        const { error } = id ? await api.from('novels').update(payload).eq('id', id) : await api.from('novels').insert([payload]);
-        if (error) alert(error.message); else location.reload();
-    }
 
-    async function getMyList() {
-        const { data } = await api.from('novels').select('id, title').eq('author_id', currentUser.id);
-        if (!data) return;
-        document.getElementById('my-list').innerHTML = data.map(n => `
-            <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee;">
-                <span>${n.title}</span>
-                <div>
-                    <button class="text-btn" onclick="editNovel('${n.id}')">Edit</button>
-                    <button class="text-btn" onclick="deleteNovel('${n.id}')" style="color:red">Del</button>
-                </div>
-            </div>
-        `).join('') || 'None';
+        const { error } = id ? await api.from('novels').update(payload).eq('id', id) : await api.from('novels').insert([payload]);
+        if (error) alert("エラー: " + error.message); else location.reload();
     }
 
     async function getList() {
-        const { data: novels } = await api.from('novels').select('*').order('created_at', { ascending: false });
+        const searchWord = document.getElementById('search-input').value.toLowerCase();
+        let query = api.from('novels').select('*').order('created_at', { ascending: false });
+        
+        const { data: novels } = await query;
         const { data: likes } = await api.from('likes').select('novel_id');
-        if (!novels) return;
-        document.getElementById('list').innerHTML = novels.map(n => {
+
+        // 検索フィルタリング（クライアント側で行うとスムーズ）
+        const filtered = novels.filter(n => {
+            const inTitle = n.title.toLowerCase().includes(searchWord);
+            const inContent = n.content.toLowerCase().includes(searchWord);
+            const inTags = n.tags && n.tags.some(t => t.toLowerCase().includes(searchWord));
+            return inTitle || inContent || inTags;
+        });
+
+        document.getElementById('list').innerHTML = filtered.map(n => {
             const lCount = likes ? likes.filter(l => l.novel_id === n.id).length : 0;
+            const tagsHtml = n.tags ? n.tags.map(t => `<span class="tag-badge" onclick="setSearch('${t}')">#${t}</span>`).join('') : '';
             return `
                 <div class="novel-card">
                     <h3 onclick="openReader('${n.id}')">${n.title}</h3>
-                    <span class="author-info">by ${n.author_name}</span>
-                    <div class="caption-mini">${n.caption || ''}</div>
-                    <button style="background:none; border:none; color:#e0245e; cursor:pointer;" onclick="addLike('${n.id}')">♥ ${lCount}</button>
-                    <button class="text-btn" style="font-size:0.7em" onclick="addFav('${n.author_id}')">Follow</button>
+                    <span class="author-info"> 執筆: ${n.author_name}</span>
+                    <div style="margin:5px 0;">${tagsHtml}</div>
+                    <div style="font-size:0.9em; color:#444;">${n.caption || ''}</div>
+                    <button style="background:none; border:none; color:#e0245e; cursor:pointer; font-size:0.9em;" onclick="addLike('${n.id}')">♥ ${lCount}</button>
                 </div>
             `;
-        }).join('');
+        }).join('') || "該当する物語が見つかりません。";
+    }
+
+    function setSearch(tag) {
+        document.getElementById('search-input').value = tag;
+        getList();
     }
 
     async function openReader(id) {
-        const { data, error } = await api.from('novels').select('*').eq('id', id).single();
-        if (error) return;
+        const { data } = await api.from('novels').select('*').eq('id', id).single();
         document.getElementById('read-title').innerText = data.title;
-        document.getElementById('read-author').innerText = 'by ' + data.author_name;
+        document.getElementById('read-author').innerText = '作者: ' + data.author_name;
         document.getElementById('read-body').innerText = data.content;
         document.getElementById('reader-overlay').style.display = 'block';
-        window.scrollTo(0, 0);
     }
 
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
 
+    async function getMyList() {
+        const { data } = await api.from('novels').select('id, title').eq('author_id', currentUser.id);
+        if (!data) return;
+        document.getElementById('my-list').innerHTML = "<strong>自分の作品:</strong> " + data.map(n => `
+            <span style="margin-right:10px;">${n.title} 
+                <a href="#" onclick="editNovel('${n.id}')" style="color:blue">[編集]</a>
+                <a href="#" onclick="deleteNovel('${n.id}')" style="color:red">[消去]</a>
+            </span>
+        `).join('');
+    }
+
     async function editNovel(id) {
         const { data } = await api.from('novels').select('*').eq('id', id).single();
-        if (!data) return;
         document.getElementById('edit-id').value = data.id;
         document.getElementById('title').value = data.title;
         document.getElementById('author').value = data.author_name;
+        document.getElementById('tags').value = data.tags ? data.tags.join(', ') : '';
         document.getElementById('caption').value = data.caption || '';
         document.getElementById('content').value = data.content;
-        document.getElementById('submit-btn').innerText = "Update Fragment";
+        document.getElementById('submit-btn').innerText = "更新する";
         window.scrollTo(0,0);
     }
 
     async function deleteNovel(id) {
-        if(confirm('Delete this?')) {
-            const { error } = await api.from('novels').delete().eq('id', id);
-            if (error) alert(error.message); else location.reload();
+        if(confirm('削除しますか？')) {
+            await api.from('novels').delete().eq('id', id);
+            location.reload();
         }
     }
 
     async function addLike(nid) {
-        if (!currentUser) return alert("Please Login");
+        if (!currentUser) return alert("ログインが必要です");
         const { error } = await api.from('likes').insert([{ novel_id: nid, user_id: currentUser.id }]);
-        if (error) alert("Already liked"); else getList();
+        if (error) alert("いいね済みです"); else getList();
     }
 
     async function addFav(aid) {
-        if (!currentUser) return alert("Please Login");
+        if (!currentUser) return alert("ログインが必要です");
         const { error } = await api.from('favorites').insert([{ author_id: aid, user_id: currentUser.id }]);
-        if (error) alert("Already followed"); else alert("Followed");
+        if (error) alert("フォロー済みです"); else alert("フォローしました");
     }
 
-    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else alert("OK"); }
+    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else alert("登録メールを確認してください"); }
     async function doLogIn() { const { error } = await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else location.reload(); }
     async function doLogOut() { await api.auth.signOut(); location.reload(); }
 
