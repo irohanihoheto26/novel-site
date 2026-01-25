@@ -250,11 +250,16 @@
         const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
         document.getElementById('comment-list').innerHTML = (data || []).map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
-            const editBtn = isMine ? `<span onclick="editComment('${c.id}', '${c.body}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>` : '';
-            return `<div class="comment-item"><strong>${c.user_name}</strong>: ${c.body} ${editBtn}</div>`;
+            
+            // 自分のコメントなら「編集」と「削除」ボタンを出す
+            const manageBtns = isMine ? `
+                <span onclick="editComment('${c.id}', '${c.body}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
+                <span onclick="deleteComment('${c.id}')" style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">[削除]</span>
+            ` : '';
+
+            return `<div class="comment-item"><strong>${c.user_name}</strong>: ${c.body} ${manageBtns}</div>`;
         }).join('') || "コメントはありません";
     }
-
     async function editComment(id, old) {
         const b = prompt("コメントを編集:", old);
         if(!b || b === old) return;
@@ -262,6 +267,19 @@
         loadComments(currentReadingId);
     }
 
+    async function deleteComment(commentId) {
+        if (!confirm("このコメントを削除してもよろしいですか？")) return;
+
+        const { error } = await api.from('comments').delete().eq('id', commentId);
+
+        if (error) {
+            alert("削除に失敗しました: " + error.message);
+        } else {
+            // コメント一覧を再読み込み
+            loadComments(currentReadingId);
+        }
+    }
+    
     async function postComment() {
         const b = document.getElementById('comment-input').value.trim();
         if(!b || !currentUser) return;
