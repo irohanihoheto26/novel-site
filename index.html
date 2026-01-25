@@ -112,3 +112,168 @@
     const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
     const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
     const api = window.supabase.createClient(u, k);
+    let currentUser = null;
+
+    async function init() {
+        const { data: { user } } = await api.auth.getUser();
+        currentUser = user;
+        
+        document.getElementById('user-page').classList.toggle('hidden', !user);
+        document.getElementById('guest-menu').classList.toggle('hidden', !!user);
+        
+        if (user) {
+            document.getElementById('auth-status').innerText = `ログイン中: ${user.email}`;
+            getMyFullList();
+        }
+        getList();
+    }
+
+    // 必読ページを開く
+    function openRules() {
+        document.getElementById('read-title').innerText = "サイト利用上の注意（必読）";
+        document.getElementById('read-author').innerText = "Fragment Library 管理";
+        document.getElementById('read-body').innerText = `
+【当サイトについて】
+当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
+以下のルールを守ってご利用ください。
+
+1. 二次創作の取り扱いについて
+・検索よけのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。
+・公式関係者の目に触れぬよう、節度ある運用をお願いします。
+
+2. 禁止事項
+・公序良俗に反する内容の投稿。
+・特定の個人や団体を誹謗中傷する内容。
+・無断転載および自作発言。
+・商業利用目的の投稿。
+
+3. マナーについて
+・ハッピーエンド、バッドエンド等の傾向がある場合は、あらすじやタグでの明記をお願いします。
+・閲覧は自己責任となります。
+
+ルールを守って、創作活動を楽しみましょう。
+        `;
+        document.getElementById('reader-footer').classList.add('hidden');
+        document.getElementById('reader-overlay').style.display = 'block';
+    }
+
+    async function getMyFullList() {
+        const { data } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+        if (!data || data.length === 0) {
+            document.getElementById('my-full-list').innerHTML = "<p style='font-size:0.9em; color:#666;'>まだ投稿した作品はありません。</p>";
+            return;
+        }
+        document.getElementById('my-full-list').innerHTML = data.map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span class="novel-meta">
+                        <a href="#" onclick="editNovel('${n.id}')" style="color:blue; margin-left:10px;">[編集]</a>
+                        <a href="#" onclick="deleteNovel('${n.id}')" style="color:red; margin-left:5px;">[削除]</a>
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function getList() {
+        const sw = document.getElementById('search-input').value.toLowerCase();
+        const { data: novels } = await api.from('novels').select('*').order('created_at', { ascending: false });
+        const { data: likes } = await api.from('likes').select('novel_id');
+
+        const filtered = novels.filter(n => 
+            n.title.toLowerCase().includes(sw) || 
+            (n.tags && n.tags.some(t => t.toLowerCase().includes(sw))) ||
+            n.author_name.toLowerCase().includes(sw)
+        );
+
+        document.getElementById('list').innerHTML = filtered.map(n => {
+            const lCount = likes ? likes.filter(l => l.novel_id === n.id).length : 0;
+            const tags = (n.tags || []).map(t => `<span class="tag-text" onclick="event.stopPropagation(); setSearch('${t}')">#${t}</span>`).join('');
+            return `
+                <div class="novel-row">
+                    <div class="novel-info">
+                        <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                        <span class="novel-meta">/ ${n.author_name} ${tags}</span>
+                    </div>
+                    <div class="like-count">♥ ${lCount}</div>
+                </div>
+            `;
+        }).join('') || "作品が見つかりませんでした。";
+    }
+
+    async function openReader(id) {
+        const { data } = await api.from('novels').select('*').eq('id', id).single();
+        document.getElementById('read-title').innerText = data.title;
+        document.getElementById('read-author').innerText = '執筆: ' + data.author_name;
+        document.getElementById('read-body').innerText = data.content;
+        
+        document.getElementById('reader-footer').classList.remove('hidden');
+        document.getElementById('reader-like-btn').onclick = () => addLike(id);
+        
+        document.getElementById('reader-overlay').style.display = 'block';
+        window.scrollTo(0,0);
+    }
+
+    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function togglePostForm() {
+        const area = document.getElementById('post-form-area');
+        area.style.display = (area.style.display === 'block') ? 'none' : 'block';
+        if(area.style.display === 'block') window.scrollTo(0,0);
+    }
+    function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
+    function setSearch(t) { document.getElementById('search-input').value = t; getList(); }
+
+    async function doPost() {
+        const id = document.getElementById('edit-id').value;
+        const tagArray = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t !== "");
+        const payload = {
+            title: document.getElementById('title').value,
+            author_name: document.getElementById('author').value,
+            caption: document.getElementById('caption').value,
+            content: document.getElementById('content').value,
+            tags: tagArray,
+            author_id: currentUser.id
+        };
+        const { error } = id ? await api.from('novels').update(payload).eq('id', id) : await api.from('novels').insert([payload]);
+        if (error) alert(error.message); else location.reload();
+    }
+
+    async function editNovel(id) {
+        const { data } = await api.from('novels').select('*').eq('id', id).single();
+        document.getElementById('edit-id').value = data.id;
+        document.getElementById('title').value = data.title;
+        document.getElementById('author').value = data.author_name;
+        document.getElementById('tags').value = data.tags ? data.tags.join(', ') : '';
+        document.getElementById('caption').value = data.caption || '';
+        document.getElementById('content').value = data.content;
+        document.getElementById('form-title').innerText = "作品を編集";
+        document.getElementById('submit-btn').innerText = "更新する";
+        document.getElementById('post-form-area').style.display = 'block';
+        window.scrollTo(0,0);
+    }
+
+    async function deleteNovel(id) {
+        if(confirm('削除してよろしいですか？')) {
+            await api.from('novels').delete().eq('id', id);
+            location.reload();
+        }
+    }
+
+    async function addLike(nid) {
+        if (!currentUser) return alert("ログインしてください");
+        const { data: novel } = await api.from('novels').select('author_id').eq('id', nid).single();
+        if (novel && novel.author_id === currentUser.id) return alert("自分の作品にはいいねできません");
+        
+        const { error } = await api.from('likes').insert([{ novel_id: nid, user_id: currentUser.id }]);
+        if (error) alert("すでにいいね済みです"); else { alert("♥ いいねしました"); getList(); }
+    }
+
+    async function doLogOut() { await api.auth.signOut(); location.reload(); }
+    async function doLogIn() { const { error } = await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else location.reload(); }
+    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else alert("登録メールを確認してください"); }
+
+    init();
+</script>
+</body>
+</html>
