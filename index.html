@@ -43,14 +43,16 @@ document.getElementById('auth-status').innerText='ログイン中:'+user.email;
 }else{
 document.getElementById('auth-status').innerText='未ログイン';
 }
-}catch(e){console.error(e)}
+}catch(e){document.getElementById('auth-status').innerText='エラー:'+e.message}
 }
 async function signUp(){
+try{
 const e=document.getElementById('email').value;
 const p=document.getElementById('password').value;
 const {error}=await supabase.auth.signUp({email:e,password:p});
 if(error) alert("エラー:"+error.message);
 else alert("メールを送信しました！確認してください。");
+}catch(err){alert("実行エラー:"+err.message)}
 }
 async function logIn(){
 const e=document.getElementById('email').value;
@@ -69,8 +71,10 @@ if(error) alert("失敗:"+error.message);
 else {alert("投稿成功！");location.reload();}
 }
 async function getNovels(){
+try{
 const {data}=await supabase.from('novels').select('*').order('created_at',{ascending:false});
 if(data) document.getElementById('novel-list').innerHTML=data.map(n=>`<div><h3>${n.title}</h3><p>${n.content}</p></div>`).join('<hr>');
+}catch(e){console.error(e)}
 }
 checkUser();
 getNovels();
