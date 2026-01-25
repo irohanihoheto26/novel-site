@@ -2,45 +2,52 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>小説サイト</title>
+<title>小説サイト接続テスト</title>
 <style>
 body{font-family:sans-serif;max-width:800px;margin:0 auto;padding:20px;background:#f9f9f9}
-section{background:white;padding:20px;border-radius:8px;margin-bottom:20px}
-#auth-status{text-align:right;color:#666}
+section{background:white;padding:20px;border-radius:8px;margin-bottom:20px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+input{width:100%;margin-bottom:10px;padding:10px;box-sizing:border-box}
+button{background:#333;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer}
+#status{text-align:right;color:#666;font-size:0.8em}
 </style>
 </head>
 <body>
-<div id="auth-status">準備中...</div>
+<div id="status">システム起動中...</div>
 <section>
-<h2>ログイン / 登録</h2>
-<input type="email" id="email" placeholder="メール">
-<input type="password" id="password" placeholder="パスワード">
-<button onclick="signUp()">新規登録</button>
+<h2>新規登録テスト</h2>
+<p>まずはアカウントが作れるか試しましょう</p>
+<input type="email" id="email" placeholder="メールアドレス">
+<input type="password" id="password" placeholder="パスワード（6文字以上）">
+<button onclick="signUpTest()">アカウント作成</button>
 </section>
-<div id="novel-list">読み込み中...</div>
+<div id="msg">ここに結果が出ます</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// 【確認】ここより上に supabase という言葉は一度も出てきません
+// 変数名を「myApp」に変えました。これで「supabase」という名前の重複エラーは物理的に起きません！
 const URL = 'https://fnobmngpstzolphexluc.supabase.co';
 const KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
-const supabase = window.supabase.createClient(URL, KEY);
+const myApp = window.supabase.createClient(URL, KEY);
 
-async function signUp() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) alert(error.message);
-    else alert("成功！");
+async function signUpTest() {
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('password').value;
+    
+    // myApp を使って通信します
+    const { data, error } = await myApp.auth.signUp({ email: e, password: p });
+    
+    if (error) {
+        alert("エラー: " + error.message);
+    } else {
+        alert("成功しました！");
+        document.getElementById('msg').innerText = e + " で登録成功。SupabaseのUsers画面を確認してください。";
+    }
 }
 
-async function getNovels() {
-    const { data } = await supabase.from('novels').select('*');
-    document.getElementById('auth-status').innerText = '接続成功';
-    document.getElementById('novel-list').innerText = data ? '投稿あり' : '投稿なし';
-}
-
-getNovels();
+// 読み込み完了時に表示を変える
+window.onload = () => {
+    document.getElementById('status').innerText = "接続準備OK";
+};
 </script>
 </body>
 </html>
