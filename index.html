@@ -12,41 +12,39 @@
         .rule-link { display: inline-block; margin-top: 10px; font-size: 0.9em; color: #666; text-decoration: underline; cursor: pointer; }
         .container { max-width: 800px; margin: 0 auto; padding: 20px; }
 
-        /* 検索・タブ */
-        .search-box { margin-bottom: 20px; width: 100%; display: flex; }
-        .search-box input { flex: 1; padding: 12px; border: 1px solid #000; font-size: 1em; }
+        /* 検索バー（右寄せ・小さめ） */
+        .search-container { display: flex; justify-content: flex-end; margin: 10px 0 20px; }
+        .search-box-sm { width: 220px; padding: 8px; border: 1px solid #000; font-size: 0.85em; outline: none; }
+
+        /* タブ・見出し */
         .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .tab-btn { background: none; border: none; font-size: 0.9em; cursor: pointer; color: #888; padding: 5px 10px; }
         .tab-btn.active { color: #000; font-weight: bold; border-bottom: 2px solid #000; }
-
         .section-title { font-size: 1.5em; font-weight: bold; border-bottom: 2px solid #000; margin: 30px 0 15px; padding-bottom: 5px; }
-        .sub-title { font-size: 1.1em; font-weight: bold; margin: 20px 0 10px; color: #333; }
+        .sub-title { font-size: 1.1em; font-weight: bold; margin: 25px 0 10px; color: #333; border-left: 5px solid #000; padding-left: 10px; }
 
-        /* 小説一行表示 */
+        /* 小説一覧の行 */
         .novel-row { padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
         .novel-info { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
         .novel-title { font-weight: bold; cursor: pointer; text-decoration: underline; margin-right: 10px; }
         .badge { font-size: 0.7em; padding: 1px 4px; border-radius: 3px; margin-left: 5px; vertical-align: middle; }
         .badge-r18 { background: #e0245e; color: #fff; }
         .badge-warn { background: #666; color: #fff; }
-        .like-count { color: #e0245e; font-size: 0.85em; min-width: 45px; text-align: right; }
+        .stats { font-size: 0.85em; color: #666; min-width: 90px; text-align: right; white-space: nowrap; }
 
-        /* フォーム */
+        /* 投稿フォーム */
         #post-form-area { border: 2px solid #000; padding: 20px; margin-bottom: 30px; background: #fdfdfd; display: none; }
-        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
-        .check-group { margin-bottom: 15px; font-size: 0.9em; }
-        .check-group label { margin-right: 15px; cursor: pointer; }
-        button { background: #000; color: #fff; border: none; padding: 10px 20px; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .inline-checks { display: flex; gap: 15px; margin: 5px 0 15px; font-size: 0.9em; flex-wrap: wrap; align-items: center; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #000; color: #fff; border: none; padding: 10px 20px; cursor: pointer; transition: 0.2s; }
         button:hover { opacity: 0.8; }
         .btn-outline { background: #fff; color: #000; border: 1px solid #000; padding: 5px 15px; font-size: 0.8em; }
 
-        /* 読書モード・コメント */
+        /* リーダー画面 */
         #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; overflow-y: auto; }
         .reader-content { max-width: 650px; margin: 40px auto; padding: 20px; }
-        .comment-item { margin-bottom: 15px; border-bottom: 1px dotted #ccc; padding-bottom: 8px; font-size: 0.9em; }
-        .message-item { border-bottom: 1px solid #ddd; padding: 10px 0; font-size: 0.85em; }
-
         .hidden { display: none !important; }
+        .comment-item { margin-bottom: 15px; border-bottom: 1px dotted #ccc; padding-bottom: 10px; position: relative; }
     </style>
 </head>
 <body>
@@ -56,20 +54,21 @@
         <button class="btn-outline" onclick="closeReader()">閉じる</button>
         <h2 id="read-title" style="font-size: 2em; margin: 30px 0 10px;"></h2>
         <p id="read-author" style="text-align: right; color: #666;"></p>
-        <div id="read-body" style="white-space: pre-wrap; font-size: 1.15em; line-height: 2; margin: 40px 0;"></div>
+        <div id="read-body" style="white-space: pre-wrap; font-size: 1.15em; line-height: 2.1; margin: 40px 0;"></div>
         
-        <div id="reader-footer" class="hidden" style="text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
-            <button id="reader-follow-btn" class="btn-outline">作者をフォロー</button>
-            <button id="reader-msg-btn" class="btn-outline">メッセージを送る</button>
-            <button id="reader-like-btn" style="font-size: 1.2em; margin-left: 10px;">♥ いいね</button>
-        </div>
-
-        <div style="margin-top: 50px; border-top: 2px solid #000; padding-top: 20px;">
-            <h3>感想・コメント</h3>
-            <div id="comment-list"></div>
-            <div id="comment-form-area" class="hidden" style="margin-top:20px;">
-                <textarea id="comment-body" placeholder="感想を書く（ログイン中のみ）" rows="3"></textarea>
-                <button onclick="postComment()" class="btn-outline">コメントを投稿</button>
+        <div id="reader-interactive-zone">
+            <div id="reader-footer" class="hidden" style="text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+                <button id="reader-follow-btn" class="btn-outline">作者をフォロー</button>
+                <button id="reader-msg-btn" class="btn-outline">メッセージを送る</button>
+                <button id="reader-like-btn" style="font-size: 1.2em; margin-left: 10px;">♥ いいね</button>
+            </div>
+            <div style="margin-top: 50px; border-top: 2px solid #000; padding-top: 20px;">
+                <h3>Comments</h3>
+                <div id="comment-list"></div>
+                <div id="comment-form-area" class="hidden" style="margin-top:20px;">
+                    <textarea id="comment-body" placeholder="感想を書く（ログイン中のみ）" rows="3"></textarea>
+                    <button onclick="postComment()" class="btn-outline">コメントを送信</button>
+                </div>
             </div>
         </div>
     </div>
@@ -81,33 +80,29 @@
 </header>
 
 <div class="container">
-    <div id="auth-status" style="text-align:right; font-size:0.75em; margin-bottom:10px; color:#888;"></div>
+    <div id="auth-status" style="text-align:right; font-size:0.75em; color:#888; margin-bottom: 10px;"></div>
 
     <div id="user-page" class="hidden">
-        <div style="display:flex; justify-content: flex-end; gap:10px; margin-bottom:10px;">
+        <div style="display:flex; justify-content: flex-end; gap:10px; margin-bottom: 5px;">
             <button onclick="togglePostForm()">新規投稿</button>
             <button class="btn-outline" onclick="doLogOut()">ログアウト</button>
         </div>
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-box-sm" placeholder="作品を検索..." oninput="getList()">
+        </div>
         
         <div class="section-title">マイページ</div>
-        
-        <div class="sub-title">投稿済みの作品</div>
-        <div id="my-full-list" style="margin-bottom: 20px;"></div>
-
+        <div class="sub-title">公開中の作品</div>
+        <div id="my-public-list"></div>
+        <div class="sub-title">下書き（非公開）</div>
+        <div id="my-draft-list"></div>
         <div class="sub-title">あなたへのメッセージ</div>
-        <div id="my-messages-list" style="background:#f9f9f9; padding:15px; border:1px solid #eee; border-radius:5px;"></div>
+        <div id="my-messages-list"></div>
     </div>
 
-    <div id="guest-menu" class="menu-bar hidden" style="text-align:right; margin-bottom: 20px;">
+    <div id="guest-menu" class="hidden" style="text-align:right; margin-bottom: 20px;">
         <button class="btn-outline" onclick="toggleAuthForm()">ログイン / 新規登録</button>
     </div>
-
-    <section id="auth-form" class="hidden" style="border:1px solid #000; padding:20px; margin-bottom:20px;">
-        <input type="email" id="email" placeholder="メールアドレス">
-        <input type="password" id="password" placeholder="パスワード">
-        <button onclick="doLogIn()">ログイン</button>
-        <button onclick="doSignUp()" class="btn-outline">新規登録</button>
-    </section>
 
     <div id="post-form-area">
         <h3 id="form-title">新規投稿</h3>
@@ -115,22 +110,23 @@
         <input type="text" id="title" placeholder="作品タイトル">
         <input type="text" id="author" placeholder="作者名">
         <input type="text" id="tags" placeholder="タグ (カンマ区切り)">
-        <div class="check-group">
+        <div class="inline-checks">
             <label><input type="checkbox" id="is_r18"> R-18</label>
             <label><input type="checkbox" id="has_special_settings"> 特殊設定あり</label>
+            <label style="color: #0056b3; font-weight: bold;"><input type="checkbox" id="is_private"> 非公開（下書きとして保存）</label>
         </div>
-        <textarea id="caption" placeholder="あらすじ（一覧に表示）" rows="2"></textarea>
-        <textarea id="content" placeholder="本文を入力" rows="15" oninput="updateWordCount()"></textarea>
+        <textarea id="caption" placeholder="あらすじ（作品一覧に表示されます）" rows="2"></textarea>
+        <textarea id="content" placeholder="本文を入力してください" rows="15" oninput="updateWordCount()"></textarea>
         <div id="word-count" style="text-align: right; font-size: 0.8em; color: #888; margin-bottom: 10px;">0 文字</div>
-        <button id="submit-btn" onclick="doPost()">投稿する</button>
+        <button id="submit-btn" onclick="doPost()">保存・公開する</button>
         <button class="btn-outline" onclick="togglePostForm()">キャンセル</button>
     </div>
 
     <div class="section-title">ライブラリ</div>
-    <div class="search-box"><input type="text" id="search-input" placeholder="検索（タイトル、作者、タグ）..." oninput="getList()"></div>
     <div class="tab-bar">
-        <button id="tab-all" class="tab-btn active" onclick="switchTab('all')">すべての作品</button>
+        <button id="tab-all" class="tab-btn active" onclick="switchTab('all')">すべて</button>
         <button id="tab-follow" class="tab-btn" onclick="switchTab('follow')">フォロー中</button>
+        <button id="tab-liked" class="tab-btn" onclick="switchTab('liked')">いいね済み</button>
     </div>
     <div id="list">読み込み中...</div>
 </div>
@@ -140,9 +136,7 @@
     const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
     const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
     const api = window.supabase.createClient(u, k);
-    let currentUser = null;
-    let currentReadingId = null;
-    let currentTab = 'all';
+    let currentUser = null, currentReadingId = null, currentTab = 'all';
 
     async function init() {
         const { data: { user } } = await api.auth.getUser();
@@ -151,8 +145,7 @@
         document.getElementById('guest-menu').classList.toggle('hidden', !!user);
         if (user) {
             document.getElementById('auth-status').innerText = `ログイン中: ${user.email}`;
-            getMyFullList();
-            loadMyMessages();
+            loadUserContent();
         }
         getList();
     }
@@ -163,7 +156,7 @@
         document.getElementById('word-count').innerText = `${text.length} 文字`;
     }
 
-    // 必読
+    // 必読（全文復活）
     function openRules() {
         document.getElementById('read-title').innerText = "サイト利用上の注意（必読）";
         document.getElementById('read-author').innerText = "Fragment Library 管理";
@@ -173,185 +166,188 @@
 以下のルールを守ってご利用ください。
 
 1. 二次創作の取り扱いについて
-・検索よけのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください。
+・検索よけのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。
 ・公式関係者の目に触れぬよう、節度ある運用をお願いします。
 
 2. 禁止事項
-・公序良俗に反する内容の投稿、誹謗中傷、無断転載。
+・公序良俗に反する内容の投稿。
+・特定の個人や団体を誹謗中傷する内容。
+・無断転載および自作発言。
+・商業利用目的の投稿。
 
 3. 作品の明記と免責事項
 ・ハッピーエンド、バッドエンド等の傾向がある場合、特殊設定がある場合やR指定が必要な場合は、あらすじやタグでの明記をお願いします。
 ・閲覧は自己責任となります。
+
+ルールを守って、創作活動を楽しみましょう。
         `;
-        document.getElementById('reader-footer').classList.add('hidden');
-        document.getElementById('reader-overlay').style.display = 'block';
-    }
-
-    // 作品表示
-    async function getList() {
-        const sw = document.getElementById('search-input').value.toLowerCase();
-        let { data: novels } = await api.from('novels').select('*').order('created_at', { ascending: false });
-        const { data: likes } = await api.from('likes').select('novel_id');
-        
-        if (currentTab === 'follow' && currentUser) {
-            const { data: favs } = await api.from('favorites').select('author_id').eq('user_id', currentUser.id);
-            const favIds = favs.map(f => f.author_id);
-            novels = novels.filter(n => favIds.includes(n.author_id));
-        }
-
-        const filtered = (novels || []).filter(n => 
-            n.title.toLowerCase().includes(sw) || 
-            (n.tags && n.tags.some(t => t.toLowerCase().includes(sw))) ||
-            n.author_name.toLowerCase().includes(sw)
-        );
-
-        document.getElementById('list').innerHTML = filtered.map(n => {
-            const lCount = likes ? likes.filter(l => l.novel_id === n.id).length : 0;
-            const r18 = n.is_r18 ? '<span class="badge badge-r18">R-18</span>' : '';
-            const spec = n.has_special_settings ? '<span class="badge badge-warn">特殊設定</span>' : '';
-            return `
-                <div class="novel-row">
-                    <div class="novel-info">
-                        <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                        ${r18}${spec}
-                        <span class="novel-meta">/ ${n.author_name}</span>
-                    </div>
-                    <div class="like-count">♥ ${lCount}</div>
-                </div>
-            `;
-        }).join('') || "作品がありません。";
-    }
-
-    // 読書モード開始
-    async function openReader(id) {
-        currentReadingId = id;
-        const { data } = await api.from('novels').select('*').eq('id', id).single();
-        if (data.is_r18 && !confirm("この作品はR-18です。18歳以上ですか？")) return;
-        
-        document.getElementById('read-title').innerText = data.title;
-        document.getElementById('read-author').innerText = '執筆: ' + data.author_name;
-        document.getElementById('read-body').innerText = (data.has_special_settings ? "【特殊設定あり注意】\n\n" : "") + data.content;
-        
-        loadComments(id);
-        document.getElementById('comment-form-area').classList.toggle('hidden', !currentUser);
-        
-        document.getElementById('reader-footer').classList.remove('hidden');
-        document.getElementById('reader-like-btn').onclick = () => addLike(id);
-        document.getElementById('reader-follow-btn').onclick = () => addFollow(data.author_id);
-        document.getElementById('reader-msg-btn').onclick = () => sendMessage(data.author_id);
-        
+        document.getElementById('reader-interactive-zone').classList.add('hidden');
         document.getElementById('reader-overlay').style.display = 'block';
         window.scrollTo(0,0);
     }
 
-    // コメント・メッセージ機能
+    // マイページ用コンテンツ読み込み
+    async function loadUserContent() {
+        const { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+        const pub = (novels || []).filter(n => !n.is_private);
+        const draft = (novels || []).filter(n => n.is_private);
+        
+        const renderRow = n => `
+            <div class="novel-row">
+                <div class="novel-info"><span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span></div>
+                <div class="stats">
+                    <button class="btn-outline" onclick="editNovel('${n.id}')">編集</button>
+                    <button class="btn-outline" onclick="deleteNovel('${n.id}')" style="color:red; border-color:red; margin-left:5px;">削除</button>
+                </div>
+            </div>`;
+        document.getElementById('my-public-list').innerHTML = pub.map(renderRow).join('') || "公開作品はありません";
+        document.getElementById('my-draft-list').innerHTML = draft.map(renderRow).join('') || "下書きはありません";
+        
+        const { data: msgs } = await api.from('messages').select('*').eq('receiver_id', currentUser.id).order('created_at', {ascending: false});
+        document.getElementById('my-messages-list').innerHTML = (msgs || []).map(m => `
+            <div style="font-size:0.85em; border-bottom:1px solid #eee; padding:10px 0;">
+                <div style="color:#888; font-size:0.8em;">From: ${m.sender_name} (${new Date(m.created_at).toLocaleDateString()})</div>
+                <div>${m.body}</div>
+            </div>`).join('') || "メッセージはありません";
+    }
+
+    // ライブラリ表示
+    async function getList() {
+        const sw = document.getElementById('search-input').value.toLowerCase();
+        let { data: novels } = await api.from('novels').select('*').eq('is_private', false).order('created_at', { ascending: false });
+        const { data: likesAll } = await api.from('likes').select('novel_id');
+        const { data: commsAll } = await api.from('comments').select('novel_id');
+
+        if (currentTab === 'follow' && currentUser) {
+            const { data: favs } = await api.from('favorites').select('author_id').eq('user_id', currentUser.id);
+            const favIds = favs.map(f => f.author_id);
+            novels = novels.filter(n => favIds.includes(n.author_id) && n.author_id !== currentUser.id);
+        } else if (currentTab === 'liked' && currentUser) {
+            const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
+            const likedIds = myLikes.map(l => l.novel_id);
+            novels = novels.filter(n => likedIds.includes(n.id));
+        } else {
+            // 「すべて」タブでは自分の作品を除外（ライブラリっぽくするため）
+            if(currentUser) novels = novels.filter(n => n.author_id !== currentUser.id);
+        }
+
+        const filtered = (novels || []).filter(n => 
+            n.title.toLowerCase().includes(sw) || 
+            n.author_name.toLowerCase().includes(sw) ||
+            (n.tags && n.tags.some(t => t.toLowerCase().includes(sw)))
+        );
+
+        document.getElementById('list').innerHTML = filtered.map(n => {
+            const lCnt = likesAll ? likesAll.filter(l => l.novel_id === n.id).length : 0;
+            const cCnt = commsAll ? commsAll.filter(c => c.novel_id === n.id).length : 0;
+            return `
+                <div class="novel-row">
+                    <div class="novel-info">
+                        <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                        ${n.is_r18 ? '<span class="badge badge-r18">R18</span>':''}
+                        ${n.has_special_settings ? '<span class="badge badge-warn">特殊</span>':''}
+                        <span style="font-size:0.8em; color:#888;">/ ${n.author_name}</span>
+                    </div>
+                    <div class="stats">♥ ${lCnt} 💬 ${cCnt}</div>
+                </div>`;
+        }).join('') || "作品がありません。";
+    }
+
+    // 読書画面
+    async function openReader(id) {
+        currentReadingId = id;
+        const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+        if (n.is_r18 && !confirm("この作品はR18です。18歳以上ですか？")) return;
+        
+        document.getElementById('read-title').innerText = n.title;
+        document.getElementById('read-author').innerText = 'by ' + n.author_name;
+        document.getElementById('read-body').innerText = n.content;
+        
+        document.getElementById('reader-interactive-zone').classList.remove('hidden');
+        document.getElementById('reader-footer').classList.toggle('hidden', n.author_id === (currentUser?currentUser.id:null));
+        
+        document.getElementById('reader-like-btn').onclick = () => addLike(id);
+        document.getElementById('reader-follow-btn').onclick = () => addFollow(n.author_id);
+        document.getElementById('reader-msg-btn').onclick = () => sendMessage(n.author_id);
+        
+        loadComments(id);
+        document.getElementById('comment-form-area').classList.toggle('hidden', !currentUser);
+        document.getElementById('reader-overlay').style.display = 'block';
+        window.scrollTo(0,0);
+    }
+
+    // コメント
     async function loadComments(nid) {
-        const { data } = await api.from('comments').select('*').eq('novel_id', nid).order('created_at', { ascending: true });
+        const { data: cs } = await api.from('comments').select('*').eq('novel_id', nid).order('created_at', {ascending: true});
         const list = document.getElementById('comment-list');
-        list.innerHTML = (data && data.length > 0) ? data.map(c => `
+        list.innerHTML = (cs && cs.length > 0) ? cs.map(c => `
             <div class="comment-item">
-                <strong>${c.user_name}</strong> <small style="color:#999">${new Date(c.created_at).toLocaleDateString()}</small>
-                <div>${c.body}</div>
-            </div>
-        `).join('') : "<p style='color:#999;font-size:0.8em;'>まだ感想はありません。</p>";
+                <strong style="font-size:0.9em;">${c.user_name}</strong> <small style="color:#999">${new Date(c.created_at).toLocaleDateString()}</small>
+                <div style="margin-top:5px;">${c.body}</div>
+                ${currentUser && c.user_id === currentUser.id ? `<button onclick="editComment('${c.id}','${c.body}')" style="font-size:0.7em; background:none; color:blue; text-decoration:underline; padding:0; margin-top:5px;">編集する</button>` : ''}
+            </div>`).join('') : "<p style='color:#999;font-size:0.8em;'>まだ感想はありません。</p>";
+    }
+
+    async function editComment(cid, oldBody) {
+        const newBody = prompt("コメントを編集:", oldBody);
+        if (newBody && newBody !== oldBody) {
+            await api.from('comments').update({ body: newBody }).eq('id', cid);
+            loadComments(currentReadingId);
+        }
     }
 
     async function postComment() {
-        const body = document.getElementById('comment-body').value.trim();
-        if (!body) return;
-        await api.from('comments').insert([{
-            novel_id: currentReadingId, user_id: currentUser.id,
-            user_name: currentUser.email.split('@')[0], body: body
-        }]);
+        const b = document.getElementById('comment-body').value.trim();
+        if (!b) return;
+        await api.from('comments').insert([{ novel_id: currentReadingId, user_id: currentUser.id, user_name: currentUser.email.split('@')[0], body: b }]);
         document.getElementById('comment-body').value = "";
         loadComments(currentReadingId);
+        getList();
     }
 
-    async function sendMessage(receiverId) {
-        if (!currentUser) return alert("ログインが必要です");
-        const msg = prompt("作者へ非公開メッセージを送ります:");
-        if (!msg) return;
-        await api.from('messages').insert([{
-            receiver_id: receiverId, sender_id: currentUser.id,
-            sender_name: currentUser.email.split('@')[0], body: msg
-        }]);
-        alert("送信しました");
-    }
-
-    async function loadMyMessages() {
-        const { data } = await api.from('messages').select('*').eq('receiver_id', currentUser.id).order('created_at', { ascending: false });
-        const list = document.getElementById('my-messages-list');
-        list.innerHTML = (data && data.length > 0) ? data.map(m => `
-            <div class="message-item">
-                <small>From: ${m.sender_name} (${new Date(m.created_at).toLocaleString()})</small>
-                <div style="margin-top:5px;">${m.body}</div>
-            </div>
-        `).join('') : "メッセージはありません。";
-    }
-
-    // 投稿関連
+    // 投稿・編集
     async function doPost() {
         const id = document.getElementById('edit-id').value;
         const payload = {
-            title: document.getElementById('title').value,
-            author_name: document.getElementById('author').value,
-            content: document.getElementById('content').value,
-            caption: document.getElementById('caption').value,
-            tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t !== ""),
-            is_r18: document.getElementById('is_r18').checked,
+            title: document.getElementById('title').value, author_name: document.getElementById('author').value,
+            content: document.getElementById('content').value, is_r18: document.getElementById('is_r18').checked,
             has_special_settings: document.getElementById('has_special_settings').checked,
+            is_private: document.getElementById('is_private').checked, caption: document.getElementById('caption').value,
+            tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t !== ""),
             author_id: currentUser.id
         };
         const { error } = id ? await api.from('novels').update(payload).eq('id', id) : await api.from('novels').insert([payload]);
         if (error) alert(error.message); else location.reload();
     }
 
-    async function getMyFullList() {
-        const { data } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
-        document.getElementById('my-full-list').innerHTML = (data || []).map(n => `
-            <div class="novel-row">
-                <div class="novel-info">
-                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                    <a href="#" onclick="editNovel('${n.id}')" style="color:blue; font-size:0.8em; margin-left:10px;">[編集]</a>
-                    <a href="#" onclick="deleteNovel('${n.id}')" style="color:red; font-size:0.8em; margin-left:5px;">[削除]</a>
-                </div>
-            </div>
-        `).join('') || "投稿作品はありません";
-    }
-
-    // 共通
-    function switchTab(t) { currentTab = t; getList(); document.getElementById('tab-all').classList.toggle('active', t==='all'); document.getElementById('tab-follow').classList.toggle('active', t==='follow'); }
-    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
-    function togglePostForm() { const a = document.getElementById('post-form-area'); a.style.display = (a.style.display==='block')?'none':'block'; if(a.style.display==='block') window.scrollTo(0,0); }
-    function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
-    async function addLike(nid) {
-        if (!currentUser) return alert("ログインしてください");
-        const { error } = await api.from('likes').insert([{ novel_id: nid, user_id: currentUser.id }]);
-        if (error) alert("すでにいいね済みです"); else { alert("♥ いいねしました"); getList(); }
-    }
-    async function addFollow(aid) {
-        if (!currentUser) return alert("ログインしてください");
-        if (aid === currentUser.id) return alert("自分はフォローできません");
-        const { error } = await api.from('favorites').insert([{ author_id: aid, user_id: currentUser.id }]);
-        if (error) alert("フォロー済みです"); else alert("フォローしました！");
-    }
     async function editNovel(id) {
         const { data } = await api.from('novels').select('*').eq('id', id).single();
         document.getElementById('edit-id').value = data.id;
         document.getElementById('title').value = data.title;
         document.getElementById('author').value = data.author_name;
+        document.getElementById('content').value = data.content;
+        document.getElementById('caption').value = data.caption || '';
         document.getElementById('tags').value = data.tags ? data.tags.join(', ') : '';
         document.getElementById('is_r18').checked = !!data.is_r18;
         document.getElementById('has_special_settings').checked = !!data.has_special_settings;
-        document.getElementById('content').value = data.content;
-        document.getElementById('caption').value = data.caption || '';
-        document.getElementById('form-title').innerText = "編集";
+        document.getElementById('is_private').checked = !!data.is_private;
+        document.getElementById('form-title').innerText = "作品を編集";
         document.getElementById('submit-btn').innerText = "更新する";
         document.getElementById('post-form-area').style.display = 'block';
         updateWordCount();
         window.scrollTo(0,0);
     }
-    async function deleteNovel(id) { if(confirm('削除しますか？')) { await api.from('novels').delete().eq('id', id); location.reload(); } }
+
+    async function deleteNovel(id) { if(confirm('本当に削除しますか？')) { await api.from('novels').delete().eq('id', id); location.reload(); } }
+
+    // メッセージ、いいね、フォロー、Auth（共通）
+    async function sendMessage(rid) { if(!currentUser) return alert("ログインが必要です"); const m = prompt("作者へ非公開メッセージを送ります:"); if(m) { await api.from('messages').insert([{receiver_id:rid, sender_id:currentUser.id, sender_name:currentUser.email.split('@')[0], body:m}]); alert("送信しました"); } }
+    async function addLike(nid) { if(!currentUser) return alert("ログインしてください"); const { error } = await api.from('likes').insert([{ novel_id: nid, user_id: currentUser.id }]); if(error) alert("すでにいいね済みです"); else { alert("♥ いいねしました"); getList(); } }
+    async function addFollow(aid) { if(!currentUser) return alert("ログインしてください"); if(aid===currentUser.id) return; const { error } = await api.from('favorites').insert([{ author_id: aid, user_id: currentUser.id }]); if(error) alert("フォロー済みです"); else alert("フォローしました"); }
+    function switchTab(t) { currentTab = t; getList(); document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.id === 'tab-'+t)); }
+    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function togglePostForm() { const a = document.getElementById('post-form-area'); a.style.display = (a.style.display==='block')?'none':'block'; if(a.style.display==='block') window.scrollTo(0,0); }
+    function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
     async function doLogOut() { await api.auth.signOut(); location.reload(); }
     async function doLogIn() { const { error } = await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else location.reload(); }
     async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if (error) alert(error.message); else alert("確認メールを送りました"); }
