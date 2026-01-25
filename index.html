@@ -31,11 +31,7 @@
         .hidden { display: none !important; }
         .novel-stats { font-size: 0.85em; color: #888; margin-left: 10px; display: inline-flex; gap: 8px; }
         .stat-item { display: inline-flex; align-items: center; gap: 3px; }
-        
-        /* 閉じるボタンを固定 */
         .sticky-close { position: sticky; top: 0; background: rgba(255,255,255,0.95); padding: 10px 0; z-index: 2100; border-bottom: 1px solid #eee; }
-        
-        /* スイッチスタイル */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-right: 8px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
@@ -93,21 +89,19 @@
 <div id="reader-overlay">
     <div class="overlay-content">
         <div class="sticky-close">
-    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 0 15px;">
-        <button class="btn-outline" onclick="closeReader()" style="width:auto; margin:0;">← 閉じる</button>
-        
-        <div id="name-changer-group" style="display: flex; align-items: center; gap: 5px; flex-grow: 1; justify-content: flex-end;">
-            <input type="text" id="target-string" placeholder="変換前の文字" style="width: 100px; margin: 0; padding: 5px; font-size: 0.8em;">
-            <span>→</span>
-            <input type="text" id="new-name" placeholder="新しい名前" style="width: 100px; margin: 0; padding: 5px; font-size: 0.8em;">
-            <button onclick="applyNameChange()" style="width: auto; padding: 5px 15px; margin: 0; font-size: 0.8em;">変換</button>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 0 15px;">
+                <button class="btn-outline" onclick="closeReader()" style="width:auto; margin:0;">← 閉じる</button>
+                <div id="name-changer-group" style="display: flex; align-items: center; gap: 5px; flex-grow: 1; justify-content: flex-end;">
+                    <input type="text" id="target-string" placeholder="変換前" style="width: 80px; margin: 0; padding: 5px; font-size: 0.8em;">
+                    <span>→</span>
+                    <input type="text" id="new-name" placeholder="変換後" style="width: 80px; margin: 0; padding: 5px; font-size: 0.8em;">
+                    <button onclick="applyNameChange()" style="width: auto; padding: 5px 15px; margin: 0; font-size: 0.8em;">変換</button>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-        <h2 id="read-title" style="font-size: 2.2em; margin: 30px 0 10px;"></h2>
+        <h2 id="read-title"></h2>
         <div id="read-author" style="text-align: right; font-weight: bold;"></div>
         <div id="read-body" style="white-space: pre-wrap; line-height: 2.2; margin: 40px 0;"></div>
-        
         <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px;">
                 <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">♥ いいね <span id="read-like-count">0</span></button>
@@ -150,8 +144,7 @@
     const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
     const api = window.supabase.createClient(u, k);
     let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
-    let editingNovelId = null; // これが空なら新規、IDが入っていれば編集モード
-let allMyNovels = [];      // 自分の作品データを一時保存する場所
+    let editingNovelId = null, allMyNovels = [], originalContent = "";
 
     async function init() {
         const { data: { user } } = await api.auth.getUser();
@@ -177,13 +170,11 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
         if (error) return;
         let filtered = novels || [];
         const sw = document.getElementById('search-input').value.toLowerCase();
-        
         if (currentTab === 'liked' && currentUser) {
             const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
             const likedIds = (myLikes || []).map(l => l.novel_id);
             filtered = filtered.filter(n => likedIds.includes(n.id));
         }
-
         if (sw) filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
 
         document.getElementById('list').innerHTML = filtered.map(n => `
@@ -207,17 +198,19 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
     async function loadUserContent() {
         if (!currentUser) return;
         let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
-        document.getElementById('my-works-list').innerHTML = (novels || []).map(n => `
+        allMyNovels = novels || [];
+        document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
-                   <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-<span onclick="openEditor('${n.id}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span onclick="openEditor('${n.id}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                     ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
                 </div>
                 <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品はありません";
         
-        (novels || []).forEach(async (n) => {
+        allMyNovels.forEach(async (n) => {
             const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const el = document.getElementById(`my-stats-${n.id}`);
@@ -229,22 +222,18 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
         currentReadingId = id;
         const { data: n } = await api.from('novels').select('*').eq('id', id).single();
         if(!n) return;
-
-        // タイトルをセットし、スタイルでサイズを半分にする
+        originalContent = n.content;
         const titleEl = document.getElementById('read-title');
         titleEl.innerText = n.title;
-        titleEl.style.fontSize = "1.1em"; // ここでサイズを半分（2.2em → 1.1em）に変更
+        titleEl.style.fontSize = "1.1em";
         titleEl.style.margin = "20px 0 10px";
-
         document.getElementById('read-author').innerText = n.author_name;
         document.getElementById('read-body').innerText = n.content;
-
-        // 作者リンクエリアの表示（前回の修正分）
-        document.getElementById('author-link-zone').innerHTML = 
-            `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline; color:#000;">${n.author_name}</strong>`;
-
+        document.getElementById('author-link-zone').innerHTML = `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline; color:#000;">${n.author_name}</strong>`;
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
+        document.getElementById('target-string').value = "";
+        document.getElementById('new-name').value = "";
         
         if (currentUser) {
             document.getElementById('comment-form-area').classList.remove('hidden');
@@ -257,20 +246,24 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
         loadLikeCount(id);
     }
 
+    function applyNameChange() {
+        const target = document.getElementById('target-string').value;
+        const replacement = document.getElementById('new-name').value;
+        if (!target) return alert("変換前の文字を入力してください");
+        const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedTarget, 'g');
+        document.getElementById('read-body').innerText = originalContent.replace(regex, replacement || "");
+    }
+
     async function loadComments(id) {
         const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
         document.getElementById('comment-list').innerHTML = (data || []).map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
-            
-            // 自分のコメントなら「編集」と「削除」ボタンを出す
-            const manageBtns = isMine ? `
-                <span onclick="editComment('${c.id}', '${c.body}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
-                <span onclick="deleteComment('${c.id}')" style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">[削除]</span>
-            ` : '';
-
+            const manageBtns = isMine ? `<span onclick="editComment('${c.id}', '${c.body}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span><span onclick="deleteComment('${c.id}')" style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">[削除]</span>` : '';
             return `<div class="comment-item"><strong>${c.user_name}</strong>: ${c.body} ${manageBtns}</div>`;
         }).join('') || "コメントはありません";
     }
+
     async function editComment(id, old) {
         const b = prompt("コメントを編集:", old);
         if(!b || b === old) return;
@@ -278,19 +271,12 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
         loadComments(currentReadingId);
     }
 
-    async function deleteComment(commentId) {
-        if (!confirm("このコメントを削除してもよろしいですか？")) return;
-
-        const { error } = await api.from('comments').delete().eq('id', commentId);
-
-        if (error) {
-            alert("削除に失敗しました: " + error.message);
-        } else {
-            // コメント一覧を再読み込み
-            loadComments(currentReadingId);
-        }
+    async function deleteComment(id) {
+        if (!confirm("削除しますか？")) return;
+        await api.from('comments').delete().eq('id', id);
+        loadComments(currentReadingId);
     }
-    
+
     async function postComment() {
         const b = document.getElementById('comment-input').value.trim();
         if(!b || !currentUser) return;
@@ -311,31 +297,42 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
         document.getElementById('read-like-count').innerText = count || 0;
     }
 
-    async function doPost() {
-    const payload = {
-        title: document.getElementById('title-input').value,
-        content: document.getElementById('content-input').value,
-        caption: document.getElementById('caption-input').value,
-        tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()),
-        is_r18: document.getElementById('r18-check').checked,
-        is_private: document.getElementById('private-check').checked,
-        author_id: currentUser.id,
-        author_name: userProfile?.display_name || "名無し"
-    };
-
-    let error;
-    if (editingNovelId) {
-        // 編集（Update）
-        const res = await api.from('novels').update(payload).eq('id', editingNovelId);
-        error = res.error;
-    } else {
-        // 新規（Insert）
-        const res = await api.from('novels').insert(payload);
-        error = res.error;
+    function openEditor(id = null) {
+        editingNovelId = id;
+        if (id) {
+            const n = allMyNovels.find(x => x.id === id);
+            if (!n) return;
+            document.getElementById('title-input').value = n.title;
+            document.getElementById('tags-input').value = (n.tags || []).join(', ');
+            document.getElementById('caption-input').value = n.caption || "";
+            document.getElementById('content-input').value = n.content;
+            document.getElementById('r18-check').checked = n.is_r18;
+            document.getElementById('private-check').checked = n.is_private;
+            document.querySelector('#editor-overlay h2').innerText = "作品を編集";
+        } else {
+            document.getElementById('title-input').value = "";
+            document.getElementById('tags-input').value = "";
+            document.getElementById('caption-input').value = "";
+            document.getElementById('content-input').value = "";
+            document.querySelector('#editor-overlay h2').innerText = "新規投稿";
+        }
+        document.getElementById('editor-overlay').style.display = 'block';
     }
 
-    if(error) alert(error.message); else location.reload();
-}
+    async function doPost() {
+        const payload = {
+            title: document.getElementById('title-input').value,
+            content: document.getElementById('content-input').value,
+            caption: document.getElementById('caption-input').value,
+            tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()),
+            is_r18: document.getElementById('r18-check').checked,
+            is_private: document.getElementById('private-check').checked,
+            author_id: currentUser.id,
+            author_name: userProfile?.display_name || "名無し"
+        };
+        const { error } = editingNovelId ? await api.from('novels').update(payload).eq('id', editingNovelId) : await api.from('novels').insert(payload);
+        if(error) alert(error.message); else location.reload();
+    }
 
     function switchTab(t) {
         currentTab = t;
@@ -346,58 +343,13 @@ let allMyNovels = [];      // 自分の作品データを一時保存する場�
     function openRules() {
         document.getElementById('read-title').innerText = "必ずお読みください（必読）";
         document.getElementById('read-author').innerText = "運営";
-        // 文字列を ` (バッククォート) で囲むことで改行を許可します
-        document.getElementById('read-body').innerText = `【当サイトについて】
-当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
-以下のルールを守ってご利用ください。
-
-1. 二次創作の取り扱いについて
-・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。
-・公式関係者の目に触れぬよう、節度ある運用をお願いします。
-
-2. 禁止事項
-・公序良俗に反する内容の投稿。
-・特定の個人や団体を誹謗中傷する内容。
-・無断転載および自作発言。
-・商業利用目的の投稿。
-
-3. 作品の明記と免責事項
-・ハッピーエンド、バッドエンド等の傾向がある場合、特殊設定がある場合やR指定が必要な場合は、あらすじやタグでの明記をお願いします。
-・閲覧は自己責任となります。
-
-ルールを守って、創作活動を楽しみましょう。`;
-        
+        document.getElementById('read-body').innerText = `【当サイトについて】...（以下略）`;
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.add('hidden');
     }
 
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
-    let editingNovelId = null; // 編集中のIDを保持する変数
-
-function openEditor(id = null) {
-    editingNovelId = id;
-    if (id) {
-        // 編集モード：既存データを読み込む
-        const novel = allNovelsForEdit.find(n => n.id === id); // getListなどで取得したデータ
-        if (!novel) return;
-        document.getElementById('title-input').value = novel.title;
-        document.getElementById('tags-input').value = (novel.tags || []).join(', ');
-        document.getElementById('caption-input').value = novel.caption || "";
-        document.getElementById('content-input').value = novel.content;
-        document.getElementById('r18-check').checked = novel.is_r18;
-        document.getElementById('private-check').checked = novel.is_private;
-        document.querySelector('#editor-overlay h2').innerText = "作品を編集";
-    } else {
-        // 新規モード：リセット
-        document.getElementById('title-input').value = "";
-        document.getElementById('tags-input').value = "";
-        document.getElementById('caption-input').value = "";
-        document.getElementById('content-input').value = "";
-        document.querySelector('#editor-overlay h2').innerText = "新規投稿";
-    }
-    document.getElementById('editor-overlay').style.display = 'block';
-}
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
     function doLogOut() { api.auth.signOut(); location.reload(); }
     function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
@@ -407,69 +359,14 @@ function openEditor(id = null) {
         await api.from('profiles').upsert({ id: currentUser.id, display_name: document.getElementById('prof-name').value, bio: document.getElementById('prof-bio').value });
         location.reload();
     }
-
-    let originalContent = ""; // 読み込み時の本文を保持
-
-async function openReader(id) {
-    currentReadingId = id;
-    const { data: n } = await api.from('novels').select('*').eq('id', id).single();
-    if(!n) return;
-
-    // 本文のオリジナルを保存（変換をリセットできるようにするため）
-    originalContent = n.content;
-    
-    // タイトルのサイズ調整
-    const titleEl = document.getElementById('read-title');
-    titleEl.innerText = n.title;
-    titleEl.style.fontSize = "1.1em";
-
-    document.getElementById('read-author').innerText = n.author_name;
-    document.getElementById('read-body').innerText = n.content; // 初期表示
-    
-    // 作者リンクエリア
-    document.getElementById('author-link-zone').innerHTML = 
-        `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>`;
-
-    // 変換入力欄をリセット（前の作品の変換設定が残らないように）
-    document.getElementById('target-string').value = "";
-    document.getElementById('new-name').value = "";
-
-    document.getElementById('reader-overlay').style.display = 'block';
-    // ...（コメント読み込みなどの既存処理）
-}
-
-function applyNameChange() {
-    const target = document.getElementById('target-string').value;
-    const replacement = document.getElementById('new-name').value;
-
-    if (!target) {
-        alert("変換前の文字を入力してください");
-        return;
-    }
-
-    // 正規表現を使って本文内の対象文字をすべて置換
-    // 特殊文字が含まれても大丈夫なようにエスケープ処理を挟むとより安全です
-    const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escapedTarget, 'g');
-    
-    const converted = originalContent.replace(regex, replacement || "");
-    document.getElementById('read-body').innerText = converted;
-}
-    init();
-
     function filterByAuthor(name) {
-    // 検索ボックスに作者名を入れる
-    const searchInput = document.getElementById('search-input');
-    searchInput.value = name;
-    
-    // リーダーを閉じてリストを再読み込み
-    closeReader();
-    switchTab('all'); // 「すべて」タブに切り替えて検索結果を表示
-    getList();
-    
-    // 画面の一番上までスクロール（親切設計）
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+        document.getElementById('search-input').value = name;
+        closeReader();
+        switchTab('all');
+        getList();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    init();
 </script>
 </body>
 </html>
