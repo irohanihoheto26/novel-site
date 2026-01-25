@@ -24,7 +24,7 @@
         .novel-stats { font-size: 0.8em; color: #888; margin-left: 10px; }
         #editor-overlay, #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; }
         .overlay-content { max-width: 700px; margin: 40px auto; padding: 20px; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
         button { background: #000; color: #fff; border: none; padding: 12px; cursor: pointer; width: 100%; margin-bottom: 5px; }
         .btn-outline { background: #fff; color: #000; border: 1px solid #000; }
         .comment-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.9em; }
@@ -59,10 +59,10 @@
         <div id="profile-edit-area" class="profile-edit-area">
             <input type="text" id="prof-name" placeholder="作者名">
             <textarea id="prof-bio" placeholder="自己紹介" rows="3"></textarea>
-            <button class="btn-outline" onclick="saveProfile()">更新</button>
+            <button class="btn-outline" onclick="saveProfile()" style="width:auto">更新</button>
         </div>
         <h3>投稿した作品</h3>
-        <div id="my-works-list"></div>
+        <div id="my-works-list">読み込み中...</div>
     </div>
 
     <div class="section-header"><h2>ライブラリ</h2></div>
@@ -81,9 +81,8 @@
         <div id="read-author" style="text-align: right; font-weight: bold;"></div>
         <div id="read-body" style="white-space: pre-wrap; line-height: 2.2; margin: 40px 0;"></div>
         
-        <div style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
+        <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
             <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">♥ いいね <span id="read-like-count">0</span></button>
-            
             <div style="margin-top: 40px; text-align: left;">
                 <h3>コメント</h3>
                 <div id="comment-list"></div>
@@ -98,9 +97,10 @@
 
 <div id="editor-overlay">
     <div class="overlay-content">
+        <h2>新規投稿</h2>
         <input type="hidden" id="edit-id">
-        <input type="text" id="title" placeholder="タイトル">
-        <textarea id="content" rows="20"></textarea>
+        <input type="text" id="title-input" placeholder="タイトル">
+        <textarea id="content-input" rows="20" placeholder="本文..."></textarea>
         <button onclick="doPost()">公開する</button>
         <button onclick="closeEditor()" class="btn-outline">閉じる</button>
     </div>
@@ -133,55 +133,86 @@
     }
 
     async function getList() {
-        // 作品 + いいね数 + コメント数を一気に取得
-        let query = api.from('novels').select('*, likes(count), comments(count)').eq('is_private', false);
+        const sw = document.getElementById('search-input').value.toLowerCase();
+        // エラーを防ぐため、まずはシンプルに取得
+        let query = api.from('novels').select('*').eq('is_private', false).order('created_at', {ascending: false});
         
-        // 自分の作品を除外
-        if (currentUser) query = query.neq('author_id', currentUser.id);
+        const { data: novels, error } = await query;
+        if(error) { console.error(error); return; }
 
-        const { data: novels } = await query.order('created_at', {ascending: false});
-        
-        document.getElementById('list').innerHTML = (novels || []).map(n => `
+        let filtered = novels || [];
+        // 自分の作品を除外
+        if (currentUser) {
+            filtered = filtered.filter(n => n.author_id !== currentUser.id);
+        }
+        // 検索フィルタ
+        if(sw) {
+            filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
+        }
+
+        document.getElementById('list').innerHTML = filtered.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
-                    <span class="novel-stats">♥ ${n.likes[0]?.count || 0} 💬 ${n.comments[0]?.count || 0}</span>
                 </div>
             </div>`).join('') || "作品がありません";
+    }
+
+    async function loadUserContent() {
+        const { data } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+        document.getElementById('my-works-list').innerHTML = (data || []).map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
+                </div>
+            </div>`).join('') || "投稿した作品はありません";
     }
 
     async function openReader(id) {
         currentReadingId = id;
         const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+        if(!n) return;
         document.getElementById('read-title').innerText = n.title;
         document.getElementById('read-author').innerText = n.author_name;
         document.getElementById('read-body').innerText = n.content;
         document.getElementById('reader-overlay').style.display = 'block';
-        
+        document.getElementById('reader-interactive-zone').classList.remove('hidden');
         loadComments(id);
         loadLikeCount(id);
+    }
+
+    function openRules() {
+        document.getElementById('read-title').innerText = "必ずお読みください（必読）";
+        document.getElementById('read-author').innerText = "運営";
+        document.getElementById('read-body').innerText = "マナーを守って楽しく使いましょう。二次創作作品は原作のガイドラインに従ってください。";
+        document.getElementById('reader-overlay').style.display = 'block';
+        document.getElementById('reader-interactive-zone').classList.add('hidden');
+    }
+
+    async function doPost() {
+        const payload = {
+            title: document.getElementById('title-input').value,
+            content: document.getElementById('content-input').value,
+            author_id: currentUser.id,
+            author_name: userProfile?.display_name || "名無し",
+            is_private: false
+        };
+        await api.from('novels').insert(payload);
+        location.reload();
     }
 
     async function loadComments(id) {
         const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
         document.getElementById('comment-list').innerHTML = (data || []).map(c => `
-            <div class="comment-item">
-                <strong>${c.author_name || '名無し'}</strong> <span style="font-size:0.8em; color:#999;">${new Date(c.created_at).toLocaleDateString()}</span>
-                <div>${c.body}</div>
-            </div>`).join('') || "まだコメントはありません";
+            <div class="comment-item"><strong>${c.author_name}</strong>: ${c.body}</div>`).join('') || "コメントはまだありません";
     }
 
     async function postComment() {
-        if (!currentUser) return alert("ログインが必要です");
+        if(!currentUser) return alert("ログインが必要です");
         const body = document.getElementById('comment-input').value;
-        if (!body) return;
-        const { error } = await api.from('comments').insert({
-            novel_id: currentReadingId,
-            user_id: currentUser.id,
-            author_name: userProfile?.display_name || "名無し",
-            body: body
-        });
+        await api.from('comments').insert({ novel_id: currentReadingId, user_id: currentUser.id, author_name: userProfile?.display_name || "名無し", body });
         document.getElementById('comment-input').value = "";
         loadComments(currentReadingId);
     }
@@ -192,15 +223,15 @@
     }
 
     async function toggleLike() {
-        if (!currentUser) return alert("ログインが必要です");
-        // 簡易的に「いいね」を追加するだけ（二重防止はテーブル側で行う）
+        if(!currentUser) return alert("ログインが必要です");
         await api.from('likes').upsert({ novel_id: currentReadingId, user_id: currentUser.id });
         loadLikeCount(currentReadingId);
     }
 
-    // その他UI関数（省略部分は前回と同様に動作します）
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display === 'block' ? 'none' : 'block'; }
-    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; getList(); }
+    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function openEditor() { document.getElementById('editor-overlay').style.display = 'block'; }
+    function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
     function doLogOut() { api.auth.signOut(); location.reload(); }
     function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
     async function doLogIn() {
