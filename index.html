@@ -66,19 +66,26 @@
 
     // ユーザーの状態（ログインしてるか）をチェック
     async function checkUser() {
-        const { data: { user } } = await supabase.auth.getUser();
-        const authSection = document.getElementById('auth-section');
-        const postSection = document.getElementById('post-section');
-        const authStatus = document.getElementById('auth-status');
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error) throw error; // エラーがあればキャッチへ飛ばす
 
-        if (user) {
-            authSection.style.display = 'none';
-            postSection.style.display = 'block';
-            authStatus.innerText = `ログイン中: ${user.email}`;
-        } else {
-            authSection.style.display = 'block';
-            postSection.style.display = 'none';
-            authStatus.innerText = '未ログイン（閲覧のみ可能です）';
+            const authSection = document.getElementById('auth-section');
+            const postSection = document.getElementById('post-section');
+            const authStatus = document.getElementById('auth-status');
+
+            if (user) {
+                authSection.style.display = 'none';
+                postSection.style.display = 'block';
+                authStatus.innerText = `ログイン中: ${user.email}`;
+            } else {
+                authSection.style.display = 'block';
+                postSection.style.display = 'none';
+                authStatus.innerText = '未ログイン（閲覧のみ可能です）';
+            }
+        } catch (e) {
+            // エラーを画面に直接出す
+            document.getElementById('auth-status').innerText = '接続エラー: ' + e.message;
         }
     }
 
