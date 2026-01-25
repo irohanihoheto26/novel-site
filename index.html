@@ -150,6 +150,8 @@
     const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
     const api = window.supabase.createClient(u, k);
     let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
+    let editingNovelId = null; // これが空なら新規、IDが入っていれば編集モード
+let allMyNovels = [];      // 自分の作品データを一時保存する場所
 
     async function init() {
         const { data: { user } } = await api.auth.getUser();
