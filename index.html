@@ -110,13 +110,20 @@
 
 <div id="editor-overlay">
     <div class="overlay-content">
-        <h2>新規投稿</h2>
-        <input type="hidden" id="edit-id">
-        <input type="text" id="title-input" placeholder="タイトル">
-        <textarea id="content-input" rows="20" placeholder="本文..."></textarea>
-        <button onclick="doPost()">公開する</button>
-        <button onclick="closeEditor()" class="btn-outline">閉じる</button>
+    <h2>新規投稿</h2>
+    <input type="text" id="title-input" placeholder="タイトル">
+    <input type="text" id="tags-input" placeholder="タグ (カンマ区切り)">
+    <textarea id="caption-input" placeholder="キャプション（あらすじ等）" rows="3"></textarea>
+    
+    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <label><input type="checkbox" id="r18-check"> R-18</label>
+        <label><input type="checkbox" id="private-check"> 非公開(下書き)</label>
     </div>
+    
+    <textarea id="content-input" rows="20" placeholder="本文を入力..."></textarea>
+    <button onclick="doPost()">公開する</button>
+    <button onclick="closeEditor()" class="btn-outline">閉じる</button>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -223,16 +230,28 @@
     }
 
     async function doPost() {
-        const payload = {
-            title: document.getElementById('title-input').value,
-            content: document.getElementById('content-input').value,
-            author_id: currentUser.id,
-            author_name: userProfile?.display_name || "名無し",
-            is_private: false
-        };
-        await api.from('novels').insert(payload);
+    if(!currentUser) return alert("ログインしてください");
+    
+    const payload = {
+        title: document.getElementById('title-input').value,
+        content: document.getElementById('content-input').value,
+        caption: document.getElementById('caption-input').value,
+        // タグをカンマで区切って配列にする処理
+        tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()),
+        is_r18: document.getElementById('r18-check').checked,
+        is_private: document.getElementById('private-check').checked,
+        author_id: currentUser.id,
+        author_name: userProfile?.display_name || "名無し"
+    };
+
+    const { error } = await api.from('novels').insert(payload);
+    if(error) {
+        alert("投稿に失敗しました: " + error.message);
+    } else {
+        alert("投稿しました！");
         location.reload();
     }
+}
 
     async function loadComments(id) {
         const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
@@ -240,24 +259,47 @@
             <div class="comment-item"><strong>${c.author_name}</strong>: ${c.body}</div>`).join('') || "コメントはまだありません";
     }
 
-    async function postComment() {
-        if(!currentUser) return alert("ログインが必要です");
-        const body = document.getElementById('comment-input').value;
-        if(!body) return;
-        await api.from('comments').insert({ novel_id: currentReadingId, user_id: currentUser.id, author_name: userProfile?.display_name || "名無し", body });
-        document.getElementById('comment-input').value = "";
-        loadComments(currentReadingId);
-    }
+   // コメント送信
+async function postComment() {
+    if(!currentUser) return alert("ログインが必要です");
+    const body = document.getElementById('comment-input').value;
+    
+    // 中身が空なら何もしない
+    if(!body.trim()) return;
 
+    const { error } = await api.from('comments').insert({ 
+        novel_id: currentReadingId, 
+        user_id: currentUser.id, 
+        author_name: userProfile?.display_name || "名無し", 
+        body: body 
+    });
+
+    if(error) {
+        alert("コメント送信に失敗しました");
+    } else {
+        document.getElementById('comment-input').value = ""; // 入力欄を空にする
+        loadComments(currentReadingId); // リストを更新
+    }
+}
+
+// いいねの切り替え（upsertで上書き保存）
+async function toggleLike() {
+    if(!currentUser) return alert("ログインが必要です");
+    
+    const { error } = await api.from('likes').upsert({ 
+        novel_id: currentReadingId, 
+        user_id: currentUser.id 
+    }, { onConflict: 'novel_id, user_id' }); // 重複してもエラーにしない設定
+
+    if(error) {
+        console.error("Like Error:", error);
+    } else {
+        loadLikeCount(currentReadingId);
+    }
+}
     async function loadLikeCount(id) {
         const { count } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', id);
         document.getElementById('read-like-count').innerText = count || 0;
-    }
-
-    async function toggleLike() {
-        if(!currentUser) return alert("ログインが必要です");
-        await api.from('likes').upsert({ novel_id: currentReadingId, user_id: currentUser.id });
-        loadLikeCount(currentReadingId);
     }
 
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display === 'block' ? 'none' : 'block'; }
