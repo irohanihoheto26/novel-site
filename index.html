@@ -1,64 +1,28 @@
 <!DOCTYPE html>
 <html lang="ja" translate="no">
-<head>
-    <meta charset="UTF-8">
-    <meta name="google" content="notranslate">
-    <title>接続テスト</title>
-</head>
+<head><meta charset="UTF-8"><title>Test</title></head>
 <body>
-    <div style="border: 2px solid #333; padding: 20px; border-radius: 10px;">
-        <h2>最終接続チェック</h2>
-        <p>1. 翻訳機能（Google翻訳）をOFFにしてください</p>
-        <p>2. 下のボタンを押して、反応があるか確認してください</p>
-        
-        <button id="testBtn" style="padding: 15px 30px; font-size: 1.2em; cursor: pointer;">
-            ここをクリックしてテスト
-        </button>
+  <button id="btn" style="padding:20px">ここをクリック</button>
+  <p id="msg">待機中...</p>
 
-        <h3 id="result-status" style="color: blue; margin-top: 20px;">
-            まだボタンが押されていません
-        </h3>
-        <pre id="error-log" style="color: red; background: #eee; padding: 10px; display: none;"></pre>
-    </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // URLとKEYの前後からスペースを完全に除去して定義
+    const u = 'https://fnobmngpstzolphexluc.supabase.co'.replace(/\s/g,'');
+    const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.replace(/\s/g,'');
+    
+    const client = window.supabase.createClient(u, k);
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // ページ読み込み完了を確認
-        console.log("Script loaded");
-
-        const URL = 'https://fnobmngpstzolphexluc.supabase.co';
-        const KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
-        const supabaseClient = window.supabase.createClient(URL, KEY);
-
-        const btn = document.getElementById('testBtn');
-        const status = document.getElementById('result-status');
-        const log = document.getElementById('error-log');
-
-        btn.onclick = async () => {
-            console.log("Button clicked");
-            status.innerText = "通信開始しました...";
-            status.style.color = "orange";
-
-            try {
-                // 最もシンプルな「今のユーザーを呼ぶ」だけの通信テスト
-                const { data, error } = await supabaseClient.auth.getUser();
-
-                if (error) {
-                    throw error;
-                }
-
-                status.innerText = "成功！サーバーと通信できました！";
-                status.style.color = "green";
-                alert("通信成功！ポップアップが出ました！");
-
-            } catch (err) {
-                console.error(err);
-                status.innerText = "通信に失敗しました。";
-                status.style.color = "red";
-                log.style.display = "block";
-                log.innerText = "エラー詳細: " + err.message;
-            }
-        };
-    </script>
+    document.getElementById('btn').onclick = async () => {
+      document.getElementById('msg').innerText = "通信中...";
+      const { error } = await client.auth.getUser();
+      if (error) {
+        document.getElementById('msg').innerText = "失敗: " + error.message;
+      } else {
+        document.getElementById('msg').innerText = "★大成功！★";
+        alert("接続成功しました！");
+      }
+    };
+  </script>
 </body>
 </html>
