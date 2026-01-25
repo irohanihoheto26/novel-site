@@ -155,13 +155,19 @@ input:checked + .slider:before {
         <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
             <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">♥ いいね <span id="read-like-count">0</span></button>
             <div style="margin-top: 40px; text-align: left;">
-                <h3>コメント</h3>
-                <div id="comment-list"></div>
-                <div id="comment-form-area" style="margin-top: 20px;">
-                    <textarea id="comment-input" placeholder="感想を書く..." rows="3"></textarea>
-                    <button onclick="postComment()" class="btn-outline" style="width:auto">コメントを送信</button>
-                </div>
-            </div>
+    <h3>コメント</h3>
+    <div id="comment-list"></div>
+    
+    <div id="comment-form-area" class="hidden" style="margin-top: 20px;">
+        <textarea id="comment-input" placeholder="感想を書く..." rows="3"></textarea>
+        <button onclick="postComment()" class="btn-outline" style="width:auto">コメントを送信</button>
+    </div>
+    
+    <div id="comment-guest-msg" style="margin-top: 20px; padding: 20px; background: #f9f9f9; text-align: center; border: 1px dashed #ccc;">
+        <p style="font-size: 0.9em; color: #666;">コメントを投稿するにはログインが必要です。</p>
+        <button onclick="closeReader(); toggleAuthForm();" class="btn-outline" style="width:auto; padding: 5px 20px; font-size: 0.8em;">ログイン / 登録</button>
+    </div>
+</div>
         </div>
     </div>
 </div>
