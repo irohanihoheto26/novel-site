@@ -335,6 +335,20 @@
     }
 
     init();
+
+    function filterByAuthor(name) {
+    // 検索ボックスに作者名を入れる
+    const searchInput = document.getElementById('search-input');
+    searchInput.value = name;
+    
+    // リーダーを閉じてリストを再読み込み
+    closeReader();
+    switchTab('all'); // 「すべて」タブに切り替えて検索結果を表示
+    getList();
+    
+    // 画面の一番上までスクロール（親切設計）
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 </script>
 </body>
 </html>
