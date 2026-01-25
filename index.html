@@ -257,7 +257,7 @@ input:checked + .slider:before {
         document.getElementById('list').innerHTML = filtered.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
-                    <span class="count-badge">${n.content.length.toLocaleString()}文字</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
                 </div>
@@ -276,14 +276,14 @@ input:checked + .slider:before {
     // マイページ（自分の作品一覧）
     async function loadUserContent() {
         if (!currentUser) return;
-        let { data: novels, error } = await api.from('novels').select('*').eq('user_name', currentUser.id).order('created_at', {ascending: false});
+        let { data: novels, error } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
         if (error) return;
 
         // 枠組みを表示
         document.getElementById('my-works-list').innerHTML = (novels || []).map(n => `
             <div class="novel-row">
                 <div class="novel-info">
-                    <span class="count-badge">${n.content.length.toLocaleString()}文字</span>
+                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
                 </div>
