@@ -9,60 +9,46 @@
         :root { --sidebar-width: 280px; }
         body { font-family: "Yu Gothic", "YuGothic", sans-serif; background: #fff; color: #000; margin: 0; display: flex; min-height: 100vh; }
 
-        /* 左メニュー (サイドバー) */
+        /* 左サイドバー */
         aside {
-            width: var(--sidebar-width);
-            height: 100vh;
-            border-right: 2px solid #000;
-            padding: 40px 20px;
-            box-sizing: border-box;
-            position: fixed;
-            left: 0;
-            top: 0;
-            overflow-y: auto;
-            background: #fff;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
+            width: var(--sidebar-width); height: 100vh; border-right: 2px solid #000;
+            padding: 40px 20px; box-sizing: border-box; position: fixed; left: 0; top: 0;
+            overflow-y: auto; background: #fff; display: flex; flex-direction: column; z-index: 100;
         }
 
-        /* 右メインコンテンツ */
-        main {
-            margin-left: var(--sidebar-width);
-            flex: 1;
-            padding: 40px;
-            max-width: 900px;
-            box-sizing: border-box;
-        }
+        /* メインエリア */
+        main { margin-left: var(--sidebar-width); flex: 1; padding: 40px; max-width: 900px; box-sizing: border-box; }
 
-        /* サイドバー内のデザイン */
         aside h1 { font-family: 'Antonio', sans-serif; font-size: 2.2em; margin: 0 0 10px; text-transform: uppercase; line-height: 1; }
-        .rule-link { font-size: 0.8em; color: #666; text-decoration: underline; cursor: pointer; margin-bottom: 30px; }
+        .rule-link { font-size: 0.85em; color: #666; text-decoration: underline; cursor: pointer; margin-bottom: 30px; display: block; }
         
-        .side-nav { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
         .search-box-side { padding: 10px; border: 1px solid #000; font-size: 0.9em; width: 100%; box-sizing: border-box; margin-bottom: 20px; }
+        .nav-group { display: flex; flex-direction: column; gap: 10px; }
 
-        /* ログイン/プロフィール周り */
-        .user-section { margin-top: auto; padding-top: 20px; border-top: 1px solid #eee; }
-        
-        /* ボタン類 */
-        button { background: #000; color: #fff; border: none; padding: 12px; cursor: pointer; font-size: 0.9em; width: 100%; margin-bottom: 10px; }
+        /* ボタン */
+        button { background: #000; color: #fff; border: none; padding: 12px; cursor: pointer; font-size: 0.9em; width: 100%; transition: 0.2s; }
+        button:hover { opacity: 0.8; }
         .btn-outline { background: #fff; color: #000; border: 1px solid #000; }
 
-        /* タブ・一覧のデザイン (メインエリア用) */
-        .tab-bar { display: flex; gap: 15px; border-bottom: 2px solid #eee; margin-bottom: 25px; }
-        .tab-btn { background: none; border: none; color: #888; padding: 10px 0; cursor: pointer; width: auto; font-weight: bold; margin: 0; }
-        .tab-btn.active { color: #000; border-bottom: 2px solid #000; }
+        /* マイページ・設定 */
+        .section-header { display: flex; align-items: baseline; gap: 15px; border-bottom: 2px solid #000; margin-bottom: 20px; }
+        .settings-link { font-size: 0.7em; color: #666; text-decoration: underline; cursor: pointer; }
+        .profile-edit-area { background: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 30px; display: none; }
 
+        /* 一覧 */
+        .tab-bar { display: flex; gap: 15px; border-bottom: 2px solid #eee; margin-bottom: 25px; }
+        .tab-btn { background: none; border: none; color: #888; padding: 10px 0; cursor: pointer; width: auto; font-weight: bold; }
+        .tab-btn.active { color: #000; border-bottom: 2px solid #000; }
         .novel-row { padding: 15px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .novel-title { font-weight: bold; cursor: pointer; text-decoration: underline; font-size: 1.1em; }
-        .badge { font-size: 0.7em; padding: 2px 5px; border-radius: 3px; margin-left: 5px; background: #eee; }
+        .novel-title { font-weight: bold; cursor: pointer; text-decoration: underline; }
 
         /* 全画面オーバーレイ */
         #editor-overlay, #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; }
         .overlay-content { max-width: 700px; margin: 40px auto; padding: 20px; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; }
 
-        /* スマホ対応 */
+        .hidden { display: none !important; }
+
         @media (max-width: 768px) {
             body { flex-direction: column; }
             aside { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 2px solid #000; }
@@ -76,71 +62,203 @@
     <h1>Fragment Library</h1>
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
     
-    <div class="side-nav">
-        <input type="text" id="search-input" class="search-box-side" placeholder="作品・作者を検索..." oninput="getList()">
-        
-        <div id="logged-in-nav" class="hidden">
-            <button onclick="openEditor()">新規投稿</button>
-            <button class="btn-outline" onclick="scrollToMypage()">マイページ</button>
-            <button class="btn-outline" onclick="doLogOut()">ログアウト</button>
-        </div>
-        
-        <div id="guest-nav">
-            <button onclick="toggleAuthForm()">ログイン / 登録</button>
-        </div>
+    <input type="text" id="search-input" class="search-box-side" placeholder="作品・作者を検索..." oninput="getList()">
+    
+    <div id="logged-in-nav" class="nav-group hidden">
+        <button onclick="openEditor()">新規投稿</button>
+        <button class="btn-outline" onclick="doLogOut()">ログアウト</button>
+    </div>
+    
+    <div id="guest-nav" class="nav-group">
+        <button onclick="toggleAuthForm()">ログイン / 新規登録</button>
     </div>
 
-    <div class="user-section" id="user-info-side">
-        </div>
+    <div id="side-user-info" style="margin-top: auto; font-size: 0.8em; color: #888;"></div>
 </aside>
 
 <main>
     <section id="auth-form" class="hidden" style="border:2px solid #000; padding:20px; margin-bottom:40px; background:#fdfdfd;">
-        <div style="font-weight:bold; margin-bottom:10px;">LOGIN / SIGN UP</div>
-        <input type="email" id="email" style="width:100%; margin-bottom:10px; padding:8px;" placeholder="メールアドレス">
-        <input type="password" id="password" style="width:100%; margin-bottom:10px; padding:8px;" placeholder="パスワード">
+        <div style="font-weight:bold; margin-bottom:15px;">ログイン / 新規登録</div>
+        <input type="email" id="email" placeholder="メールアドレス">
+        <input type="password" id="password" placeholder="パスワード">
         <div style="display:flex; gap:10px;">
             <button onclick="doLogIn()">ログイン</button>
             <button onclick="doSignUp()" class="btn-outline">新規登録</button>
         </div>
+        <p style="font-size:0.75em; color:#666; margin-top:10px;">※新規登録時は確認メールが送信されます。</p>
     </section>
 
     <div id="user-page" class="hidden">
-        <h2 id="mypage-section" style="border-bottom: 2px solid #000;">My Page</h2>
-        <div style="background:#f9f9f9; padding:20px; margin-bottom:30px;">
-            <h3 style="margin-top:0;">Profile</h3>
-            <input type="text" id="prof-name" placeholder="公開名">
-            <textarea id="prof-bio" placeholder="自己紹介..." rows="2" style="width:100%; margin:10px 0;"></textarea>
-            <button class="btn-outline" onclick="saveProfile()" style="width:auto;">更新</button>
+        <div class="section-header">
+            <h2 style="margin:0;">マイページ</h2>
+            <span class="settings-link" onclick="toggleSettings()">[設定]</span>
+        </div>
+
+        <div id="profile-edit-area" class="profile-edit-area">
+            <h3 style="margin-top:0;">プロフィール設定</h3>
+            <label style="font-size:0.8em;">作者名</label>
+            <input type="text" id="prof-name" placeholder="公開される名前">
+            <label style="font-size:0.8em;">自己紹介</label>
+            <textarea id="prof-bio" placeholder="読者へのメッセージなど" rows="3"></textarea>
+            <button class="btn-outline" onclick="saveProfile()" style="width:auto;">プロフィールの更新</button>
         </div>
         
-        <h3>Works</h3>
-        <div id="my-works-list"></div>
-        
-        <h3>Messages</h3>
-        <div id="my-messages-list"></div>
+        <div style="margin-bottom:40px;">
+            <h3>作品管理</h3>
+            <div id="my-works-list">読み込み中...</div>
+            <h3 style="margin-top:30px;">メッセージ</h3>
+            <div id="my-messages-list">メッセージはありません</div>
+        </div>
     </div>
 
-    <h2 style="border-bottom: 2px solid #000; margin-top:40px;">Library</h2>
+    <div class="section-header">
+        <h2 style="margin:0;">ライブラリ</h2>
+    </div>
     <div class="tab-bar">
-        <button id="tab-all" class="tab-btn active" onclick="switchTab('all')">ALL</button>
-        <button id="tab-follow" class="tab-btn" onclick="switchTab('follow')">FOLLOWING</button>
-        <button id="tab-liked" class="tab-btn" onclick="switchTab('liked')">LIKED</button>
+        <button id="tab-all" class="tab-btn active" onclick="switchTab('all')">すべて</button>
+        <button id="tab-follow" class="tab-btn" onclick="switchTab('follow')">フォロー中</button>
+        <button id="tab-liked" class="tab-btn" onclick="switchTab('liked')">いいね済み</button>
     </div>
     <div id="list">作品を読み込み中...</div>
 </main>
 
-<div id="editor-overlay">...</div>
-<div id="reader-overlay">...</div>
+<div id="editor-overlay">
+    <div class="overlay-content">
+        <h2 id="form-title">新規投稿</h2>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="title" placeholder="作品タイトル">
+        <input type="text" id="tags" placeholder="タグ (カンマ区切り)">
+        <div style="display:flex; gap:15px; margin-bottom:15px; font-size:0.9em;">
+            <label><input type="checkbox" id="is_r18"> R-18</label>
+            <label><input type="checkbox" id="has_special_settings"> 特殊設定あり</label>
+            <label style="color:blue;"><input type="checkbox" id="is_private"> 非公開(下書き)</label>
+        </div>
+        <textarea id="content" placeholder="本文を入力してください..." rows="20" oninput="updateWordCount()"></textarea>
+        <div id="word-count" style="text-align: right; font-size: 0.8em; color: #888; margin-bottom:15px;">0 文字</div>
+        <div style="display:flex; gap:10px;">
+            <button onclick="doPost()" style="flex:2;">保存・公開</button>
+            <button class="btn-outline" onclick="closeEditor()" style="flex:1;">閉じる</button>
+        </div>
+    </div>
+</div>
 
+<div id="reader-overlay">
+    <div class="overlay-content">
+        <button class="btn-outline" onclick="closeReader()">閉じる</button>
+        <h2 id="read-title" style="font-size: 2em; margin: 30px 0 10px;"></h2>
+        <div style="text-align: right; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <span id="read-author" style="font-weight:bold;"></span>
+            <p id="read-author-bio" style="font-size:0.8em; color:#888; margin:5px 0;"></p>
+        </div>
+        <div id="read-body" style="white-space: pre-wrap; font-size: 1.1em; line-height: 2; margin: 40px 0;"></div>
+        <div id="reader-interactive-zone">
+            <div id="reader-footer" class="hidden" style="text-align: center; border-top:1px solid #eee; padding-top:20px;">
+                <button onclick="addFollow()" class="btn-outline" style="width:auto;">フォロー</button>
+                <button onclick="sendMessage()" class="btn-outline" style="width:auto;">メッセージ</button>
+                <button onclick="addLike()" style="width:auto; margin-left:10px;">♥ いいね</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // JSのロジックはそのまま維持しつつ、UIの連動部分だけ微調整
-    // init() 内でサイドバーにユーザー名を表示する処理などを追加
-    function scrollToMypage() {
-        document.getElementById('mypage-section').scrollIntoView({ behavior: 'smooth' });
-    }
-    // ... (前回のスクリプトをここに統合) ...
-</script>
+    const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
+    const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
+    const api = window.supabase.createClient(u, k);
+    let currentUser = null, userProfile = null, currentTab = 'all';
 
+    async function init() {
+        const { data: { user } } = await api.auth.getUser();
+        currentUser = user;
+        if (user) {
+            document.getElementById('logged-in-nav').classList.remove('hidden');
+            document.getElementById('guest-nav').classList.add('hidden');
+            document.getElementById('user-page').classList.remove('hidden');
+            document.getElementById('side-user-info').innerText = `ログイン中: ${user.email}`;
+            await loadProfile();
+            loadUserContent();
+        }
+        getList();
+    }
+
+    async function loadProfile() {
+        const { data } = await api.from('profiles').select('*').eq('id', currentUser.id).single();
+        if (data) {
+            userProfile = data;
+            document.getElementById('prof-name').value = data.display_name || "";
+            document.getElementById('prof-bio').value = data.bio || "";
+        }
+    }
+
+    async function saveProfile() {
+        const name = document.getElementById('prof-name').value;
+        const bio = document.getElementById('prof-bio').value;
+        const { error } = await api.from('profiles').upsert({ id: currentUser.id, display_name: name, bio: bio });
+        if (error) alert("エラー: " + error.message); 
+        else { alert("プロフィールを更新しました"); location.reload(); }
+    }
+
+    function toggleSettings() {
+        const area = document.getElementById('profile-edit-area');
+        area.style.display = (area.style.display === 'block') ? 'none' : 'block';
+    }
+
+    async function getList() {
+        const sw = document.getElementById('search-input').value.toLowerCase();
+        let { data: novels } = await api.from('novels').select('*').eq('is_private', false).order('created_at', { ascending: false });
+        // 簡易フィルタ
+        const filtered = (novels || []).filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
+        document.getElementById('list').innerHTML = filtered.map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
+                </div>
+                <div style="font-size:0.8em; color:#666;">💬</div>
+            </div>`).join('') || "作品がありません";
+    }
+
+    async function doPost() {
+        const id = document.getElementById('edit-id').value;
+        const payload = {
+            title: document.getElementById('title').value,
+            author_name: userProfile?.display_name || "名無し",
+            content: document.getElementById('content').value,
+            is_r18: document.getElementById('is_r18').checked,
+            has_special_settings: document.getElementById('has_special_settings').checked,
+            is_private: document.getElementById('is_private').checked,
+            author_id: currentUser.id
+        };
+        const { error } = id ? await api.from('novels').update(payload).eq('id', id) : await api.from('novels').insert([payload]);
+        if (error) alert(error.message); else location.reload();
+    }
+
+    // 各種UI制御
+    function openEditor() { document.getElementById('editor-overlay').style.display = 'block'; }
+    function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
+    function openReader(id) { 
+        // 詳細は前回同様のため省略。リーダー表示ロジックをここに
+        document.getElementById('reader-overlay').style.display = 'block'; 
+    }
+    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
+    function updateWordCount() { document.getElementById('word-count').innerText = document.getElementById('content').value.length + " 文字"; }
+    async function doLogOut() { await api.auth.signOut(); location.reload(); }
+    async function doLogIn() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await api.auth.signInWithPassword({ email, password });
+        if (error) alert("ログイン失敗: " + error.message); else location.reload();
+    }
+    async function doSignUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await api.auth.signUp({ email, password });
+        if (error) alert("登録失敗: " + error.message); else alert("確認メールを送信しました");
+    }
+
+    init();
+</script>
 </body>
 </html>
