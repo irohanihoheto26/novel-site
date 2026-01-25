@@ -253,6 +253,32 @@ input:checked + .slider:before {
         if (currentUser) filtered = filtered.filter(n => n.author_id !== currentUser.id);
         if (sw) filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
 
+        async function getList() {
+        const sw = document.getElementById('search-input').value.toLowerCase();
+        let { data: novels, error } = await api.from('novels').select('*').eq('is_private', false).order('created_at', {ascending: false});
+        if (error) return;
+
+        let filtered = novels || [];
+        if (currentUser) filtered = filtered.filter(n => n.author_id !== currentUser.id);
+
+        // --- ここから追加：タブごとの絞り込み ---
+        if (currentTab === 'liked') {
+            // 自分がいいねした作品IDのリストを取得
+            const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser?.id);
+            const likedIds = (myLikes || []).map(l => l.novel_id);
+            filtered = filtered.filter(n => likedIds.includes(n.id));
+        }
+        
+        if (currentTab === 'follow') {
+            // ここにフォロー中の作者絞り込みを入れる（フォロー機能を作ったら！）
+            filtered = []; // まだ機能がないので一旦空にするか「開発中」メッセージを出す
+        }
+        // --- ここまで ---
+
+        if (sw) filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
+
+        // ...（以下、表示処理はそのまま）...
+
         // 枠組みを表示
         document.getElementById('list').innerHTML = filtered.map(n => `
             <div class="novel-row">
@@ -442,6 +468,18 @@ async function toggleLike() {
     }
 
     // --- ここまで ---
+
+    // タブ切り替え機能
+async function switchTab(tab) {
+    currentTab = tab;
+    
+    // ボタンの見た目（activeクラス）を切り替え
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    
+    // リストの中身を再読み込み
+    getList();
+}
     init();
     async function saveProfile() {
     const name = document.getElementById('prof-name').value;
