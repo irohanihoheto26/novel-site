@@ -1,36 +1,62 @@
 <!DOCTYPE html>
 <html lang="ja" translate="no">
 <head>
-<meta charset="UTF-8">
-<meta name="google" content="notranslate">
-<title>最終テスト</title>
+    <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
+    <title>接続テスト</title>
 </head>
 <body>
-    <h2>アカウント作成テスト</h2>
-    <input type="email" id="email" placeholder="メール" value="test@example.com">
-    <input type="password" id="password" placeholder="パスワード(6文字以上)" value="password123">
-    <button id="regBtn">登録ボタンを押す</button>
-    <p id="msg">翻訳をオフにしてからボタンを押してください</p>
+    <div style="border: 2px solid #333; padding: 20px; border-radius: 10px;">
+        <h2>最終接続チェック</h2>
+        <p>1. 翻訳機能（Google翻訳）をOFFにしてください</p>
+        <p>2. 下のボタンを押して、反応があるか確認してください</p>
+        
+        <button id="testBtn" style="padding: 15px 30px; font-size: 1.2em; cursor: pointer;">
+            ここをクリックしてテスト
+        </button>
+
+        <h3 id="result-status" style="color: blue; margin-top: 20px;">
+            まだボタンが押されていません
+        </h3>
+        <pre id="error-log" style="color: red; background: #eee; padding: 10px; display: none;"></pre>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // ページ読み込み完了を確認
+        console.log("Script loaded");
+
         const URL = 'https://fnobmngpstzolphexluc.supabase.co';
         const KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
-        const myApp = window.supabase.createClient(URL, KEY);
+        const supabaseClient = window.supabase.createClient(URL, KEY);
 
-        document.getElementById('regBtn').onclick = async () => {
-            const e = document.getElementById('email').value;
-            const p = document.getElementById('password').value;
-            document.getElementById('msg').innerText = "通信中...";
+        const btn = document.getElementById('testBtn');
+        const status = document.getElementById('result-status');
+        const log = document.getElementById('error-log');
 
-            const { data, error } = await myApp.auth.signUp({ email: e, password: p });
+        btn.onclick = async () => {
+            console.log("Button clicked");
+            status.innerText = "通信開始しました...";
+            status.style.color = "orange";
 
-            if (error) {
-                alert("エラー: " + error.message);
-                document.getElementById('msg').innerText = "エラー: " + error.message;
-            } else {
-                alert("大成功！Usersを確認してください！");
-                document.getElementById('msg').innerText = "成功しました！";
+            try {
+                // 最もシンプルな「今のユーザーを呼ぶ」だけの通信テスト
+                const { data, error } = await supabaseClient.auth.getUser();
+
+                if (error) {
+                    throw error;
+                }
+
+                status.innerText = "成功！サーバーと通信できました！";
+                status.style.color = "green";
+                alert("通信成功！ポップアップが出ました！");
+
+            } catch (err) {
+                console.error(err);
+                status.innerText = "通信に失敗しました。";
+                status.style.color = "red";
+                log.style.display = "block";
+                log.innerText = "エラー詳細: " + err.message;
             }
         };
     </script>
