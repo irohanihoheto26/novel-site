@@ -197,8 +197,16 @@
 
     async function loadUserContent() {
         if (!currentUser) return;
-        let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
-        allMyNovels = novels || [];
+        let { data: novels, error } = await api.from('novels')
+            .select('*')
+            .eq('author_id', currentUser.id)
+            .order('created_at', {ascending: false});
+        
+        if (error) return;
+
+        // ここでグローバル変数に保存（これが編集時に必要）
+        allMyNovels = novels || []; 
+
         document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
@@ -210,6 +218,7 @@
                 <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品はありません";
         
+        // スタッツ（いいね・コメント数）の読み込み
         allMyNovels.forEach(async (n) => {
             const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
@@ -300,8 +309,12 @@
     function openEditor(id = null) {
         editingNovelId = id;
         if (id) {
+            // 自分の作品リストからIDが一致するものを探す
             const n = allMyNovels.find(x => x.id === id);
-            if (!n) return;
+            if (!n) {
+                console.error("作品データが見つかりません ID:", id);
+                return;
+            }
             document.getElementById('title-input').value = n.title;
             document.getElementById('tags-input').value = (n.tags || []).join(', ');
             document.getElementById('caption-input').value = n.caption || "";
@@ -310,10 +323,13 @@
             document.getElementById('private-check').checked = n.is_private;
             document.querySelector('#editor-overlay h2').innerText = "作品を編集";
         } else {
+            // 新規投稿時はリセット
             document.getElementById('title-input').value = "";
             document.getElementById('tags-input').value = "";
             document.getElementById('caption-input').value = "";
             document.getElementById('content-input').value = "";
+            document.getElementById('r18-check').checked = false;
+            document.getElementById('private-check').checked = false;
             document.querySelector('#editor-overlay h2').innerText = "新規投稿";
         }
         document.getElementById('editor-overlay').style.display = 'block';
