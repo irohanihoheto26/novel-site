@@ -218,10 +218,20 @@
         currentReadingId = id;
         const { data: n } = await api.from('novels').select('*').eq('id', id).single();
         if(!n) return;
-        document.getElementById('read-title').innerText = n.title;
+
+        // タイトルをセットし、スタイルでサイズを半分にする
+        const titleEl = document.getElementById('read-title');
+        titleEl.innerText = n.title;
+        titleEl.style.fontSize = "1.1em"; // ここでサイズを半分（2.2em → 1.1em）に変更
+        titleEl.style.margin = "20px 0 10px";
+
         document.getElementById('read-author').innerText = n.author_name;
         document.getElementById('read-body').innerText = n.content;
-        `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>`;
+
+        // 作者リンクエリアの表示（前回の修正分）
+        document.getElementById('author-link-zone').innerHTML = 
+            `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline; color:#000;">${n.author_name}</strong>`;
+
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
         
