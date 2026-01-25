@@ -1,1 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>小説サイト</title>
+<style>
+body{font-family:sans-serif;max-width:800px;margin:0 auto;padding:20px;background:#f9f9f9}
+section{background:white;padding:20px;border-radius:8px;margin-bottom:20px}
+#auth-status{text-align:right;color:#666}
+</style>
+</head>
+<body>
+<div id="auth-status">準備中...</div>
+<section>
+<h2>ログイン / 登録</h2>
+<input type="email" id="email" placeholder="メール">
+<input type="password" id="password" placeholder="パスワード">
+<button onclick="signUp()">新規登録</button>
+</section>
+<div id="novel-list">読み込み中...</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// 【確認】ここより上に supabase という言葉は一度も出てきません
+const URL = 'https://fnobmngpstzolphexluc.supabase.co';
+const KEY = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE';
+const supabase = window.supabase.createClient(URL, KEY);
+
+async function signUp() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) alert(error.message);
+    else alert("成功！");
+}
+
+async function getNovels() {
+    const { data } = await supabase.from('novels').select('*');
+    document.getElementById('auth-status').innerText = '接続成功';
+    document.getElementById('novel-list').innerText = data ? '投稿あり' : '投稿なし';
+}
+
+getNovels();
+</script>
+</body>
+</html>
