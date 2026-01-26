@@ -532,8 +532,29 @@
     }
 
     async function loadLikeCount(id) {
+        // 全体のカウントを取得
         const { count } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', id);
         document.getElementById('read-like-count').innerText = count || 0;
+
+        // 自分がいいね済みかチェックしてボタンの色を変える
+        const likeBtn = document.getElementById('like-btn');
+        if (currentUser) {
+            const { data } = await api.from('likes')
+                .select('*')
+                .eq('novel_id', id)
+                .eq('user_id', currentUser.id)
+                .maybeSingle();
+
+            if (data) {
+                likeBtn.style.background = "#ff4d4d"; // いいね済みは赤く
+                likeBtn.style.color = "#fff";
+                likeBtn.innerText = "♥ いいね済み " + (count || 0);
+            } else {
+                likeBtn.style.background = "#fff"; // 未いいねは白（枠あり）
+                likeBtn.style.color = "#000";
+                likeBtn.innerText = "♥ いいね " + (count || 0);
+            }
+        }
     }
 
     async function doPost() {
