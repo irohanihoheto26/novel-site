@@ -348,6 +348,17 @@
 
     async function openReader(id) {
         currentReadingId = id;
+        
+        const bodyEl = document.getElementById('read-body');
+        const titleEl = document.getElementById('read-title');
+        
+        titleEl.style.textDecoration = "none";
+        document.getElementById('name-changer-group').classList.remove('hidden');
+        
+        // 必読用のクラスを解除
+        bodyEl.classList.remove('hanging-indent');
+        // 必要なら普通のインデント（1字下げ）を付ける
+        bodyEl.classList.add('indent-text');
         // 隠していた要素を再表示させる
         document.getElementById('name-changer-group').classList.remove('hidden');
         document.getElementById('read-body').classList.remove('indent-text'); // 必要に応じて（小説本文もインデントするならそのままでOK）
