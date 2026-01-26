@@ -83,6 +83,30 @@
         font-size: 0.9em;
     }
 }
+        /* 下書きラベルの新しいデザイン */
+.draft-badge {
+    background-color: #e0f2ff; /* 水色 */
+    color: #004080;           /* 濃い青文字（読みやすさ重視） */
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 15px;      /* 角丸 */
+    margin-left: 8px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* 削除ボタンのスタイル */
+.btn-delete {
+    cursor: pointer;
+    color: #cc0000;
+    font-size: 0.8em;
+    margin-left: 10px;
+    text-decoration: underline;
+}
+.btn-delete:hover {
+    color: #ff0000;
+}
     </style>
 </head>
 <body>
@@ -239,32 +263,24 @@
 
     async function loadUserContent() {
         if (!currentUser) return;
-        
-        // 全てのステータス（公開・非公開問わず）の自分の作品を取得
-        let { data: novels, error } = await api.from('novels')
-            .select('*')
-            .eq('author_id', currentUser.id)
-            .order('created_at', {ascending: false});
-        
-        if (error) {
-            console.error("作品取得エラー:", error.message);
-            return;
-        }
-
-        allMyNovels = novels || []; 
+        let { data: novels, error } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+        if (error) return;
+        allMyNovels = novels || [];
 
         document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     <span onclick="openEditor('${n.id}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
+                    <span onclick="deleteNovel('${n.id}', '${n.title}')" class="btn-delete">[削除]</span>
+                    
                     <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
-                    ${n.is_private ? '<span style="color:blue; font-size:0.75em;">下書き</span>' : ''}
+                    ${n.is_private ? '<span class="draft-badge">下書き</span>' : ''}
                 </div>
                 <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品はありません";
         
-        // スタッツ読み込み（IDを引用符で囲んでエラー回避）
+        // (スタッツ読み込みのループはそのまま)
         allMyNovels.forEach(async (n) => {
             const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
@@ -396,6 +412,25 @@
         };
         const { error } = editingNovelId ? await api.from('novels').update(payload).eq('id', editingNovelId) : await api.from('novels').insert(payload);
         if(error) alert(error.message); else location.reload();
+    }
+
+    async function deleteNovel(id, title) {
+        if (!confirm(`作品「${title}」を完全に削除してもよろしいですか？\nこの操作は取り消せません。`)) {
+            return;
+        }
+
+        // 1. 関連するいいねとコメントを先に消す必要がある場合があります（DB設定によりますが、安全のため）
+        // 2. 本体を削除
+        const { error } = await api.from('novels').delete().eq('id', id);
+
+        if (error) {
+            alert("削除に失敗しました: " + error.message);
+        } else {
+            alert("作品を削除しました");
+            // リストを再読み込み
+            loadUserContent();
+            getList(); 
+        }
     }
 
     function switchTab(t) {
