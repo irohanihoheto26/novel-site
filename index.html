@@ -197,14 +197,18 @@
 
     async function loadUserContent() {
         if (!currentUser) return;
+        
+        // 全てのステータス（公開・非公開問わず）の自分の作品を取得
         let { data: novels, error } = await api.from('novels')
             .select('*')
             .eq('author_id', currentUser.id)
             .order('created_at', {ascending: false});
         
-        if (error) return;
+        if (error) {
+            console.error("作品取得エラー:", error.message);
+            return;
+        }
 
-        // ここでグローバル変数に保存（これが編集時に必要）
         allMyNovels = novels || []; 
 
         document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => `
@@ -218,13 +222,43 @@
                 <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品はありません";
         
-        // スタッツ（いいね・コメント数）の読み込み
+        // スタッツ読み込み（IDを引用符で囲んでエラー回避）
         allMyNovels.forEach(async (n) => {
             const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const el = document.getElementById(`my-stats-${n.id}`);
             if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
         });
+    }
+
+    function openEditor(id = null) {
+        editingNovelId = id;
+        if (id) {
+            // IDを文字列に変換してから比較する（型の不一致を防ぐ）
+            const n = allMyNovels.find(x => String(x.id) === String(id));
+            if (!n) {
+                alert("編集対象のデータが見つかりませんでした。ページを更新してもう一度お試しください。");
+                console.error("Missing Data for ID:", id, "Available Novels:", allMyNovels);
+                return;
+            }
+            document.getElementById('title-input').value = n.title || "";
+            document.getElementById('tags-input').value = (n.tags || []).join(', ');
+            document.getElementById('caption-input').value = n.caption || "";
+            document.getElementById('content-input').value = n.content || "";
+            document.getElementById('r18-check').checked = !!n.is_r18;
+            document.getElementById('private-check').checked = !!n.is_private;
+            document.querySelector('#editor-overlay h2').innerText = "作品を編集";
+        } else {
+            // 新規作成
+            document.getElementById('title-input').value = "";
+            document.getElementById('tags-input').value = "";
+            document.getElementById('caption-input').value = "";
+            document.getElementById('content-input').value = "";
+            document.getElementById('r18-check').checked = false;
+            document.getElementById('private-check').checked = false;
+            document.querySelector('#editor-overlay h2').innerText = "新規投稿";
+        }
+        document.getElementById('editor-overlay').style.display = 'block';
     }
 
     async function openReader(id) {
@@ -306,34 +340,6 @@
         document.getElementById('read-like-count').innerText = count || 0;
     }
 
-    function openEditor(id = null) {
-        editingNovelId = id;
-        if (id) {
-            // 自分の作品リストからIDが一致するものを探す
-            const n = allMyNovels.find(x => x.id === id);
-            if (!n) {
-                console.error("作品データが見つかりません ID:", id);
-                return;
-            }
-            document.getElementById('title-input').value = n.title;
-            document.getElementById('tags-input').value = (n.tags || []).join(', ');
-            document.getElementById('caption-input').value = n.caption || "";
-            document.getElementById('content-input').value = n.content;
-            document.getElementById('r18-check').checked = n.is_r18;
-            document.getElementById('private-check').checked = n.is_private;
-            document.querySelector('#editor-overlay h2').innerText = "作品を編集";
-        } else {
-            // 新規投稿時はリセット
-            document.getElementById('title-input').value = "";
-            document.getElementById('tags-input').value = "";
-            document.getElementById('caption-input').value = "";
-            document.getElementById('content-input').value = "";
-            document.getElementById('r18-check').checked = false;
-            document.getElementById('private-check').checked = false;
-            document.querySelector('#editor-overlay h2').innerText = "新規投稿";
-        }
-        document.getElementById('editor-overlay').style.display = 'block';
-    }
 
     async function doPost() {
         const payload = {
