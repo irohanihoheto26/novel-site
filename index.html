@@ -189,13 +189,20 @@ aside button, #auth-form button:first-of-type {
     
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
     <input type="text" style="display:none" aria-hidden="true">
+    <div style="position: relative; width: 100%;">
     <input type="search" 
-       id="search-input" 
-       class="search-box-side" 
-       placeholder="検索..." 
-       oninput="getList()" 
-       autocomplete="off" 
-       name="novel-search-field">
+           id="search-input" 
+           class="search-box-side" 
+           placeholder="検索..." 
+           oninput="getList()" 
+           autocomplete="off" 
+           name="novel-search-field">
+    <span id="search-clear" 
+          onclick="clearSearch()" 
+          style="position: absolute; right: 10px; top: 10px; cursor: pointer; color: #999; font-size: 1.2em; display: none;">
+          ×
+    </span>
+</div>
     <div id="logged-in-nav" class="hidden">
         <button onclick="openEditor()">新規投稿</button>
         <button class="btn-outline" onclick="doLogOut()">ログアウト</button>
@@ -297,6 +304,17 @@ aside button, #auth-form button:first-of-type {
         <div class="checkbox-group">
             <label><span class="switch"><input type="checkbox" id="r18-check"><span class="slider"></span></span>R-18</label>
             <label><span class="switch"><input type="checkbox" id="private-check"><span class="slider"></span></span>非公開(下書き)</label>
+            <label style="display: flex; align-items: center; font-weight: bold; font-size: 0.9em; cursor: pointer;">
+        <span class="switch">
+            <input type="checkbox" id="convert-check">
+            <span class="slider"></span>
+        </span>
+        名前変換を有効にする
+    </label>
+    <div id="convert-setup-area" style="margin-top: 10px; display: none;">
+        <p style="font-size: 0.75em; color: #666; margin-bottom: 5px;">本文中で変換したい文字（例：雛子）を入力：</p>
+        <input type="text" id="default-target-input" placeholder="変換前のデフォルト名" style="margin-bottom: 0; font-size: 0.85em;">
+    </div>
         </div>
         <textarea id="content-input" rows="20" placeholder="本文を入力..."></textarea>
         <div id="word-count-display">文字数: <span id="current-count">0</span></div>
@@ -314,29 +332,45 @@ aside button, #auth-form button:first-of-type {
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
     async function init() {
-        const { data: { user } } = await api.auth.getUser();
-        currentUser = user;
-        if (user) {
+    // 1. ログイン状態が確定・変化した時に自動で動く「監視役」を立てる
+    api.auth.onAuthStateChange(async (event, session) => {
+        currentUser = session?.user || null;
+
+        if (currentUser) {
+            // ログイン中の表示
             document.getElementById('logged-in-nav').classList.remove('hidden');
             document.getElementById('guest-nav').classList.add('hidden');
             document.getElementById('user-page').classList.remove('hidden');
+            
             await loadProfile();
+            // プロフィールが未設定なら設定を促す
             if (!userProfile || !userProfile.display_name) {
                 forceProfileSetup();
             }
             loadUserContent();
+        } else {
+            // 未ログイン（ログアウト）時の表示
+            document.getElementById('logged-in-nav').classList.add('hidden');
+            document.getElementById('guest-nav').classList.remove('hidden');
+            document.getElementById('user-page').classList.add('hidden');
         }
+
+        // 2. ログイン状態がわかってからリストを読み込む（これで「読み込み中」が消える）
         getList();
-        
-        // リアルタイム文字数カウントのイベント登録
-        const contentInput = document.getElementById('content-input');
-        if(contentInput) {
-            contentInput.addEventListener('input', (e) => {
-                const count = e.target.value.length;
-                document.getElementById('current-count').innerText = count.toLocaleString();
-            });
-        }
+    });
+
+    // リアルタイム文字数カウント（ここは今のまま）
+    const contentInput = document.getElementById('content-input');
+    if(contentInput) {
+        contentInput.addEventListener('input', (e) => {
+            document.getElementById('current-count').innerText = e.target.value.length.toLocaleString();
+        });
     }
+        // スイッチがONのときだけ、変換前の名前入力欄を表示する
+document.getElementById('convert-check')?.addEventListener('change', (e) => {
+    document.getElementById('convert-setup-area').style.display = e.target.checked ? 'block' : 'none';
+});
+}
 
     async function loadProfile() {
         const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
@@ -409,12 +443,12 @@ aside button, #auth-form button:first-of-type {
             // 'all' の場合はそのまま（全員の公開作品）
 
             if (sw) {
-                filtered = filtered.filter(n => 
-                    n.title.toLowerCase().includes(sw) || 
-                    n.author_name.toLowerCase().includes(sw) ||
-                    (n.tags && n.tags.some(t => t.toLowerCase().includes(sw)))
-                );
-            }
+        countEl.innerText = `${filtered.length} 件見つかりました`;
+        document.getElementById('search-clear').style.display = 'block'; // これを追加！
+    } else {
+        countEl.innerText = "";
+        document.getElementById('search-clear').style.display = 'none';  // これを追加！
+    }
 
             // 検索ワードがある時だけ件数を表示
             const countEl = document.getElementById('search-result-count');
@@ -496,24 +530,40 @@ aside button, #auth-form button:first-of-type {
 
     function openEditor(id = null) {
         editingNovelId = id;
+        const convertSetup = document.getElementById('convert-setup-area');
+        
         if (id) {
             const n = allMyNovels.find(x => String(x.id) === String(id));
             if (!n) return;
+            // 既存の項目
             document.getElementById('title-input').value = n.title || "";
             document.getElementById('tags-input').value = (n.tags || []).join(', ');
             document.getElementById('caption-input').value = n.caption || "";
             document.getElementById('content-input').value = n.content || "";
             document.getElementById('r18-check').checked = !!n.is_r18;
             document.getElementById('private-check').checked = !!n.is_private;
+            
+            // --- 追加：名前変換の項目 ---
+            document.getElementById('convert-check').checked = !!n.is_convert;
+            document.getElementById('default-target-input').value = n.default_name || "";
+            convertSetup.style.display = n.is_convert ? 'block' : 'none';
+            
             document.getElementById('current-count').innerText = (n.content || "").length.toLocaleString();
             document.querySelector('#editor-overlay h2').innerText = "作品を編集";
         } else {
+            // 新規投稿（すべてリセット）
             document.getElementById('title-input').value = "";
             document.getElementById('tags-input').value = "";
             document.getElementById('caption-input').value = "";
             document.getElementById('content-input').value = "";
             document.getElementById('r18-check').checked = false;
             document.getElementById('private-check').checked = false;
+            
+            // --- 追加：名前変換のリセット ---
+            document.getElementById('convert-check').checked = false;
+            document.getElementById('default-target-input').value = "";
+            convertSetup.style.display = 'none';
+            
             document.getElementById('current-count').innerText = "0";
             document.querySelector('#editor-overlay h2').innerText = "新規投稿";
         }
@@ -727,19 +777,40 @@ aside button, #auth-form button:first-of-type {
     }
 
     async function doPost() {
-        const payload = {
-            title: document.getElementById('title-input').value,
-            content: document.getElementById('content-input').value,
-            caption: document.getElementById('caption-input').value,
-            tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()).filter(t => t),
-            is_r18: document.getElementById('r18-check').checked,
-            is_private: document.getElementById('private-check').checked,
-            author_id: currentUser.id,
-            author_name: userProfile?.display_name || "名無し"
-        };
-        const { error } = editingNovelId ? await api.from('novels').update(payload).eq('id', editingNovelId) : await api.from('novels').insert(payload);
-        if(error) alert(error.message); else location.reload();
+    if (!currentUser) return alert("ログインが必要です"); // 念のため追加
+
+    const payload = {
+        title: document.getElementById('title-input').value,
+        content: document.getElementById('content-input').value,
+        caption: document.getElementById('caption-input').value,
+        tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()).filter(t => t),
+        is_r18: document.getElementById('r18-check').checked,
+        is_private: document.getElementById('private-check').checked,
+        
+        // --- ここが追加分 ---
+        is_convert: document.getElementById('convert-check').checked, // スイッチの状態
+        default_name: document.getElementById('default-target-input').value, // 変換前の名前
+        // ------------------
+
+        author_id: currentUser.id,
+        author_name: userProfile?.display_name || "名無し"
+    };
+
+    const { error } = editingNovelId 
+        ? await api.from('novels').update(payload).eq('id', editingNovelId) 
+        : await api.from('novels').insert(payload);
+
+    if(error) {
+        alert(error.message); 
+    } else {
+        // location.reload() でもいいですが、
+        // 以下の2つを呼ぶとリロードなしで画面が更新されてスムーズです！
+        closeEditor();
+        loadUserContent();
+        getList();
+        alert("保存しました！");
     }
+}
 
     async function deleteNovel(id, title) {
         if (!confirm(`作品「${title}」を削除しますか？`)) return;
@@ -885,6 +956,13 @@ function forceProfileSetup() {
         }
         checkFollowStatus(authorId);
     }
+
+    function clearSearch() {
+    const input = document.getElementById('search-input');
+    input.value = ""; // 文字を消す
+    document.getElementById('search-clear').style.display = 'none'; // ボタンを隠す
+    getList(); // リストを再表示
+}
     
     init();
 </script>
