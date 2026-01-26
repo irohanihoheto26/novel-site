@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragment Library</title>
-    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&display=swap" rel="stylesheet">
-    <style>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300&display=swap" rel="stylesheet">    <style>
         :root { --sidebar-width: 280px; }
         body { font-family: "Yu Gothic", "YuGothic", sans-serif; background: #fff; color: #000; margin: 0; display: flex; min-height: 100vh; }
         aside { width: var(--sidebar-width); height: 100vh; border-right: 2px solid #000; padding: 40px 20px; box-sizing: border-box; position: fixed; left: 0; top: 0; overflow-y: auto; background: #fff; display: flex; flex-direction: column; z-index: 100; }
@@ -150,13 +149,26 @@
     padding: 0 15px;
     background: #fff;
 }
+
+    /* 見出しをデラゴシックワンで統一 */
+.section-header h2, #library-section-header h2, #user-page h3 {
+    font-family: 'Dela Gothic One', sans-serif;
+    letter-spacing: 0.05em;
+}
     </style>
 </head>
 <body>
 
 <aside>
     <h1 onclick="location.reload()">Fragment Library</h1>
-    <p style="font-size: 1.5em; color: #fcaf17; margin-top: -20px; margin-bottom: 30px;">WEB小説投稿サイト</p>
+<p style="
+    font-family: 'Dela Gothic One', sans-serif; 
+    font-size: 0.8em; /* デラゴシックは大きいので少し小さめに */
+    letter-spacing: 0.1em; 
+    color: #fcaf17; /* ご希望のオレンジ系 */
+    margin-top: -15px; 
+    margin-bottom: 30px;
+">WEB小説投稿サイト</p>
     
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
     <input type="text" style="display:none" aria-hidden="true">
