@@ -424,22 +424,28 @@
     }
 
     async function loadComments(id) {
-        // コメントと一緒に、投稿者のプロフィールの display_name を取得する
         const { data, error } = await api
             .from('comments')
-            .select('id, body, user_id, created_at, profiles(display_name)')
+            .select('*') // profilesとの結合をやめてシンプルにする
             .eq('novel_id', id)
             .order('created_at', {ascending: true});
 
         if (error) {
             console.error("コメント取得エラー:", error.message);
+            document.getElementById('comment-list').innerHTML = "エラーが発生しました";
             return;
         }
 
-        document.getElementById('comment-list').innerHTML = (data || []).map(c => {
+        const listEl = document.getElementById('comment-list');
+        if (!data || data.length === 0) {
+            listEl.innerHTML = "コメントはありません";
+            return;
+        }
+
+        listEl.innerHTML = data.map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
-            // profilesから名前を取得（設定されていなければ「名無し」）
-            const name = (c.profiles && c.profiles.display_name) ? c.profiles.display_name : "名無し";
+            // 名前は保存されている user_name を使用する
+            const name = c.user_name || "名無し";
             
             const manageBtns = isMine ? `
                 <span onclick="deleteComment('${c.id}')" 
@@ -451,15 +457,17 @@
                 <div class="comment-item">
                     <strong>${name}</strong>: ${c.body} ${manageBtns}
                 </div>`;
-        }).join('') || "コメントはありません";
+        }).join('');
     }
 
     async function postComment() {
         const b = document.getElementById('comment-input').value.trim();
         if(!b || !currentUser) return;
 
-        // user_name には今の表示名を入れる
-        const displayName = userProfile?.display_name || currentUser.email.split('@')[0];
+        // userProfile(マイページ情報)があればそれを使う、なければメールアドレス
+        const displayName = (userProfile && userProfile.display_name) 
+                            ? userProfile.display_name 
+                            : currentUser.email.split('@')[0];
 
         const { error } = await api.from('comments').insert({ 
             novel_id: currentReadingId, 
@@ -480,16 +488,19 @@
     async function toggleLike() {
         if(!currentUser) return alert("ログインが必要です");
 
-        // 1. すでにいいねしているか確認
+        // currentReadingId が文字列の "6" になっている可能性があるので、
+        // DBの型に合わせて処理します。
         const { data: existingLike, error: checkError } = await api
             .from('likes')
             .select('*')
-            .eq('novel_id', currentReadingId)
+            .eq('novel_id', currentReadingId) // ここで型エラーが出ている
             .eq('user_id', currentUser.id)
             .maybeSingle();
 
         if (checkError) {
             console.error("いいねチェックエラー:", checkError.message);
+            // もしここでエラーが出るなら、DBのテーブル定義で novel_id が
+            // uuid型なのに、送っているIDが数字（1, 2, 3...）なのが原因です。
             return;
         }
 
