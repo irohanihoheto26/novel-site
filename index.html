@@ -670,10 +670,30 @@
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
-    async function doLogOut() { await api.auth.signOut(); location.href = "./"; }
+    async function doLogOut() {
+        await api.auth.signOut();
+        // セッションストレージなども念のためクリア
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+        // パラメータなしのトップページへ強制移動
+        window.location.replace(window.location.pathname);
+    }
     function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
-    async function doLogIn() { await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); location.reload(); }
-    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
+    async function doLogIn() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        const { data, error } = await api.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+            alert("ログイン失敗: " + error.message);
+        } else {
+            // 成功したら少し待ってからリロード（スマホの処理待ち対策）
+            setTimeout(() => {
+                window.location.replace(window.location.pathname);
+            }, 500);
+        }
+    }    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
     async function saveProfile() {
         const name = document.getElementById('prof-name').value.trim();
         const bio = document.getElementById('prof-bio').value;
