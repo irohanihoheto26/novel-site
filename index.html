@@ -104,6 +104,12 @@
 .indent-text {
     text-indent: 1em;
 }
+        /* 箇条書き用：2行目以降も1字下げた位置に揃える */
+.hanging-indent {
+    padding-left: 1em;   /* 全体を1文字分右に寄せる */
+    text-indent: -1em;  /* 1行目だけを1文字分左に戻す */
+    margin-bottom: 1em; /* 段落ごとの隙間 */
+}
     </style>
 </head>
 <body>
@@ -466,31 +472,33 @@
 
     function openRules() {
         const bodyEl = document.getElementById('read-body');
+        const titleEl = document.getElementById('read-title'); // タイトル要素を取得
         
-        // 1. タイトルと作者の設定
-        document.getElementById('read-title').innerText = "必ずお読みください";
+        // 1. タイトルと作者の設定 + 下線を追加
+        titleEl.innerText = "必ずお読みください（必読）";
+        titleEl.style.textDecoration = "underline"; // ここで下線を入れる
+        titleEl.style.textUnderlineOffset = "10px"; // 下線と文字の間に少し隙間を作ると綺麗です
+        
         document.getElementById('read-author').innerText = "運営";
         
-        // 2. 文章の作成（各段落の頭にスペースを入れるか、CSSクラスを適用）
-        bodyEl.classList.add('indent-text'); // インデントを有効化
-        bodyEl.innerText = `【当サイトについて】 
+        bodyEl.classList.remove('indent-text');
+        bodyEl.classList.add('hanging-indent');
+
+        // 文章を・（中黒）付きの形式に整える
+        bodyEl.innerText = `当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
+
+・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください。伏せ字や愛称の利用を推奨します。公式関係者の目に触れぬよう、節度ある運用をお願いします。
+
+・公序良俗に反する内容の投稿、特定の個人や団体を誹謗中傷する内容、無断転載および自作発言は固く禁止いたします。
+
+・R指定が必要な場合は必ず設定を行ってください。また、特殊な性癖や過度な暴力描写が含まれる場合は、タグやキャプションでの注意喚起をお願いします。
+
+閲覧は自己責任となります。ルールを守って、創作活動を楽しみましょう。`;
         
-        　当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。 
-        　以下のルールを守ってご利用ください。
-         
-         1. 二次創作の取り扱いについて
-        　　・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。
-        　　・公式関係者の目に触れぬよう、節度ある運用をお願いします。 
-         
-         2. 禁止事項 
-        　　・公序良俗に反する内容の投稿。 
-        　　・特定の個人や団体を誹謗中傷する内容。 
-        　　・無断転載および自作発言。 
-        　　・商業利用目的の投稿。 
-          
-         3. 作品の明記と免責事項 
-    　　 　　・ハッピーエンド、バッドエンド等の傾向がある場合、特殊設定がある場合やR指定が必要な場合は、あらすじやタグでの明記をお願いします。 
-          　・閲覧は自己責任となります。 ルールを守って、創作活動を楽しみましょう。`;
+        document.getElementById('name-changer-group').classList.add('hidden');
+        document.getElementById('reader-overlay').style.display = 'block';
+        document.getElementById('reader-interactive-zone').classList.add('hidden');
+    }
         
         // 3. 【重要】名前変換エリアを隠す
         document.getElementById('name-changer-group').classList.add('hidden');
