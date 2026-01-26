@@ -44,42 +44,35 @@
         /* スマホ・タブレット用の設定（画面幅が800px以下の場合） */
 @media screen and (max-width: 800px) {
     body {
-        flex-direction: column; /* 横並びから縦並びに変更 */
+        flex-direction: column;
     }
 
     aside {
         width: 100%;
-        height: auto;
-        position: relative; /* 固定を解除 */
+        height: auto; /* 高さを内容に合わせる */
+        position: static; /* 固定を完全に解除 */
         border-right: none;
         border-bottom: 2px solid #000;
-        padding: 20px;
+        padding: 15px;
+        z-index: 10;
     }
 
     main {
-        margin-left: 0; /* サイドバー分の余白を消す */
-        padding: 20px;
+        margin-left: 0;
+        padding: 15px;
         width: 100%;
+        box-sizing: border-box; /* はみ出し防止 */
     }
 
-    .overlay-content {
-        margin: 10px; /* オーバーレイの余白を削る */
-        padding: 10px;
-    }
-
-    /* 名前変換エリアをスマホで押しやすく調整 */
-    #name-changer-group {
-        justify-content: flex-start;
-        width: 100%;
-        margin-top: 10px;
+    /* ボタンが縦に並びすぎると場所を取るので、横並びに調整 */
+    #logged-in-nav {
+        display: flex;
+        gap: 10px;
     }
     
-    #name-changer-group input {
-        flex: 1; /* 入力欄を広げる */
-    }
-
-    /* タブやボタンをスマホサイズに */
-    .tab-btn {
+    #logged-in-nav button {
+        flex: 1;
+        padding: 8px;
         font-size: 0.9em;
     }
 }
@@ -106,6 +99,10 @@
 }
 .btn-delete:hover {
     color: #ff0000;
+}
+        /* 本文の1行目を1文字分空ける設定 */
+.indent-text {
+    text-indent: 1em;
 }
     </style>
 </head>
@@ -232,17 +229,40 @@
     }
 
     async function getList() {
-        let { data: novels, error } = await api.from('novels').select('*').eq('is_private', false).order('created_at', {ascending: false});
-        if (error) return;
+        // 基本のクエリ（公開中の作品を取得）
+        let query = api.from('novels').select('*').eq('is_private', false);
+
+        // ログインしている場合、自分の作品（author_id が自分のIDと一致するもの）を除外する
+        if (currentUser) {
+            query = query.neq('author_id', currentUser.id);
+        }
+
+        let { data: novels, error } = await query.order('created_at', {ascending: false});
+        
+        if (error) {
+            console.error("リスト取得エラー:", error.message);
+            return;
+        }
+
         let filtered = novels || [];
         const sw = document.getElementById('search-input').value.toLowerCase();
+        
+        // 「いいね済み」タブの処理
         if (currentTab === 'liked' && currentUser) {
             const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
             const likedIds = (myLikes || []).map(l => l.novel_id);
             filtered = filtered.filter(n => likedIds.includes(n.id));
         }
-        if (sw) filtered = filtered.filter(n => n.title.toLowerCase().includes(sw) || n.author_name.toLowerCase().includes(sw));
 
+        // 検索ワードの処理
+        if (sw) {
+            filtered = filtered.filter(n => 
+                n.title.toLowerCase().includes(sw) || 
+                n.author_name.toLowerCase().includes(sw)
+            );
+        }
+
+        // リスト表示
         document.getElementById('list').innerHTML = filtered.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
@@ -253,6 +273,7 @@
                 <div class="novel-stats" id="stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品がありません";
 
+        // スタッツ読み込み
         filtered.forEach(async (n) => {
             const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
@@ -321,6 +342,10 @@
 
     async function openReader(id) {
         currentReadingId = id;
+        // 隠していた要素を再表示させる
+        document.getElementById('name-changer-group').classList.remove('hidden');
+        document.getElementById('read-body').classList.remove('indent-text'); // 必要に応じて（小説本文もインデントするならそのままでOK）
+
         const { data: n } = await api.from('novels').select('*').eq('id', id).single();
         if(!n) return;
         originalContent = n.content;
@@ -440,25 +465,29 @@
     }
 
     function openRules() {
+        const bodyEl = document.getElementById('read-body');
+        
+        // 1. タイトルと作者の設定
         document.getElementById('read-title').innerText = "必ずお読みください（必読）";
         document.getElementById('read-author').innerText = "運営";
-        document.getElementById('read-body').innerText = `【当サイトについて】 当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。 
-        以下のルールを守ってご利用ください。
-        1. 二次創作の取り扱いについて 
-        　・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください（伏せ字や愛称の利用を推奨します）。 
-        　・公式関係者の目に触れぬよう、節度ある運用をお願いします。 
-        2. 禁止事項 
-        　・公序良俗に反する内容の投稿。 
-         ・特定の個人や団体を誹謗中傷する内容。 
-         ・無断転載および自作発言。 
-         ・商業利用目的の投稿。 
-        3. 作品の明記と免責事項 
-        　・ハッピーエンド、バッドエンド等の傾向がある場合、特殊設定がある場合やR指定が必要な場合は、あらすじやタグでの明記をお願いします。 
-         ・閲覧は自己責任となります。 ルールを守って、創作活動を楽しみましょう。`;
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.add('hidden');
-    }
+        
+        // 2. 文章の作成（各段落の頭にスペースを入れるか、CSSクラスを適用）
+        bodyEl.classList.add('indent-text'); // インデントを有効化
+        bodyEl.innerText = `当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。以下のルールを守ってご利用ください。
 
+　検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください。伏せ字や愛称の利用を推奨します。公式関係者の目に触れぬよう、節度ある運用をお願いします。
+
+　公序良俗に反する内容の投稿、特定の個人や団体を誹謗中傷する内容、無断転載および自作発言は固く禁止いたします。
+
+　R指定が必要な場合は必ず設定を行ってください。閲覧は自己責任となります。ルールを守って、創作活動を楽しみましょう。`;
+        
+        // 3. 【重要】名前変換エリアを隠す
+        document.getElementById('name-changer-group').classList.add('hidden');
+        
+        // 4. 表示
+        document.getElementById('reader-overlay').style.display = 'block';
+        document.getElementById('reader-interactive-zone').classList.add('hidden'); // いいね・コメント欄も隠す
+    }
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
