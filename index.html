@@ -166,7 +166,34 @@ aside button, #auth-form button:first-of-type {
     color: #fcaf17;
     border-color: #fcaf17;
 }
-    
+    /* 「マイページ」や「ライブラリ」などの見出し共通スタイル */
+.section-header h2, 
+#library-section-header h2, 
+#user-page h3,
+#editor-overlay h2 {
+    font-family: 'Dela Gothic One', sans-serif;
+    font-size: 2.2em;      /* フォントを大きく */
+    color: #000;           /* 黒で引き締める */
+    letter-spacing: 0.15em; /* 文字の間隔を少し広げる */
+    display: inline-block;
+    transform: scaleX(0.7); /* 横幅を70%に縮めて縦長に見せる */
+    transform-origin: left center; /* 左端を軸に縮める */
+    margin: 10px 0;
+    white-space: nowrap;
+}
+
+/* マイページ内の微調整 */
+#user-page h3 {
+    font-size: 1.8em; /* サブ見出しは少しだけ控えめに */
+    margin-top: 30px;
+}
+
+/* ライブラリ見出しの余白調整 */
+#library-section-header {
+    margin-top: 60px;
+    border-top: 2px solid #000; /* 線をシンプルに太くして力強く */
+    padding-top: 20px;
+}
     </style>
 </head>
 <body>
@@ -331,41 +358,36 @@ aside button, #auth-form button:first-of-type {
     let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
-    async function init() {
-    // ログイン状態の監視
+    // --- 修正版 init 関数 ---
+async function init() {
     api.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
 
         if (currentUser) {
-            // ログイン中のUI表示
             document.getElementById('logged-in-nav').classList.remove('hidden');
             document.getElementById('guest-nav').classList.add('hidden');
             document.getElementById('user-page').classList.remove('hidden');
-            document.getElementById('auth-form').classList.add('hidden'); // フォームを隠す
+            document.getElementById('auth-form').classList.add('hidden');
 
-            // プロフィール読み込み
             await loadProfile();
             
-            // 重要：プロフィールがない新規ユーザーでも止まらないようにする
+            // alertによる強制停止を避け、自動で入力欄を表示するだけに留める
             if (!userProfile || !userProfile.display_name) {
-                // 名前がない場合は「マイページ」の設定エリアを強制的に開く
                 document.getElementById('profile-edit-area').style.display = 'block';
-                alert("プロフィール（作者名）を設定してください。");
+                // 最初の一回だけ優しく通知
+                console.log("Profile setup required");
             }
             
             loadUserContent();
         } else {
-            // ログアウト状態のUI表示
             document.getElementById('logged-in-nav').classList.add('hidden');
             document.getElementById('guest-nav').classList.remove('hidden');
             document.getElementById('user-page').classList.add('hidden');
         }
-
-        // 最後に必ずリストを読み込む（これで「読み込み中」が消える）
         getList();
     });
 
-    // 文字数カウントのイベント（エラー防止のため存在確認を入れる）
+    // 文字数カウントのイベント
     const contentInput = document.getElementById('content-input');
     if(contentInput) {
         contentInput.addEventListener('input', (e) => {
@@ -374,12 +396,39 @@ aside button, #auth-form button:first-of-type {
         });
     }
 
-    // 名前変換スイッチの連動
+    // 名前変換スイッチ
     document.getElementById('convert-check')?.addEventListener('change', (e) => {
         const area = document.getElementById('convert-setup-area');
         if(area) area.style.display = e.target.checked ? 'block' : 'none';
     });
 }
+
+// --- スクリプトの最後（途切れていた部分の補完） ---
+async function postComment() {
+    const b = document.getElementById('comment-input').value.trim();
+    if(!b || !currentUser) return;
+
+    const displayName = (userProfile && userProfile.display_name) 
+                        ? userProfile.display_name 
+                        : currentUser.email.split('@')[0];
+
+    const { error } = await api.from('comments').insert({ 
+        novel_id: currentReadingId, 
+        user_id: currentUser.id, 
+        user_name: displayName, 
+        body: b 
+    });
+
+    if (error) {
+        alert("コメントに失敗しました。");
+    } else {
+        document.getElementById('comment-input').value = "";
+        loadComments(currentReadingId); // 追記：コメントを再読み込み
+    }
+}
+
+// 最後に初期化を実行
+init();
 
     async function loadProfile() {
         const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
