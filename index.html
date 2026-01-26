@@ -426,9 +426,6 @@ async function postComment() {
     }
 }
 
-// 最後に初期化を実行
-init();
-
     async function loadProfile() {
         const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
         if (error) console.error(error);
