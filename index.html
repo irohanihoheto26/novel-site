@@ -189,9 +189,7 @@
         <div id="read-body" style="white-space: pre-wrap; line-height: 2.2; margin: 40px 0;"></div>
         <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px;">
-                <button id="like-btn" onclick="toggleLike()" ...>♥ いいね <span id="read-like-count">0</span></button>
-
-<button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">
+                <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 40px;">
     ♥ <span id="read-like-text">いいね</span> <span id="read-like-count">0</span>
 </button>
                 <span id="author-link-zone" style="font-size: 0.9em; color: #666;"></span>
@@ -416,6 +414,16 @@
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
         loadComments(id);
         loadLikeCount(id);
+
+        const form = document.getElementById('comment-form-area');
+        const msg = document.getElementById('comment-guest-msg');
+        if (currentUser) {
+            form.classList.remove('hidden');
+            msg.classList.add('hidden');
+        } else {
+            form.classList.add('hidden');
+            msg.classList.remove('hidden');
+        }
     }
 
     function applyNameChange() {
@@ -557,13 +565,6 @@
         }
     }
 
-    if (currentUser) {
-        document.getElementById('comment-form-area').classList.remove('hidden');
-        document.getElementById('comment-guest-msg').classList.add('hidden');
-    } else {
-        document.getElementById('comment-form-area').classList.add('hidden');
-        document.getElementById('comment-guest-msg').classList.remove('hidden');
-    }
     async function doPost() {
         const payload = {
             title: document.getElementById('title-input').value,
