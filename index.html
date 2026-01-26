@@ -314,29 +314,30 @@ aside button, #auth-form button:first-of-type {
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
     async function init() {
-        const { data: { user } } = await api.auth.getUser();
-        currentUser = user;
-        if (user) {
+    // A: ユーザー確認（終わったら勝手にUIが変わるようにする）
+    api.auth.getSession().then(({ data: { session } }) => {
+        currentUser = session?.user || null;
+        if (currentUser) {
             document.getElementById('logged-in-nav').classList.remove('hidden');
             document.getElementById('guest-nav').classList.add('hidden');
             document.getElementById('user-page').classList.remove('hidden');
-            await loadProfile();
-            if (!userProfile || !userProfile.display_name) {
-                forceProfileSetup();
-            }
+            loadProfile();
             loadUserContent();
         }
-        getList();
-        
-        // リアルタイム文字数カウントのイベント登録
-        const contentInput = document.getElementById('content-input');
-        if(contentInput) {
-            contentInput.addEventListener('input', (e) => {
-                const count = e.target.value.length;
-                document.getElementById('current-count').innerText = count.toLocaleString();
-            });
-        }
+    });
+
+    // B: 作品取得（Aを待たずに即実行！）
+    getList();
+
+    // イベント登録などはそのまま
+    const contentInput = document.getElementById('content-input');
+    if(contentInput) {
+        contentInput.addEventListener('input', (e) => {
+            const count = e.target.value.length;
+            document.getElementById('current-count').innerText = count.toLocaleString();
+        });
     }
+}
 
     async function loadProfile() {
         const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
