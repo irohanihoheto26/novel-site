@@ -134,7 +134,13 @@
 <aside>
     <h1 onclick="location.reload()">Fragment Library</h1>
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
-    <input type="text" id="search-input" class="search-box-side" placeholder="検索..." oninput="getList()">
+    <input type="search" 
+       id="search-input" 
+       class="search-box-side" 
+       placeholder="検索..." 
+       oninput="getList()" 
+       autocomplete="off" 
+       name="novel-search-field">
     <div id="logged-in-nav" class="hidden">
         <button onclick="openEditor()">新規投稿</button>
         <button class="btn-outline" onclick="doLogOut()">ログアウト</button>
