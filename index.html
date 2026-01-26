@@ -846,16 +846,15 @@ function forceProfileSetup() {
         const { data } = await api.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', authorId).maybeSingle();
         const btn = document.getElementById('follow-btn');
         if (!btn) return;
+
         if (data) {
             btn.innerText = "フォロー中";
-            btn.classList.remove('btn-outline');
-            btn.style.background = "#000";
+            btn.style.background = "#fcaf17"; // オレンジで塗りつぶし
             btn.style.color = "#fff";
         } else {
             btn.innerText = "フォローする";
-            btn.classList.add('btn-outline');
             btn.style.background = "#fff";
-            btn.style.color = "#000";
+            btn.style.color = "#fcaf17";
         }
     }
 
