@@ -259,9 +259,16 @@
     }
 
     async function loadProfile() {
-        const { data } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+        const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+        if (error) console.error(error);
+        
         userProfile = data;
-        if(data) document.getElementById('prof-name').value = data.display_name || "";
+        if (data) {
+            // 作者名を入力欄にセット
+            document.getElementById('prof-name').value = data.display_name || "";
+            // 自己紹介を入力欄にセット（ここが抜けていたはずです！）
+            document.getElementById('prof-bio').value = data.bio || "";
+        }
     }
 
     async function getList() {
@@ -638,8 +645,22 @@
     async function doLogIn() { await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); location.reload(); }
     async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
     async function saveProfile() {
-        await api.from('profiles').upsert({ id: currentUser.id, display_name: document.getElementById('prof-name').value, bio: document.getElementById('prof-bio').value });
-        location.reload();
+        if (!currentUser) return;
+        const name = document.getElementById('prof-name').value;
+        const bio = document.getElementById('prof-bio').value;
+
+        const { error } = await api.from('profiles').upsert({ 
+            id: currentUser.id, 
+            display_name: name, 
+            bio: bio 
+        });
+
+        if (error) {
+            alert("更新に失敗しました: " + error.message);
+        } else {
+            alert("プロフィールを更新しました！");
+            location.reload(); // 確実に反映させるためリロード
+        }
     }
     function filterByAuthor(name) {
         document.getElementById('search-input').value = name;
