@@ -256,6 +256,9 @@
             document.getElementById('guest-nav').classList.add('hidden');
             document.getElementById('user-page').classList.remove('hidden');
             await loadProfile();
+            if (!userProfile || !userProfile.display_name) {
+                forceProfileSetup();
+            }
             loadUserContent();
         }
         getList();
@@ -665,9 +668,13 @@
     async function doLogIn() { await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); location.reload(); }
     async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
     async function saveProfile() {
-        if (!currentUser) return;
-        const name = document.getElementById('prof-name').value;
+        const name = document.getElementById('prof-name').value.trim();
         const bio = document.getElementById('prof-bio').value;
+
+        if (!name) {
+            alert("作者名は必須です！");
+            return;
+        }
 
         const { error } = await api.from('profiles').upsert({ 
             id: currentUser.id, 
@@ -676,10 +683,10 @@
         });
 
         if (error) {
-            alert("更新に失敗しました: " + error.message);
+            alert("エラー: " + error.message);
         } else {
-            alert("プロフィールを更新しました！");
-            location.reload(); // 確実に反映させるためリロード
+            alert("設定完了！投稿できるようになりました。");
+            location.reload(); // リロードして制限を解除
         }
     }
     function filterByAuthor(name) {
@@ -688,7 +695,25 @@
         switchTab('all');
         getList();
     }
-
+function forceProfileSetup() {
+        // 設定エリアを表示
+        const settingsArea = document.getElementById('profile-edit-area');
+        settingsArea.style.display = 'block';
+        
+        // 案内メッセージを出す
+        const header = document.querySelector('#user-page h2');
+        header.innerHTML = 'プロフィールを完了させてください <span style="font-size:0.5em; color:red;">(必須)</span>';
+        
+        // 作者名入力欄を赤枠にして目立たせる
+        const nameInput = document.getElementById('prof-name');
+        nameInput.style.border = "2px solid red";
+        nameInput.placeholder = "【必須】作者名を入力してください";
+        
+        // 注意：この状態では他の操作を制限したい場合は、
+        // 「新規投稿」ボタンを無効化するなどの処理も有効です
+        const postBtn = document.querySelector('#logged-in-nav button');
+        if(postBtn) postBtn.disabled = true;
+    }
     init();
 </script>
 </body>
