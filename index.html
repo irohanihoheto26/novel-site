@@ -502,7 +502,18 @@
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
-    function doLogOut() { api.auth.signOut(); location.reload(); }
+    async function doLogOut() {
+        // ログアウト処理が終わるのをしっかり待つ
+        const { error } = await api.auth.signOut();
+        
+        if (error) {
+            console.error("ログアウトエラー:", error.message);
+            alert("ログアウトに失敗しました");
+        } else {
+            // 完全に終わってからリロード
+            location.href = "./"; // location.reload()より確実にトップに戻る
+        }
+    }
     function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
     async function doLogIn() { await api.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value }); location.reload(); }
     async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
