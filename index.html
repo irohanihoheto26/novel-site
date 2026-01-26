@@ -741,6 +741,12 @@ function forceProfileSetup() {
         const postBtn = document.querySelector('#logged-in-nav button');
         if(postBtn) postBtn.disabled = true;
     }
+    // ページが「戻る」で表示された際、強制的に状態をチェックする
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
     init();
 </script>
 </body>
