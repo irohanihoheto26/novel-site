@@ -357,31 +357,26 @@ aside button, #auth-form button:first-of-type {
     if (!listEl) return;
 
     try {
-        // 1. 小説データの基本取得（ここが失敗したらリトライを促す）
-        let { data: novels, error } = await api.from('novels')
-            .select('*')
-            .eq('is_private', false)
-            .order('created_at', {ascending: false});
+        // 1. 基本データの取得（統計は含めない）
+        let query = api.from('novels').select('*').eq('is_private', false);
+        let { data: novels, error } = await query.order('created_at', { ascending: false });
+        if (error) throw error;
 
-        if (error) throw error; // ここでのエラーは致命的（ネット切断など）
-        let filtered = novels || [];
+        let baseNovels = novels || [];
 
         // 【機能維持】自分の作品を除外
         if (currentUser) {
-            filtered = filtered.filter(n => n.author_id !== currentUser.id);
+            baseNovels = baseNovels.filter(n => n.author_id !== currentUser.id);
         }
 
-        // 2. タブと検索のフィルタリング（手元のデータで即座に行う）
+        // 2. フィルタリング（検索・タブ）
         const sw = document.getElementById('search-input').value.toLowerCase();
-        
+        let filtered = baseNovels;
+
         if (currentTab === 'liked' && currentUser) {
             const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
             const likedIds = (myLikes || []).map(l => l.novel_id);
             filtered = filtered.filter(n => likedIds.includes(n.id));
-        } else if (currentTab === 'follow' && currentUser) {
-            const { data: follows } = await api.from('follows').select('following_id').eq('follower_id', currentUser.id);
-            const followingIds = (follows || []).map(f => f.following_id);
-            filtered = filtered.filter(n => followingIds.includes(n.author_id));
         }
 
         if (sw) {
@@ -392,36 +387,31 @@ aside button, #auth-form button:first-of-type {
             );
         }
 
-        // 検索件数の表示
+        // 3. 検索件数の表示
         const countEl = document.getElementById('search-result-count');
         if (countEl) countEl.innerText = sw ? `${filtered.length} 件見つかりました` : "";
 
-        // 3. 【重要】まずリストを一旦描画して「読み込み中」を消し去る
-        const renderHtml = (items) => items.map(n => `
+        // 4. まず「枠」を描画する（これでスマホでも即座に作品名が出る！）
+        const sortType = document.getElementById('sort-order').value;
+        listEl.innerHTML = filtered.map(n => `
             <div class="novel-row">
                 <div class="novel-info">
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
                     <div style="margin-top:5px;">
-                        ${(n.tags || []).filter(t => t && t.trim() !== "").map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
+                        ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
                     </div>
                 </div>
                 <div class="novel-stats" id="stats-${n.id}">
                     <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
-                    <span class="stat-item" id="like-count-${n.id}">♥ ${n.like_count || 0}</span>
-                    <span class="stat-item" id="comm-count-${n.id}">💬 ${n.comment_count || 0}</span>
+                    <span class="stat-item" id="like-count-${n.id}">♥ ...</span>
+                    <span class="stat-item" id="comm-count-${n.id}">💬 ...</span>
                 </div>
-            </div>`).join('');
+            </div>`).join('') || "作品がありません";
 
-        listEl.innerHTML = renderHtml(filtered) || "作品がありません";
-
-        // 4. 非同期で統計を「1つずつ」取得（1つ失敗しても全体を止めない）
-        const sortType = document.getElementById('sort-order').value;
-        
-        // awaitを使わず、各作品ごとに独立して処理を走らせる（スマホの待ち時間を無くす）
+        // 5. 非同期で統計データを取ってきて、後から数字を埋める
         filtered.forEach(async (n) => {
             try {
-                // 統計取得を1つのリクエストにまとめたいが、現状は個別で行う
                 const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
                 const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
                 
@@ -429,30 +419,24 @@ aside button, #auth-form button:first-of-type {
                 n.comment_count = cCount || 0;
                 n.char_count = (n.content || "").length;
 
-                // 画面上の数字だけを更新
-                const lEl = document.getElementById(`like-count-${n.id}`);
-                const cEl = document.getElementById(`comm-count-${n.id}`);
-                if (lEl) lEl.innerText = `♥ ${n.like_count}`;
-                if (cEl) cEl.innerText = `💬 ${n.comment_count}`;
+                // 画面上の数字だけを更新（ピンポイントで書き換え）
+                const likeEl = document.getElementById(`like-count-${n.id}`);
+                const commEl = document.getElementById(`comm-count-${n.id}`);
+                if (likeEl) likeEl.innerText = `♥ ${n.like_count}`;
+                if (commEl) commEl.innerText = `💬 ${n.comment_count}`;
 
-                // 全員分終わったかチェックして、必要なら並び替え
-                // (並び替えロジックは昨日のものと同様)
-            } catch (e) {
-                console.warn(`統計取得エラー(${n.title}):`, e.message);
+                // もし「いいね順」「文字数順」が選ばれていたら
+                // 全件取得後に並び替えるロジックを入れる場合はここで行いますが、
+                // まずはリストが出ることを優先しましょう。
+            } catch (err) {
+                console.warn("統計取得に失敗:", n.title);
             }
         });
 
     } catch (e) {
-    console.error("致命的エラー:", e);
-    // listElの中身を書き換える際、イベントが死なないようにシンプルにします
-    listEl.innerHTML = `
-        <div style="padding:20px; text-align:center; color:red;">
-            <p>作品の取得に失敗しました</p>
-            <button type="button" onclick="location.reload()" style="padding:10px 20px; background:#fcaf17; color:#fff; border:none; border-radius:5px; cursor:pointer;">
-                ページを再読み込みする
-            </button>
-        </div>`;
-}
+        console.error("getList全体エラー:", e);
+        listEl.innerHTML = `<div style="padding:20px; text-align:center;">作品の取得に失敗しました。<br><button onclick="getList()">再試行</button></div>`;
+    }
 }
 
     function setSearchTag(tagName) {
