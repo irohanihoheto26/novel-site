@@ -168,6 +168,9 @@ aside button, #auth-form button:first-of-type {
 }
     
     </style>
+
+    <style id="user-custom-style"></style>
+
 </head>
 <body>
 
@@ -218,6 +221,9 @@ aside button, #auth-form button:first-of-type {
         <div id="profile-edit-area" class="profile-edit-area">
             <input type="text" id="prof-name" placeholder="作者名">
             <textarea id="prof-bio" placeholder="自己紹介" rows="3"></textarea>
+            <label>カスタムCSS（任意）</label>
+<textarea id="prof-css" style="width:100%; height:150px;"></textarea>
+
             <button class="btn-outline" onclick="saveProfile()" style="width:auto">更新</button>
         </div>
         <div id="user-stats-area" style="display: flex; gap: 20px; margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px;">
@@ -405,8 +411,11 @@ const api = window.supabase.createClient(u, k, {
             <div class="novel-row">
                 <div class="novel-info">
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                    <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
-                    <div style="margin-top:5px;">
+<span 
+    onclick="openAuthorPage('${n.author_id}')" 
+    style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
+    / ${n.author_name}
+</span>                    <div style="margin-top:5px;">
                         ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
                     </div>
                 </div>
@@ -808,27 +817,30 @@ const api = window.supabase.createClient(u, k, {
         }
     }    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
     async function saveProfile() {
-        const name = document.getElementById('prof-name').value.trim();
-        const bio = document.getElementById('prof-bio').value;
+    const name = document.getElementById('prof-name').value.trim();
+    const bio = document.getElementById('prof-bio').value;
+    const css = document.getElementById('prof-css').value; // ←追加
 
-        if (!name) {
-            alert("作者名は必須です！");
-            return;
-        }
-
-        const { error } = await api.from('profiles').upsert({ 
-            id: currentUser.id, 
-            display_name: name, 
-            bio: bio 
-        });
-
-        if (error) {
-            alert("エラー: " + error.message);
-        } else {
-            alert("設定完了！投稿できるようになりました。");
-            location.reload(); // リロードして制限を解除
-        }
+    if (!name) {
+        alert("作者名は必須です！");
+        return;
     }
+
+    const { error } = await api.from('profiles').upsert({ 
+        id: currentUser.id, 
+        display_name: name, 
+        bio: bio,
+        custom_css: css   // ←追加
+    });
+
+    if (error) {
+        alert("エラー: " + error.message);
+    } else {
+        alert("設定完了！投稿できるようになりました。");
+        location.reload();
+    }
+}
+
     function filterByAuthor(name) {
         document.getElementById('search-input').value = name;
         closeReader();
@@ -889,7 +901,29 @@ function forceProfileSetup() {
         checkFollowStatus(authorId);
     }
     
+async function openAuthorPage(authorId) {
+    // 1. その作者のプロフィール（display_name, bio, custom_css）を取得
+    const { data: prof, error } = await api.from('profiles').select('*').eq('id', authorId).maybeSingle();
+    
+    if (error || !prof) return;
 
+    // 2. その人のカスタムCSSを、HTMLの <style id="user-custom-style"> に流し込む！
+    const styleEl = document.getElementById('user-custom-style');
+    if (styleEl) {
+        styleEl.innerHTML = prof.custom_css || ""; 
+    }
+
+    // 3. ライブラリの見出しを「〇〇さんの作品一覧」に書き換える
+    const header = document.querySelector('#library-section-header h2');
+    if (header) header.innerText = `${prof.display_name} さんのページ`;
+
+    // 4. その作者の作品だけでリストを再取得する
+    // (getListを改造して、authorId指定がある場合はそれだけで絞り込むようにします)
+    await getList(authorId); 
+    
+    // リーダーが開いていたら閉じる
+    closeReader();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     init();
