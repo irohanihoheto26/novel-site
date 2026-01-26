@@ -402,7 +402,7 @@ async function init() {
     });
 }
 
-// --- スクリプトの最後（途切れていた部分の補完） ---
+// 353行目あたりにある中途半端な部分を削除し、関数を一つにまとめます。
 async function postComment() {
     const b = document.getElementById('comment-input').value.trim();
     if(!b || !currentUser) return;
@@ -422,7 +422,7 @@ async function postComment() {
         alert("コメントに失敗しました。");
     } else {
         document.getElementById('comment-input').value = "";
-        loadComments(currentReadingId); // 追記：コメントを再読み込み
+        loadComments(currentReadingId); 
     }
 }
 
@@ -443,100 +443,103 @@ init();
     }
 
     async function getList() {
-        try {
-            let query = api.from('novels').select('*').eq('is_private', false);
-            if (currentUser) query = query.neq('author_id', currentUser.id);
+    try {
+        // 1. UI要素と入力値の取得
+        const countEl = document.getElementById('search-result-count');
+        const searchInput = document.getElementById('search-input');
+        const searchClearBtn = document.getElementById('search-clear');
+        const sortType = document.getElementById('sort-order').value;
+        const sw = searchInput.value.toLowerCase();
 
-            let { data: novels, error } = await query.order('created_at', {ascending: false});
-            if (error) throw error;
+        // 2. データの取得（基本は「非公開ではない」作品）
+        let query = api.from('novels').select('*').eq('is_private', false);
+        
+        // ログイン中は自分の作品をライブラリに出さない（マイページにあるため）
+        if (currentUser) query = query.neq('author_id', currentUser.id);
 
-            let baseNovels = novels || [];
+        let { data: novels, error } = await query.order('created_at', {ascending: false});
+        if (error) throw error;
 
-            // 統計データを取得して合体
-            const novelsWithStats = await Promise.all(baseNovels.map(async (n) => {
-                const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-                const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-                return { 
-                    ...n, 
-                    like_count: lCount || 0, 
-                    comment_count: cCount || 0, 
-                    char_count: (n.content || "").length 
-                };
-            }));
+        let baseNovels = novels || [];
 
-            // 並べ替え
-            const sortType = document.getElementById('sort-order').value;
-            if (sortType === 'likes') {
-                novelsWithStats.sort((a, b) => b.like_count - a.like_count);
-            } else if (sortType === 'char_count') {
-                novelsWithStats.sort((a, b) => b.char_count - a.char_count);
-            }
+        // 3. 統計データの取得と合体（いいね数・コメント数・文字数）
+        const novelsWithStats = await Promise.all(baseNovels.map(async (n) => {
+            const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            return { 
+                ...n, 
+                like_count: lCount || 0, 
+                comment_count: cCount || 0, 
+                char_count: (n.content || "").length 
+            };
+        }));
 
-            // 検索とタブのフィルタリング
-            const sw = document.getElementById('search-input').value.toLowerCase();
-            let filtered = novelsWithStats;
-
-            // --- タブごとの切り替えロジックを修正 ---
-            if (currentTab === 'liked') {
-                if (!currentUser) {
-                    filtered = []; // ログインしてなければ空
-                } else {
-                    // 自分がいいねした作品IDだけを抽出
-                    const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
-                    const likedIds = (myLikes || []).map(l => l.novel_id);
-                    filtered = filtered.filter(n => likedIds.includes(n.id));
-                }
-            } else if (currentTab === 'follow') {
-                if (!currentUser) {
-                    filtered = [];
-                } else {
-                    // 自分がフォローしている人のIDリストを取得
-                    const { data: follows } = await api.from('follows').select('following_id').eq('follower_id', currentUser.id);
-                    const followingIds = (follows || []).map(f => f.following_id);
-                    // その作者たちの作品だけを表示
-                    filtered = filtered.filter(n => followingIds.includes(n.author_id));
-                }
-            }
-            // 'all' の場合はそのまま（全員の公開作品）
-
-            if (sw) {
-        countEl.innerText = `${filtered.length} 件見つかりました`;
-        document.getElementById('search-clear').style.display = 'block'; // これを追加！
-    } else {
-        countEl.innerText = "";
-        document.getElementById('search-clear').style.display = 'none';  // これを追加！
-    }
-
-            // 検索ワードがある時だけ件数を表示
-            const countEl = document.getElementById('search-result-count');
-            if (sw) {
-                countEl.innerText = `${filtered.length} 件見つかりました`;
-            } else {
-                countEl.innerText = ""; // 検索していない時は消す
-            }
-            
-            document.getElementById('list').innerHTML = filtered.map(n => `
-                <div class="novel-row">
-                    <div class="novel-info">
-                        <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                        <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
-                        <div style="margin-top:5px;">
-                            ${(n.tags || [])
-    .filter(t => t && t.trim() !== "") // ← ここを追加！空文字やスペースのみを除外
-    .map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`)
-    .join('')}
-                        </div>
-                    </div>
-                    <div class="novel-stats">
-                        <span class="count-badge">${n.char_count.toLocaleString()}文字</span>
-                        <span class="stat-item">♥ ${n.like_count}</span>
-                        <span class="stat-item">💬 ${n.comment_count}</span>
-                    </div>
-                </div>`).join('') || "作品がありません";
-        } catch (e) {
-            console.error(e);
+        // 4. 並べ替え処理
+        let filtered = novelsWithStats;
+        if (sortType === 'likes') {
+            filtered.sort((a, b) => b.like_count - a.like_count);
+        } else if (sortType === 'char_count') {
+            filtered.sort((a, b) => b.char_count - a.char_count);
         }
+
+        // 5. タブによるフィルタリング（フォロー中・いいね済み）
+        if (currentTab === 'liked') {
+            if (!currentUser) {
+                filtered = [];
+            } else {
+                const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
+                const likedIds = (myLikes || []).map(l => l.novel_id);
+                filtered = filtered.filter(n => likedIds.includes(n.id));
+            }
+        } else if (currentTab === 'follow') {
+            if (!currentUser) {
+                filtered = [];
+            } else {
+                const { data: follows } = await api.from('follows').select('following_id').eq('follower_id', currentUser.id);
+                const followingIds = (follows || []).map(f => f.following_id);
+                filtered = filtered.filter(n => followingIds.includes(n.author_id));
+            }
+        }
+
+        // 6. 検索ワードによる絞り込み（タイトル・作者名・タグ）
+        if (sw) {
+            filtered = filtered.filter(n => 
+                n.title.toLowerCase().includes(sw) || 
+                n.author_name.toLowerCase().includes(sw) ||
+                (n.tags && n.tags.some(t => t.toLowerCase().includes(sw)))
+            );
+            // 検索中のみ件数とクリアボタンを表示
+            if (countEl) countEl.innerText = `${filtered.length} 件見つかりました`;
+            if (searchClearBtn) searchClearBtn.style.display = 'block';
+        } else {
+            if (countEl) countEl.innerText = "";
+            if (searchClearBtn) searchClearBtn.style.display = 'none';
+        }
+
+        // 7. リストの描画
+        document.getElementById('list').innerHTML = filtered.map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
+                    <div style="margin-top:5px;">
+                        ${(n.tags || [])
+                            .filter(t => t && t.trim() !== "")
+                            .map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`)
+                            .join('')}
+                    </div>
+                </div>
+                <div class="novel-stats">
+                    <span class="count-badge">${n.char_count.toLocaleString()}文字</span>
+                    <span class="stat-item">♥ ${n.like_count}</span>
+                    <span class="stat-item">💬 ${n.comment_count}</span>
+                </div>
+            </div>`).join('') || "作品がありません";
+
+    } catch (e) {
+        console.error("getList Error:", e);
     }
+}
 
     function setSearchTag(tagName) {
         document.getElementById('search-input').value = tagName;
