@@ -142,6 +142,14 @@
     padding: 10px;
     border-radius: 8px;
 }
+        /* マイページのリストだけ幅を制限して中央に寄せる */
+#my-works-list {
+    max-width: 600px; /* お好みの幅に調整してください */
+    margin: 0 auto 0 0; /* 左寄せのまま幅だけ狭める場合はこちら */
+    border: 1px solid #eee;
+    padding: 0 15px;
+    background: #fff;
+}
     </style>
 </head>
 <body>
@@ -149,6 +157,7 @@
 <aside>
     <h1 onclick="location.reload()">Fragment Library</h1>
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
+    <p style="font-size: 0.75em; color: #888; margin-top: -20px; margin-bottom: 30px;">WEB小説投稿サイト</p>
     <input type="text" style="display:none" aria-hidden="true">
     <input type="search" 
        id="search-input" 
@@ -345,12 +354,23 @@
             // 検索とタブのフィルタリング
             const sw = document.getElementById('search-input').value.toLowerCase();
             let filtered = novelsWithStats;
-            
-            if (currentTab === 'liked' && currentUser) {
-                const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
-                const likedIds = (myLikes || []).map(l => l.novel_id);
-                filtered = filtered.filter(n => likedIds.includes(n.id));
+
+            // --- タブごとの切り替えロジックを修正 ---
+            if (currentTab === 'liked') {
+                if (!currentUser) {
+                    filtered = []; // ログインしてなければ空
+                } else {
+                    // 自分がいいねした作品IDだけを抽出
+                    const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
+                    const likedIds = (myLikes || []).map(l => l.novel_id);
+                    filtered = filtered.filter(n => likedIds.includes(n.id));
+                }
+            } else if (currentTab === 'follow') {
+                // フォロー機能はまだ未実装なので、今は「Coming Soon」的に空にするか
+                // あるいはログインユーザーの作品以外を表示するなどの処理
+                filtered = []; 
             }
+            // 'all' の場合はそのまま（全員の公開作品）
 
             if (sw) {
                 filtered = filtered.filter(n => 
