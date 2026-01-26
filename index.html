@@ -215,7 +215,6 @@
     </select>
 </div>
 
-<div id="word-count-display">文字数: <span id="current-count">0</span></div>
 <div id="editor-overlay">
     <div class="overlay-content">
         <h2>新規投稿</h2>
@@ -227,6 +226,7 @@
             <label><span class="switch"><input type="checkbox" id="private-check"><span class="slider"></span></span>非公開(下書き)</label>
         </div>
         <textarea id="content-input" rows="20" placeholder="本文を入力..."></textarea>
+        <div id="word-count-display">文字数: <span id="current-count">0</span></div>
         <button onclick="doPost()">公開／保存する</button>
         <button onclick="closeEditor()" class="btn-outline">閉じる</button>
     </div>
@@ -430,21 +430,69 @@
     }
 
     async function loadComments(id) {
-        const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
+        // コメントと一緒に、投稿者のプロフィールの display_name を取得する
+        const { data, error } = await api
+            .from('comments')
+            .select(`
+                id, 
+                body, 
+                user_id, 
+                created_at,
+                profiles (
+                    display_name
+                )
+            `)
+            .eq('novel_id', id)
+            .order('created_at', {ascending: true});
+
+        if (error) {
+            console.error("コメント取得エラー:", error.message);
+            return;
+        }
+
         document.getElementById('comment-list').innerHTML = (data || []).map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
-            const manageBtns = isMine ? `<span onclick="deleteComment('${c.id}')" style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">[削除]</span>` : '';
-            return `<div class="comment-item"><strong>${c.user_name}</strong>: ${c.body} ${manageBtns}</div>`;
+            
+            // profilesから名前を取得（設定されていなければ「名無し」）
+            // 注意：c.profiles.display_name の形式でデータが返ってきます
+            const name = (c.profiles && c.profiles.display_name) ? c.profiles.display_name : "名無し";
+            
+            const manageBtns = isMine ? `
+                <span onclick="deleteComment('${c.id}')" 
+                      style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">
+                      [削除]
+                </span>` : '';
+
+            return `
+                <div class="comment-item">
+                    <strong>${name}</strong>: ${c.body} ${manageBtns}
+                </div>`;
         }).join('') || "コメントはありません";
     }
 
     async function postComment() {
         const b = document.getElementById('comment-input').value.trim();
         if(!b || !currentUser) return;
-        const name = userProfile?.display_name || currentUser.email.split('@')[0];
-        await api.from('comments').insert({ novel_id: currentReadingId, user_id: currentUser.id, user_name: name, body: b });
-        document.getElementById('comment-input').value = "";
-        loadComments(currentReadingId);
+
+        // 最新のプロフィール情報を再取得（念のため）
+        const { data: prof } = await api.from('profiles').select('display_name').eq('id', currentUser.id).single();
+        
+        // 設定されていればその名前を、なければアドレスの@前を使う（バックアップ）
+        const displayName = (prof && prof.display_name) ? prof.display_name : currentUser.email.split('@')[0];
+
+        const { error } = await api.from('comments').insert({ 
+            novel_id: currentReadingId, 
+            user_id: currentUser.id, 
+            user_name: displayName, // ここで表示名を保存
+            body: b 
+        });
+
+        if (error) {
+            console.error("コメント投稿エラー:", error.message);
+        } else {
+            document.getElementById('comment-input').value = "";
+            loadComments(currentReadingId);
+        }
     }
 
     async function toggleLike() {
