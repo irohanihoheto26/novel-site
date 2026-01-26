@@ -166,6 +166,10 @@
             <textarea id="prof-bio" placeholder="自己紹介" rows="3"></textarea>
             <button class="btn-outline" onclick="saveProfile()" style="width:auto">更新</button>
         </div>
+        <div id="user-stats-area" style="display: flex; gap: 20px; margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px;">
+    <div><strong>合計文字数:</strong> <span id="total-char-count">0</span> 字</div>
+    <div><strong>合計いいね:</strong> <span id="total-likes">0</span></div>
+</div>
         <h3>投稿した作品</h3>
         <div id="my-works-list">読み込み中...</div>
     </div>
@@ -355,7 +359,10 @@
                         <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                         <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
                         <div style="margin-top:5px;">
-                            ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
+                            ${(n.tags || [])
+    .filter(t => t && t.trim() !== "") // ← ここを追加！空文字やスペースのみを除外
+    .map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`)
+    .join('')}
                         </div>
                     </div>
                     <div class="novel-stats">
@@ -379,21 +386,29 @@
         let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
         allMyNovels = novels || [];
 
-        document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => `
+        // --- 合計計算用の変数を準備 ---
+        let totalChars = 0;
+        let totalLikesSum = 0;
+
+        document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => {
+            totalChars += (n.content || "").length; // 文字数を加算
+            
+            return `
             <div class="novel-row">
-                <div class="novel-info">
-                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                    <span onclick="openEditor('${n.id}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
-                    <span onclick="deleteNovel('${n.id}', '${n.title}')" class="btn-delete">[削除]</span>
-                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
-                    ${n.is_private ? '<span class="draft-badge">下書き</span>' : ''}
-                </div>
-                <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
-            </div>`).join('') || "作品はありません";
+                </div>`;
+        }).join('') || "作品はありません";
         
+        // 文字数を画面に反映
+        document.getElementById('total-char-count').innerText = totalChars.toLocaleString();
+
+        // いいね合計を非同期で計算
         allMyNovels.forEach(async (n) => {
             const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            
+            totalLikesSum += (lCount || 0); // いいねを加算
+            document.getElementById('total-likes').innerText = totalLikesSum.toLocaleString();
+
             const el = document.getElementById(`my-stats-${n.id}`);
             if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
         });
