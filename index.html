@@ -529,12 +529,14 @@
     }
 
     async function loadLikeCount(id) {
+        const countEl = document.getElementById('read-like-count');
+        const likeBtn = document.getElementById('like-btn');
+        if (!countEl || !likeBtn) return; // 要素がない場合は何もしない（エラー防止）
+
         // 全体のカウントを取得
         const { count } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', id);
-        document.getElementById('read-like-count').innerText = count || 0;
+        countEl.innerText = count || 0;
 
-        // 自分がいいね済みかチェックしてボタンの色を変える
-        const likeBtn = document.getElementById('like-btn');
         if (currentUser) {
             const { data } = await api.from('likes')
                 .select('*')
@@ -543,17 +545,25 @@
                 .maybeSingle();
 
             if (data) {
-                likeBtn.style.background = "#ff4d4d"; // いいね済みは赤く
+                likeBtn.style.background = "#ff4d4d";
                 likeBtn.style.color = "#fff";
-                likeBtn.innerText = "♥ いいね済み " + (count || 0);
+                // innerTextを丸ごと変えると中のspan(count用)が消えるので注意
+                document.getElementById('read-like-text').innerText = "いいね済み";
             } else {
-                likeBtn.style.background = "#fff"; // 未いいねは白（枠あり）
+                likeBtn.style.background = "#fff";
                 likeBtn.style.color = "#000";
-                likeBtn.innerText = "♥ いいね " + (count || 0);
+                document.getElementById('read-like-text').innerText = "いいね";
             }
         }
     }
 
+    if (currentUser) {
+        document.getElementById('comment-form-area').classList.remove('hidden');
+        document.getElementById('comment-guest-msg').classList.add('hidden');
+    } else {
+        document.getElementById('comment-form-area').classList.add('hidden');
+        document.getElementById('comment-guest-msg').classList.remove('hidden');
+    }
     async function doPost() {
         const payload = {
             title: document.getElementById('title-input').value,
