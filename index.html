@@ -166,32 +166,31 @@ aside button, #auth-form button:first-of-type {
     color: #fcaf17;
     border-color: #fcaf17;
 }
-    /* 「マイページ」や「ライブラリ」などの見出し共通スタイル */
+/* 「マイページ」や「ライブラリ」などの見出し共通スタイルをリセット */
 .section-header h2, 
 #library-section-header h2, 
 #user-page h3,
 #editor-overlay h2 {
-    font-family: 'Dela Gothic One', sans-serif;
-    font-size: 2.2em;      /* フォントを大きく */
-    color: #000;           /* 黒で引き締める */
-    letter-spacing: 0.15em; /* 文字の間隔を少し広げる */
-    display: inline-block;
-    transform: scaleX(0.7); /* 横幅を70%に縮めて縦長に見せる */
-    transform-origin: left center; /* 左端を軸に縮める */
+    font-family: "Yu Gothic", "YuGothic", sans-serif; /* 游ゴシックに戻す */
+    font-size: 1.8em;      /* 少し落ち着いた大きさに調整 */
+    color: #000;
+    letter-spacing: 0.05em; /* 通常の間隔に */
+    display: block;        /* inline-blockから戻す */
+    transform: none;       /* 縦長加工を解除 */
     margin: 10px 0;
-    white-space: nowrap;
+    white-space: normal;   /* 改行を許可 */
 }
 
 /* マイページ内の微調整 */
 #user-page h3 {
-    font-size: 1.8em; /* サブ見出しは少しだけ控えめに */
+    font-size: 1.4em;
     margin-top: 30px;
 }
 
-/* ライブラリ見出しの余白調整 */
+/* ライブラリ見出しの余白調整（デザイン的な区切りは維持） */
 #library-section-header {
     margin-top: 60px;
-    border-top: 2px solid #000; /* 線をシンプルに太くして力強く */
+    border-top: 2px solid #000;
     padding-top: 20px;
 }
     </style>
@@ -258,7 +257,7 @@ aside button, #auth-form button:first-of-type {
     <div><strong>合計文字数:</strong> <span id="total-char-count">0</span> 字</div>
     <div><strong>合計いいね:</strong> <span id="total-likes">0</span></div>
 </div>
-        <h2>投稿した作品</h2>
+        <h3>投稿した作品</h3>
         <div id="my-works-list">読み込み中...</div>
     </div>
 
