@@ -332,44 +332,53 @@ aside button, #auth-form button:first-of-type {
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
     async function init() {
-    // 1. ログイン状態が確定・変化した時に自動で動く「監視役」を立てる
+    // ログイン状態の監視
     api.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
 
         if (currentUser) {
-            // ログイン中の表示
+            // ログイン中のUI表示
             document.getElementById('logged-in-nav').classList.remove('hidden');
             document.getElementById('guest-nav').classList.add('hidden');
             document.getElementById('user-page').classList.remove('hidden');
-            
+            document.getElementById('auth-form').classList.add('hidden'); // フォームを隠す
+
+            // プロフィール読み込み
             await loadProfile();
-            // プロフィールが未設定なら設定を促す
+            
+            // 重要：プロフィールがない新規ユーザーでも止まらないようにする
             if (!userProfile || !userProfile.display_name) {
-                forceProfileSetup();
+                // 名前がない場合は「マイページ」の設定エリアを強制的に開く
+                document.getElementById('profile-edit-area').style.display = 'block';
+                alert("プロフィール（作者名）を設定してください。");
             }
+            
             loadUserContent();
         } else {
-            // 未ログイン（ログアウト）時の表示
+            // ログアウト状態のUI表示
             document.getElementById('logged-in-nav').classList.add('hidden');
             document.getElementById('guest-nav').classList.remove('hidden');
             document.getElementById('user-page').classList.add('hidden');
         }
 
-        // 2. ログイン状態がわかってからリストを読み込む（これで「読み込み中」が消える）
+        // 最後に必ずリストを読み込む（これで「読み込み中」が消える）
         getList();
     });
 
-    // リアルタイム文字数カウント（ここは今のまま）
+    // 文字数カウントのイベント（エラー防止のため存在確認を入れる）
     const contentInput = document.getElementById('content-input');
     if(contentInput) {
         contentInput.addEventListener('input', (e) => {
-            document.getElementById('current-count').innerText = e.target.value.length.toLocaleString();
+            const count = e.target.value.length;
+            document.getElementById('current-count').innerText = count.toLocaleString();
         });
     }
-        // スイッチがONのときだけ、変換前の名前入力欄を表示する
-document.getElementById('convert-check')?.addEventListener('change', (e) => {
-    document.getElementById('convert-setup-area').style.display = e.target.checked ? 'block' : 'none';
-});
+
+    // 名前変換スイッチの連動
+    document.getElementById('convert-check')?.addEventListener('change', (e) => {
+        const area = document.getElementById('convert-setup-area');
+        if(area) area.style.display = e.target.checked ? 'block' : 'none';
+    });
 }
 
     async function loadProfile() {
