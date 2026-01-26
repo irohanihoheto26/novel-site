@@ -320,24 +320,26 @@ const api = window.supabase.createClient(u, k, {
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
     async function init() {
-    // A: ユーザー確認（終わったら勝手にUIが変わるようにする）
-    api.auth.getSession().then(({ data: { session } }) => {
-        currentUser = session?.user || null;
-        if (currentUser) {
-            document.getElementById('logged-in-nav').classList.remove('hidden');
-            document.getElementById('guest-nav').classList.add('hidden');
-            document.getElementById('user-page').classList.remove('hidden');
-            loadProfile();
-            loadUserContent();
-        }
-    });
+    // 1. セッションを確実に取得（スマホで最重要）
+    const { data: { session } } = await api.auth.getSession();
+    currentUser = session?.user || null;
 
-    // B: 作品取得（Aを待たずに即実行！）
-    getList();
+    // 2. ログインしている場合の UI セット
+    if (currentUser) {
+        document.getElementById('logged-in-nav').classList.remove('hidden');
+        document.getElementById('guest-nav').classList.add('hidden');
+        document.getElementById('user-page').classList.remove('hidden');
 
-    // イベント登録などはそのまま
+        await loadProfile();
+        await loadUserContent();
+    }
+
+    // 3. currentUser が確定してから作品リストを取得
+    await getList();
+
+    // 4. 文字数カウント（元のコードをそのまま残す）
     const contentInput = document.getElementById('content-input');
-    if(contentInput) {
+    if (contentInput) {
         contentInput.addEventListener('input', (e) => {
             const count = e.target.value.length;
             document.getElementById('current-count').innerText = count.toLocaleString();
