@@ -163,11 +163,12 @@
     <h1 onclick="location.reload()">Fragment Library</h1>
 <p style="
     font-family: 'Dela Gothic One', sans-serif; 
-    font-size: 0.8em; /* デラゴシックは大きいので少し小さめに */
-    letter-spacing: 0.1em; 
-    color: #fcaf17; /* ご希望のオレンジ系 */
+    font-size: 0.65em; /* サイズをさらに小さく */
+    letter-spacing: 0.25em; /* 間隔を広げて潰れを防止 */
+    color: #fcaf17; 
     margin-top: -15px; 
     margin-bottom: 30px;
+    white-space: nowrap; /* 改行防止 */
 ">WEB小説投稿サイト</p>
     
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
@@ -525,7 +526,12 @@
         document.getElementById('author-link-zone').innerHTML = `
             作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
             ${(currentUser && n.author_id !== currentUser.id) ? 
-                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" style="width:auto; padding:2px 10px; margin-left:10px; font-size:0.8em;" class="btn-outline">フォロー</button>` 
+                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
+                    style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
+                    border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
+                    font-weight: bold; border-radius: 4px; cursor: pointer;">
+                    フォロー
+                </button>` 
                 : ''}
         `;
         // フォロー状態を反映
