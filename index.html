@@ -917,6 +917,7 @@ async function postComment() {
         window.location.replace(window.location.pathname);
     }
     function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
+    
     async function doLogIn() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -926,12 +927,14 @@ async function postComment() {
         if (error) {
             alert("ログイン失敗: " + error.message);
         } else {
-            // 成功したら少し待ってからリロード（スマホの処理待ち対策）
             setTimeout(() => {
                 window.location.replace(window.location.pathname);
             }, 500);
         }
-    }    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
+    }
+    
+    async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }
+    
     async function saveProfile() {
         const name = document.getElementById('prof-name').value.trim();
         const bio = document.getElementById('prof-bio').value;
@@ -954,6 +957,7 @@ async function postComment() {
             location.reload(); // リロードして制限を解除
         }
     }
+    
     function filterByAuthor(name) {
         document.getElementById('search-input').value = name;
         closeReader();
@@ -979,13 +983,14 @@ function forceProfileSetup() {
         const postBtn = document.querySelector('#logged-in-nav button');
         if(postBtn) postBtn.disabled = true;
     }
+    
     // ページが「戻る」で表示された際、強制的に状態をチェックする
     window.addEventListener('pageshow', (event) => {
         if (event.persisted) {
             window.location.reload();
         }
     });
-
+    
     async function checkFollowStatus(authorId) {
         const { data } = await api.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', authorId).maybeSingle();
         const btn = document.getElementById('follow-btn');
