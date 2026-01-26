@@ -309,7 +309,13 @@ aside button, #auth-form button:first-of-type {
 <script>
     const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
     const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
-    const api = window.supabase.createClient(u, k);
+const api = window.supabase.createClient(u, k, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+    }
+});
     let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
