@@ -458,21 +458,19 @@
         const b = document.getElementById('comment-input').value.trim();
         if(!b || !currentUser) return;
 
-        // 最新のプロフィール情報を再取得（念のため）
-        const { data: prof } = await api.from('profiles').select('display_name').eq('id', currentUser.id).single();
-        
-        // 設定されていればその名前を、なければアドレスの@前を使う（バックアップ）
-        const displayName = (prof && prof.display_name) ? prof.display_name : currentUser.email.split('@')[0];
+        // user_name には今の表示名を入れる
+        const displayName = userProfile?.display_name || currentUser.email.split('@')[0];
 
         const { error } = await api.from('comments').insert({ 
             novel_id: currentReadingId, 
             user_id: currentUser.id, 
-            user_name: displayName, // ここで表示名を保存
+            user_name: displayName, 
             body: b 
         });
 
         if (error) {
             console.error("コメント投稿エラー:", error.message);
+            alert("コメントに失敗しました。");
         } else {
             document.getElementById('comment-input').value = "";
             loadComments(currentReadingId);
