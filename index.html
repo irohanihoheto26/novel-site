@@ -156,8 +156,9 @@
 
 <aside>
     <h1 onclick="location.reload()">Fragment Library</h1>
+    <p style="font-size: 1.5em; color: #fcaf17; margin-top: -20px; margin-bottom: 30px;">WEB小説投稿サイト</p>
+    
     <span class="rule-link" onclick="openRules()">必ずお読みください（必読）</span>
-    <p style="font-size: 0.75em; color: #888; margin-top: -20px; margin-bottom: 30px;">WEB小説投稿サイト</p>
     <input type="text" style="display:none" aria-hidden="true">
     <input type="search" 
        id="search-input" 
@@ -366,9 +367,15 @@
                     filtered = filtered.filter(n => likedIds.includes(n.id));
                 }
             } else if (currentTab === 'follow') {
-                // フォロー機能はまだ未実装なので、今は「Coming Soon」的に空にするか
-                // あるいはログインユーザーの作品以外を表示するなどの処理
-                filtered = []; 
+                if (!currentUser) {
+                    filtered = [];
+                } else {
+                    // 自分がフォローしている人のIDリストを取得
+                    const { data: follows } = await api.from('follows').select('following_id').eq('follower_id', currentUser.id);
+                    const followingIds = (follows || []).map(f => f.following_id);
+                    // その作者たちの作品だけを表示
+                    filtered = filtered.filter(n => followingIds.includes(n.author_id));
+                }
             }
             // 'all' の場合はそのまま（全員の公開作品）
 
@@ -503,9 +510,16 @@
         document.getElementById('read-author').innerText = n.author_name;
         bodyEl.innerText = n.content; 
 
-        document.getElementById('author-link-zone').innerHTML = 
-            `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline; color:#000;">${n.author_name}</strong>`;
-
+        document.getElementById('author-link-zone').innerHTML = `
+            作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
+            ${(currentUser && n.author_id !== currentUser.id) ? 
+                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" style="width:auto; padding:2px 10px; margin-left:10px; font-size:0.8em;" class="btn-outline">フォロー</button>` 
+                : ''}
+        `;
+        // フォロー状態を反映
+        if (currentUser && n.author_id !== currentUser.id) {
+            checkFollowStatus(n.author_id);
+        }
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.remove('hidden');
         loadComments(id);
@@ -809,6 +823,36 @@ function forceProfileSetup() {
             window.location.reload();
         }
     });
+
+    async function checkFollowStatus(authorId) {
+        const { data } = await api.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', authorId).maybeSingle();
+        const btn = document.getElementById('follow-btn');
+        if (!btn) return;
+        if (data) {
+            btn.innerText = "フォロー中";
+            btn.classList.remove('btn-outline');
+            btn.style.background = "#000";
+            btn.style.color = "#fff";
+        } else {
+            btn.innerText = "フォローする";
+            btn.classList.add('btn-outline');
+            btn.style.background = "#fff";
+            btn.style.color = "#000";
+        }
+    }
+
+    async function toggleFollow(authorId) {
+        if (!currentUser) return alert("ログインが必要です");
+        const { data: existing } = await api.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', authorId).maybeSingle();
+
+        if (existing) {
+            await api.from('follows').delete().eq('id', existing.id);
+        } else {
+            await api.from('follows').insert({ follower_id: currentUser.id, following_id: authorId });
+        }
+        checkFollowStatus(authorId);
+    }
+    
     init();
 </script>
 </body>
