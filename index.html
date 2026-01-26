@@ -110,6 +110,15 @@
     text-indent: -1em;  /* 1行目だけを1文字分左に戻す */
     margin-bottom: 1em; /* 段落ごとの隙間 */
 }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-bar select { padding: 5px; border: 1px solid #000; font-family: inherit; }
+    .tag-link { 
+        display: inline-block; background: #f0f0f0; color: #333; padding: 2px 8px; 
+        border-radius: 4px; font-size: 0.75em; cursor: pointer; margin-right: 5px; 
+    }
+    .tag-link:hover { background: #000; color: #fff; }
+    #word-count-display { font-size: 0.8em; color: #666; text-align: right; margin-bottom: 10px; }
+
     </style>
 </head>
 <body>
@@ -147,6 +156,13 @@
     </div>
 
     <div class="section-header"><h2>ライブラリ</h2></div>
+    <div class="filter-bar">
+    <select id="sort-order" onchange="getList()">
+        <option value="created_at">最新順</option>
+        <option value="likes">いいね順</option>
+        <option value="char_count">文字数順</option>
+    </select>
+</div>
     <div class="tab-bar">
         <button id="tab-all" class="tab-btn active" onclick="switchTab('all')">すべて</button>
         <button id="tab-follow" class="tab-btn" onclick="switchTab('follow')">フォロー中</button>
@@ -191,6 +207,15 @@
     </div>
 </div>
 
+    <div class="filter-bar">
+    <select id="sort-order" onchange="getList()">
+        <option value="created_at">最新順</option>
+        <option value="likes">いいね順</option>
+        <option value="char_count">文字数順</option>
+    </select>
+</div>
+
+<div id="word-count-display">文字数: <span id="current-count">0</span></div>
 <div id="editor-overlay">
     <div class="overlay-content">
         <h2>新規投稿</h2>
@@ -235,37 +260,80 @@
     }
 
     async function getList() {
-        // 基本のクエリ（公開中の作品を取得）
+        // 1. 基本データの取得（公開作品のみ）
         let query = api.from('novels').select('*').eq('is_private', false);
-
-        // ログインしている場合、自分の作品（author_id が自分のIDと一致するもの）を除外する
+        
+        // ログイン中は自分の作品を除外
         if (currentUser) {
             query = query.neq('author_id', currentUser.id);
         }
 
         let { data: novels, error } = await query.order('created_at', {ascending: false});
-        
         if (error) {
-            console.error("リスト取得エラー:", error.message);
+            console.error("データ取得失敗:", error.message);
             return;
         }
 
-        let filtered = novels || [];
+        let baseNovels = novels || [];
+
+        // 2. 各作品の「統計データ（いいね・コメント）」を取得して合体させる
+        // 並べ替え（いいね順など）を正確に行うために必要です
+        const novelsWithStats = await Promise.all(baseNovels.map(async (n) => {
+            const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            return { 
+                ...n, 
+                like_count: lCount || 0, 
+                comment_count: cCount || 0, 
+                char_count: (n.content || "").length 
+            };
+        }));
+
+        // 3. 並べ替えの実行
+        const sortType = document.getElementById('sort-order').value;
+        if (sortType === 'likes') {
+            novelsWithStats.sort((a, b) => b.like_count - a.like_count); // いいねが多い順
+        } else if (sortType === 'char_count') {
+            novelsWithStats.sort((a, b) => b.char_count - a.char_count); // 文字数が多い順
+        } else {
+            // デフォルト（最新順）は取得時のまま
+        }
+
+        // 4. 検索フィルタリング（タイトル・作者名・タグ）
         const sw = document.getElementById('search-input').value.toLowerCase();
+        let filtered = novelsWithStats;
         
-        // 「いいね済み」タブの処理
         if (currentTab === 'liked' && currentUser) {
+            // 「いいね済み」タブなら、自分がいいねしたIDだけ残す
             const { data: myLikes } = await api.from('likes').select('novel_id').eq('user_id', currentUser.id);
             const likedIds = (myLikes || []).map(l => l.novel_id);
             filtered = filtered.filter(n => likedIds.includes(n.id));
         }
 
-        // 検索ワードの処理
         if (sw) {
             filtered = filtered.filter(n => 
                 n.title.toLowerCase().includes(sw) || 
-                n.author_name.toLowerCase().includes(sw)
+                n.author_name.toLowerCase().includes(sw) ||
+                (n.tags && n.tags.some(t => t.toLowerCase().includes(sw)))
             );
+        }
+
+        // 5. HTML生成
+        document.getElementById('list').innerHTML = filtered.map(n => `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    <span style="font-size:0.8em; color:#888;"> / ${n.author_name}</span>
+                    <div style="margin-top:5px;">
+                        ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="novel-stats">
+                    <span class="count-badge">${n.char_count.toLocaleString()}文字</span>
+                    <span class="stat-item">♥ ${n.like_count}</span>
+                    <span class="stat-item">💬 ${n.comment_count}</span>
+                </div>
+            </div>`).join('') || "作品がありません";
         }
 
         // リスト表示
@@ -544,6 +612,13 @@
         getList();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // 1. リアルタイム文字数カウント
+document.getElementById('content-input').addEventListener('input', (e) => {
+    const count = e.target.value.length;
+    document.getElementById('current-count').innerText = count.toLocaleString();
+});
+    
     init();
 </script>
 </body>
