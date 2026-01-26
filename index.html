@@ -126,7 +126,22 @@
     }
     .tag-link:hover { background: #000; color: #fff; }
     #word-count-display { font-size: 0.8em; color: #666; text-align: right; margin-bottom: 10px; }
-
+/* ライブラリの見出しだけ、上に大きな余白と太めの線を入れる */
+#library-section-header {
+    margin-top: 80px; /* ここでガッツリ下げます */
+    padding-top: 40px;
+    border-top: 3px double #000; /* 二重線にして「ここから別物」感を出す */
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+    /* ライブラリ全体の背景をわずかにグレーにして、マイページと切り離す */
+#list {
+    background: #fafafa;
+    padding: 10px;
+    border-radius: 8px;
+}
     </style>
 </head>
 <body>
@@ -174,7 +189,7 @@
         <div id="my-works-list">読み込み中...</div>
     </div>
 
-    <div class="section-header">
+    <div id="library-section-header">
     <h2>ライブラリ</h2>
     <span id="search-result-count" style="font-size: 0.8em; color: #666; margin-left: 10px;"></span>
 </div>
