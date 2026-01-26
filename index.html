@@ -427,15 +427,7 @@
         // コメントと一緒に、投稿者のプロフィールの display_name を取得する
         const { data, error } = await api
             .from('comments')
-            .select(`
-                id, 
-                body, 
-                user_id, 
-                created_at,
-                profiles (
-                    display_name
-                )
-            `)
+            .select('id, body, user_id, created_at, profiles(display_name)')
             .eq('novel_id', id)
             .order('created_at', {ascending: true});
 
@@ -446,9 +438,7 @@
 
         document.getElementById('comment-list').innerHTML = (data || []).map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
-            
             // profilesから名前を取得（設定されていなければ「名無し」）
-            // 注意：c.profiles.display_name の形式でデータが返ってきます
             const name = (c.profiles && c.profiles.display_name) ? c.profiles.display_name : "名無し";
             
             const manageBtns = isMine ? `
