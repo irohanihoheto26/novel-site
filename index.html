@@ -497,6 +497,23 @@
         }
     }
 
+    async function deleteComment(id) {
+        if (!confirm("このコメントを削除しますか？")) return;
+
+        const { error } = await api
+            .from('comments')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', currentUser.id); // 自分のコメントのみ削除可能（念のため）
+
+        if (error) {
+            console.error("削除エラー:", error.message);
+            alert("削除に失敗しました。");
+        } else {
+            // 削除できたら、今読んでいる小説のコメント一覧を再読み込み
+            loadComments(currentReadingId);
+        }
+    }
     async function toggleLike() {
         if(!currentUser) return alert("ログインが必要です");
 
