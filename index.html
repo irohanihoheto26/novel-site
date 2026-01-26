@@ -41,6 +41,48 @@
         input:checked + .slider:before { transform: translateX(20px); }
         .checkbox-group { display: flex; gap: 25px; margin-bottom: 20px; align-items: center; }
         .checkbox-group label { display: flex; align-items: center; font-size: 0.9em; font-weight: bold; cursor: pointer; }
+        /* スマホ・タブレット用の設定（画面幅が800px以下の場合） */
+@media screen and (max-width: 800px) {
+    body {
+        flex-direction: column; /* 横並びから縦並びに変更 */
+    }
+
+    aside {
+        width: 100%;
+        height: auto;
+        position: relative; /* 固定を解除 */
+        border-right: none;
+        border-bottom: 2px solid #000;
+        padding: 20px;
+    }
+
+    main {
+        margin-left: 0; /* サイドバー分の余白を消す */
+        padding: 20px;
+        width: 100%;
+    }
+
+    .overlay-content {
+        margin: 10px; /* オーバーレイの余白を削る */
+        padding: 10px;
+    }
+
+    /* 名前変換エリアをスマホで押しやすく調整 */
+    #name-changer-group {
+        justify-content: flex-start;
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    #name-changer-group input {
+        flex: 1; /* 入力欄を広げる */
+    }
+
+    /* タブやボタンをスマホサイズに */
+    .tab-btn {
+        font-size: 0.9em;
+    }
+}
     </style>
 </head>
 <body>
@@ -217,7 +259,7 @@
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     <span onclick="openEditor('${n.id}')" style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
                     <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
-                    ${n.is_private ? '<span style="color:blue; font-size:0.75em;">[下書き]</span>' : ''}
+                    ${n.is_private ? '<span style="color:blue; font-size:0.75em;">下書き</span>' : ''}
                 </div>
                 <div class="novel-stats" id="my-stats-${n.id}">♥ - 💬 -</div>
             </div>`).join('') || "作品はありません";
