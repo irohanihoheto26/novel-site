@@ -649,20 +649,23 @@
     function openRules() {
         const bodyEl = document.getElementById('read-body');
         const titleEl = document.getElementById('read-title');
-        titleEl.innerText = "必ずお読みください（必読）";
+        titleEl.innerText = "必ずお読みください";
         titleEl.style.textDecoration = "underline";
         titleEl.style.textUnderlineOffset = "10px";
         document.getElementById('read-author').innerText = "運営";
         bodyEl.classList.remove('indent-text');
         bodyEl.classList.add('hanging-indent');
         document.getElementById('name-changer-group').classList.add('hidden');
-        bodyEl.innerText = `　当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
 
-・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください。
-・公序良俗に反する内容の投稿、無断転載は固く禁止いたします。
-・R指定が必要な場合は必ず設定を行ってください。
+        // ↓ innerText を innerHTML に変更し、中身を <br> や <span> で構成します
+        bodyEl.innerHTML = `
+            当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。<br><br>
+            ・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。<br>
+            ・<span style="border-bottom: 2px solid #000;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。<br>
+            ・<span style="background-color: #ffff00;">R指定が必要な場合は必ず設定</span>を行ってください。<br><br>
+            ルールを守って、創作活動を楽しみましょう。
+        `;
 
-　ルールを守って、創作活動を楽しみましょう。`;
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-interactive-zone').classList.add('hidden');
     }
