@@ -443,12 +443,16 @@ aside button, #auth-form button:first-of-type {
         });
 
     } catch (e) {
-        console.error("致命的エラー:", e);
-        listEl.innerHTML = `<div style="padding:20px; text-align:center;">
-            作品の取得に失敗しました。<br>
-            <button onclick="getList()" style="margin-top:10px;">再試行する</button>
+    console.error("致命的エラー:", e);
+    // listElの中身を書き換える際、イベントが死なないようにシンプルにします
+    listEl.innerHTML = `
+        <div style="padding:20px; text-align:center; color:red;">
+            <p>作品の取得に失敗しました</p>
+            <button type="button" onclick="location.reload()" style="padding:10px 20px; background:#fcaf17; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+                ページを再読み込みする
+            </button>
         </div>`;
-    }
+}
 }
 
     function setSearchTag(tagName) {
@@ -457,17 +461,21 @@ aside button, #auth-form button:first-of-type {
     }
 
     async function loadUserContent() {
-        if (!currentUser) return;
-        let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
-        allMyNovels = novels || [];
+    if (!currentUser) return;
+    let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
+    allMyNovels = novels || [];
 
-        // --- 合計計算用の変数を準備 ---
-        let totalChars = 0;
-        let totalLikesSum = 0;
+    let totalChars = 0;
+    let totalLikesSum = 0;
 
-        document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => {
+    // 要素が存在するかチェックしてから代入する（スマホエラー防止の要！）
+    const myWorksList = document.getElementById('my-works-list');
+    const totalCharEl = document.getElementById('total-char-count');
+    const totalLikesEl = document.getElementById('total-likes');
+
+    if (myWorksList) {
+        myWorksList.innerHTML = allMyNovels.map(n => {
             totalChars += (n.content || "").length; 
-            
             return `
             <div class="novel-row">
                 <div class="novel-info">
@@ -481,22 +489,21 @@ aside button, #auth-form button:first-of-type {
                 </div>
             </div>`;
         }).join('') || "作品はありません";
-        
-        // 文字数を画面に反映
-        document.getElementById('total-char-count').innerText = totalChars.toLocaleString();
-
-        // いいね合計を非同期で計算
-        allMyNovels.forEach(async (n) => {
-            const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-            const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-            
-            totalLikesSum += (lCount || 0); // いいねを加算
-            document.getElementById('total-likes').innerText = totalLikesSum.toLocaleString();
-
-            const el = document.getElementById(`my-stats-${n.id}`);
-            if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
-        });
     }
+
+    if (totalCharEl) totalCharEl.innerText = totalChars.toLocaleString();
+
+    allMyNovels.forEach(async (n) => {
+        const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        
+        totalLikesSum += (lCount || 0);
+        if (totalLikesEl) totalLikesEl.innerText = totalLikesSum.toLocaleString();
+
+        const el = document.getElementById(`my-stats-${n.id}`);
+        if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
+    });
+}
 
     function openEditor(id = null) {
         editingNovelId = id;
