@@ -347,56 +347,60 @@
     }
 
     async function openReader(id) {
-        currentReadingId = id;
-        
-        const bodyEl = document.getElementById('read-body');
-        const titleEl = document.getElementById('read-title');
-        
-        titleEl.style.textDecoration = "none";
-        document.getElementById('name-changer-group').classList.remove('hidden');
-        
-        // 必読用のクラスを解除
-        bodyEl.classList.remove('hanging-indent');
-        // 必要なら普通のインデント（1字下げ）を付ける
-        bodyEl.classList.add('indent-text');
-        // 隠していた要素を再表示させる
-        document.getElementById('name-changer-group').classList.remove('hidden');
-        document.getElementById('read-body').classList.remove('indent-text'); // 必要に応じて（小説本文もインデントするならそのままでOK）
+    currentReadingId = id;
+    
+    // 要素の取得（宣言は1回だけ！）
+    const bodyEl = document.getElementById('read-body');
+    const titleEl = document.getElementById('read-title');
+    const nameGroup = document.getElementById('name-changer-group');
 
-        const { data: n } = await api.from('novels').select('*').eq('id', id).single();
-        if(!n) return;
-        originalContent = n.content;
-        const titleEl = document.getElementById('read-title');
-        titleEl.innerText = n.title;
-        titleEl.style.fontSize = "1.1em";
-        titleEl.style.margin = "20px 0 10px";
-        document.getElementById('read-author').innerText = n.author_name;
-        document.getElementById('read-body').innerText = n.content;
-        document.getElementById('author-link-zone').innerHTML = `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline; color:#000;">${n.author_name}</strong>`;
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.remove('hidden');
-        document.getElementById('target-string').value = "";
-        document.getElementById('new-name').value = "";
-        
-        if (currentUser) {
-            document.getElementById('comment-form-area').classList.remove('hidden');
-            document.getElementById('comment-guest-msg').classList.add('hidden');
-        } else {
-            document.getElementById('comment-form-area').classList.add('hidden');
-            document.getElementById('comment-guest-msg').classList.remove('hidden');
-        }
-        loadComments(id);
-        loadLikeCount(id);
+    // 必読ページの設定をリセット
+    titleEl.style.textDecoration = "none";
+    bodyEl.classList.remove('hanging-indent');
+    bodyEl.classList.add('indent-text'); // 通常の1字下げを適用
+    if (nameGroup) nameGroup.classList.remove('hidden');
+
+    const { data: n, error } = await api.from('novels').select('*').eq('id', id).single();
+    if(error || !n) return;
+
+    originalContent = n.content;
+    titleEl.innerText = n.title;
+    titleEl.style.fontSize = "1.1em";
+    titleEl.style.margin = "20px 0 10px";
+
+    document.getElementById('read-author').innerText = n.author_name;
+    bodyEl.innerText = n.content; 
+
+    document.getElementById('author-link-zone').innerHTML = 
+        `作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline; color:#000;">${n.author_name}</strong>`;
+
+    document.getElementById('reader-overlay').style.display = 'block';
+    document.getElementById('reader-interactive-zone').classList.remove('hidden');
+    
+    // 変換入力欄をリセット
+    document.getElementById('target-string').value = "";
+    document.getElementById('new-name').value = "";
+
+    if (currentUser) {
+        document.getElementById('comment-form-area').classList.remove('hidden');
+        document.getElementById('comment-guest-msg').classList.add('hidden');
+    } else {
+        document.getElementById('comment-form-area').classList.add('hidden');
+        document.getElementById('comment-guest-msg').classList.remove('hidden');
     }
+    loadComments(id);
+    loadLikeCount(id);
+}
 
     function applyNameChange() {
-        const target = document.getElementById('target-string').value;
-        const replacement = document.getElementById('new-name').value;
-        if (!target) return alert("変換前の文字を入力してください");
-        const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedTarget, 'g');
-        document.getElementById('read-body').innerText = originalContent.replace(regex, replacement || "");
-    }
+    const target = document.getElementById('target-string').value;
+    const replacement = document.getElementById('new-name').value;
+    if (!target) return alert("変換前の文字を入力してください");
+    
+    const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedTarget, 'g');
+    document.getElementById('read-body').innerText = originalContent.replace(regex, replacement || "");
+}
 
     async function loadComments(id) {
         const { data } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
@@ -482,42 +486,35 @@
     }
 
     function openRules() {
-        const bodyEl = document.getElementById('read-body');
-        const titleEl = document.getElementById('read-title'); // タイトル要素を取得
-        
-        // 1. タイトルと作者の設定 + 下線を追加
-        titleEl.innerText = "必ずお読みください（必読）";
-        titleEl.style.textDecoration = "underline"; // ここで下線を入れる
-        titleEl.style.textUnderlineOffset = "10px"; // 下線と文字の間に少し隙間を作ると綺麗です
-        
-        document.getElementById('read-author').innerText = "運営";
-        
-        bodyEl.classList.remove('indent-text');
-        bodyEl.classList.add('hanging-indent');
+    const bodyEl = document.getElementById('read-body');
+    const titleEl = document.getElementById('read-title');
+    const nameGroup = document.getElementById('name-changer-group');
 
-        // 文章を・（中黒）付きの形式に整える
-        bodyEl.innerText = `当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
+    // 体裁を整える
+    titleEl.innerText = "必ずお読みください（必読）";
+    titleEl.style.textDecoration = "underline";
+    titleEl.style.textUnderlineOffset = "10px";
+    document.getElementById('read-author').innerText = "運営";
+
+    // インデントの切り替え
+    bodyEl.classList.remove('indent-text');
+    bodyEl.classList.add('hanging-indent'); // ぶら下げインデント適用
+    if (nameGroup) nameGroup.classList.add('hidden'); // 名前変換を隠す
+
+    bodyEl.innerText = `当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。
 
 ・検索避けのため、原作名・キャラクター名をそのままフルネームで表示することは避けてください。伏せ字や愛称の利用を推奨します。公式関係者の目に触れぬよう、節度ある運用をお願いします。
 
 ・公序良俗に反する内容の投稿、特定の個人や団体を誹謗中傷する内容、無断転載および自作発言は固く禁止いたします。
 
-・R指定が必要な場合は必ず設定を行ってください。また、特殊な性癖や過度な暴力描写が含まれる場合は、タグやキャプションでの注意喚起をお願いします。
+・R指定が必要な場合は必ず設定を行ってください。また、特殊な傾向がある場合はタグやキャプションでの注意喚起をお願いします。
 
 閲覧は自己責任となります。ルールを守って、創作活動を楽しみましょう。`;
-        
-        document.getElementById('name-changer-group').classList.add('hidden');
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.add('hidden');
-    }
-        
-        // 3. 【重要】名前変換エリアを隠す
-        document.getElementById('name-changer-group').classList.add('hidden');
-        
-        // 4. 表示
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.add('hidden'); // いいね・コメント欄も隠す
-    }
+    
+    document.getElementById('reader-overlay').style.display = 'block';
+    document.getElementById('reader-interactive-zone').classList.add('hidden');
+}
+    
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
