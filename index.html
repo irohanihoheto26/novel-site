@@ -497,7 +497,37 @@
 
     async function toggleLike() {
         if(!currentUser) return alert("ログインが必要です");
-        await api.from('likes').upsert({ novel_id: currentReadingId, user_id: currentUser.id }, { onConflict: 'novel_id, user_id' });
+
+        // 1. すでにいいねしているか確認
+        const { data: existingLike, error: checkError } = await api
+            .from('likes')
+            .select('*')
+            .eq('novel_id', currentReadingId)
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+
+        if (checkError) {
+            console.error("いいねチェックエラー:", checkError.message);
+            return;
+        }
+
+        if (existingLike) {
+            // 2. すでにいいね済みなら、取り消す（もう一度押すと消える仕様）
+            await api.from('likes').delete().eq('id', existingLike.id);
+        } else {
+            // 3. まだなら、いいねを追加
+            const { error: insertError } = await api.from('likes').insert({ 
+                novel_id: currentReadingId, 
+                user_id: currentUser.id 
+            });
+            if (insertError) {
+                console.error("いいね登録エラー:", insertError.message);
+                alert("いいねに失敗しました。設定を確認してください。");
+                return;
+            }
+        }
+
+        // 4. カウントを更新
         loadLikeCount(currentReadingId);
     }
 
