@@ -310,7 +310,17 @@ aside button, #auth-form button:first-of-type {
         <button onclick="closeEditor()" class="btn-outline">閉じる</button>
     </div>
 </div>
-
+<div id="author-page-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:3000; overflow-y:auto;">
+    <div class="overlay-content">
+        <button class="btn-outline" onclick="closeAuthorPage()" style="width:auto;">← 戻る</button>
+        <div id="author-profile-header" style="margin-top:30px; border-bottom:3px solid #000; padding-bottom:20px;">
+            <h1 id="author-page-name" style="font-family:'Dela Gothic One',sans-serif;"></h1>
+            <p id="author-page-bio" style="white-space:pre-wrap; color:#666;"></p>
+        </div>
+        <div id="author-page-works" style="margin-top:40px;">
+            </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
     const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
@@ -901,25 +911,37 @@ function forceProfileSetup() {
         checkFollowStatus(authorId);
     }
 
-    async function openAuthorPage(authorId) {
+  // 【統合・修正版】個人ページ（オーバーレイ）を全画面で開く関数
+async function openAuthorPage(authorId) {
     const overlay = document.getElementById('author-page-overlay');
     const worksEl = document.getElementById('author-page-works');
-    
-    // 1. プロフィール取得
-    const { data: prof } = await api.from('profiles').select('*').eq('id', authorId).maybeSingle();
-    if (!prof) return;
+    const nameEl = document.getElementById('author-page-name');
+    const bioEl = document.getElementById('author-page-bio');
+    const styleEl = document.getElementById('user-custom-style');
 
-    // 2. その人のCSSを適用（これが一番大事！）
-    document.getElementById('user-custom-style').innerHTML = prof.custom_css || "";
+    if (!overlay || !worksEl) return;
 
-    // 3. ヘッダー情報の埋め込み
-    document.getElementById('author-page-name').innerText = prof.display_name;
-    document.getElementById('author-page-bio').innerText = prof.bio || "";
+    // 1. プロフィールとCSSを取得
+    const { data: prof, error } = await api.from('profiles').select('*').eq('id', authorId).maybeSingle();
+    if (error || !prof) return;
 
-    // 4. その人の作品だけを取得して表示
-    worksEl.innerHTML = "読み込み中...";
+    // 2. その人のカスタムCSSを適用
+    if (styleEl) {
+        styleEl.innerHTML = prof.custom_css || ""; 
+    }
+
+    // 3. オーバーレイ内の情報をセット
+    nameEl.innerText = prof.display_name;
+    bioEl.innerText = prof.bio || "";
+    worksEl.innerHTML = "作品を読み込み中...";
+
+    // 4. 全画面表示にする
     overlay.style.display = 'block';
+    
+    // リーダーが開いていたら閉じておく
+    closeReader();
 
+    // 5. その人の作品だけを取得して表示
     const { data: novels } = await api.from('novels')
         .select('*')
         .eq('author_id', authorId)
@@ -941,44 +963,11 @@ function closeAuthorPage() {
     // 閉じるときにCSSをリセットして、元のサイトデザインに戻す
     document.getElementById('user-custom-style').innerHTML = "";
 }
-async function openAuthorPage(authorId) {
-    // 1. その作者のプロフィール（display_name, bio, custom_css）を取得
-    const { data: prof, error } = await api.from('profiles').select('*').eq('id', authorId).maybeSingle();
-    
-    if (error || !prof) return;
-
-    // 2. その人のカスタムCSSを、HTMLの <style id="user-custom-style"> に流し込む！
-    const styleEl = document.getElementById('user-custom-style');
-    if (styleEl) {
-        styleEl.innerHTML = prof.custom_css || ""; 
-    }
-
-    // 3. ライブラリの見出しを「〇〇さんの作品一覧」に書き換える
-    const header = document.querySelector('#library-section-header h2');
-    if (header) header.innerText = `${prof.display_name} さんのページ`;
-
-    // 4. その作者の作品だけでリストを再取得する
-    // (getListを改造して、authorId指定がある場合はそれだけで絞り込むようにします)
-    await getList(authorId); 
-    
-    // リーダーが開いていたら閉じる
-    closeReader();
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     init();
 });
 </script>
-    <div id="author-page-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:3000; overflow-y:auto;">
-    <div class="overlay-content">
-        <button class="btn-outline" onclick="closeAuthorPage()" style="width:auto;">← 戻る</button>
-        <div id="author-profile-header" style="margin-top:30px; border-bottom:3px solid #000; padding-bottom:20px;">
-            <h1 id="author-page-name" style="font-family:'Dela Gothic One',sans-serif;"></h1>
-            <p id="author-page-bio" style="white-space:pre-wrap; color:#666;"></p>
-        </div>
-        <div id="author-page-works" style="margin-top:40px;">
-            </div>
-    </div>
-</div>
+    
 </body>
 </html>
