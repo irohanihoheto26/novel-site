@@ -1005,13 +1005,15 @@ async function openAuthorPage(authorId) {
 
     // 3. オーバーレイ内の情報をセット
     nameEl.innerText = prof.display_name;
-    bioEl.innerText = prof.bio || "";
+    
+    // 【重要】ここを innerHTML に変えることで、自己紹介欄に書いたタグが動くようになります
+    bioEl.innerHTML = prof.bio || ""; 
+    
     worksEl.innerHTML = "作品を読み込み中...";
 
     // 4. 全画面表示にする
     overlay.style.display = 'block';
     
-    // リーダーが開いていたら閉じておく
     closeReader();
 
     // 5. その人の作品だけを取得して表示
