@@ -341,14 +341,16 @@ aside button, #auth-form button:first-of-type {
     </div>
 </div>
 <div id="author-page-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:3000; overflow-y:auto;">
-    <div class="overlay-content">
-        <button class="btn-outline" onclick="closeAuthorPage()" style="width:auto;">← 戻る</button>
-        <div id="author-profile-header" style="margin-top:30px; border-bottom:3px solid #000; padding-bottom:20px;">
+    <div class="overlay-content" style="padding: 20px;">
+        <button class="btn-outline" onclick="closeAuthorPage()" style="width:auto; margin-bottom: 20px;">← 戻る</button>
+
+        <div id="author-profile-header">
             <h1 id="author-page-name" style="font-family:'Dela Gothic One',sans-serif;"></h1>
-            <p id="author-page-bio" style="white-space:pre-wrap; color:#666;"></p>
+            
+            <div id="author-page-bio"></div>
         </div>
-        <div id="author-page-works" style="margin-top:40px;">
-            </div>
+
+        <div id="author-page-works" style="margin-top:20px;"></div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1002,34 +1004,39 @@ async function openAuthorPage(authorId) {
 
     if (!overlay || !worksEl) return;
 
+    // 1. プロフィールとコード（HTML/CSS）を取得
     const { data: prof, error } = await api.from('profiles').select('*').eq('id', authorId).maybeSingle();
     if (error || !prof) return;
 
-    // --- 【改造】HTMLとCSSを一つの入力欄から振り分ける ---
-    const fullCode = prof.custom_css || ""; // 今のCSS欄を「全コード」として扱う
-    
-    // <style>タグに囲まれた部分をCSSとして、それ以外をHTMLとして分ける
+    // 2. HTMLとCSSの切り分け
+    const fullCode = prof.custom_css || "";
     const cssMatch = fullCode.match(/<style>([\s\S]*?)<\/style>/);
-    const cssPart = cssMatch ? cssMatch[1] : fullCode; // <style>がなければ全部CSSとして扱う（互換性のため）
-    const htmlPart = fullCode.replace(/<style>[\s\S]*?<\/style>/, ""); // CSSを除いた部分をHTMLにする
+    const cssPart = cssMatch ? cssMatch[1] : fullCode;
+    const htmlPart = fullCode.replace(/<style>[\s\S]*?<\/style>/, "");
 
+    // 3. スタイルとHTMLの適用（ここでカスタムエリアが出現する）
     if (styleEl) styleEl.innerHTML = cssPart; 
-    bioEl.innerHTML = htmlPart || prof.bio || ""; // 独自HTMLがあればそれを、なければ自己紹介を出す
-    // ----------------------------------------------
-
+    bioEl.innerHTML = htmlPart || prof.bio || ""; 
     nameEl.innerText = prof.display_name;
+
     worksEl.innerHTML = "作品を読み込み中...";
     overlay.style.display = 'block';
-    
-    closeReader(); // 念のため
+    closeReader();
 
+    // 4. 小説データの取得
     const { data: novels } = await api.from('novels')
         .select('*')
         .eq('author_id', authorId)
         .eq('is_private', false)
         .order('created_at', { ascending: false });
 
-    worksEl.innerHTML = (novels || []).map(n => `
+    // 5. 【重要】作品リストを表示する場所の決定
+    // bioEl.innerHTML の中に 'custom-works-area' があるかチェックする
+    const customArea = document.getElementById('custom-works-area');
+    const targetEl = customArea || worksEl; 
+
+    // 6. リストを生成して表示
+    targetEl.innerHTML = (novels || []).map(n => `
         <div class="novel-row">
             <div class="novel-info">
                 <span class="novel-title" onclick="openReader('${n.id}')" style="cursor:pointer; position:relative; z-index:4000;">${n.title}</span>
@@ -1037,6 +1044,11 @@ async function openAuthorPage(authorId) {
             </div>
         </div>
     `).join('') || "公開作品はありません";
+
+    // 7. もしカスタムエリアに表示したなら、元のエリアは空にする
+    if (customArea && customArea !== worksEl) {
+        worksEl.innerHTML = "";
+    }
 }
 
 function closeAuthorPage() {
