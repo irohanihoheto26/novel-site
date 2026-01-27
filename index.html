@@ -253,6 +253,9 @@ aside button, #auth-form button:first-of-type {
             <span style="color: red; font-size: 0.75em; font-weight: bold; margin-left: 5px;">
         ※知識のない方は変更しないでください。画面表示が崩れる恐れがあります。
     </span>
+            <button type="button" onclick="resetToTemplate()" style="font-size: 0.8em; margin-bottom: 5px;">
+    初期デザインに戻す
+</button>
 <textarea id="prof-css" style="width:100%; height:150px;"></textarea>
 
             <button class="btn-outline" onclick="saveProfile()" style="width:auto">更新</button>
@@ -467,8 +470,9 @@ const api = window.supabase.createClient(u, k, {
     margin-left: 10px;
 }
 </style>`;
-            cssInput.value = data.custom_css || defaultTemplate;
-        }
+            
+// 修正：DBのデータがあっても強制的にテンプレを出す（確認が終わったら元に戻してね）
+cssInput.value = defaultTemplate;        }
 
         // 現在の名前表示を更新
         const displayEl = document.getElementById('display-current-name');
@@ -1080,6 +1084,14 @@ function closeAuthorPage() {
     document.getElementById('user-custom-style').innerHTML = "";
 }
 
+    function resetToTemplate() {
+    if (confirm("入力した内容を消して初期デザインに戻しますか？")) {
+        // 先ほどの defaultTemplate の中身をここにセット
+        const template = ``;
+        document.getElementById('prof-css').value = template;
+    }
+}
+    
 document.addEventListener('DOMContentLoaded', () => {
     init();
 });
