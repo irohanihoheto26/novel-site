@@ -150,11 +150,17 @@
     background: #fff;
 }
 
-    /* 見出しをデラゴシックワンで統一 */
-.section-header h2, #library-section-header h2, #user-page h3 {
-    font-family: 'Dela Gothic One', sans-serif;
-    letter-spacing: 0.05em;
+/* 見出しや特定の場所を游ゴシックにする設定 */
+h1, h2, h3, .novel-title, #author-page-name, #prof-name, #prof-bio {
+    font-family: "Yu Gothic Medium", "Yu Gothic", "游ゴシック体", "游ゴシック", "Meiryo", sans-serif !important;
+    font-weight: 600;
 }
+
+/* サイトタイトルだけは元のデザインを残したい場合は以下を個別に設定 */
+aside h1 {
+    /* もしタイトルも游ゴシックにするならここも変更 */
+}
+    
     /* ログインボタンや新規投稿ボタンをオレンジに */
 aside button, #auth-form button:first-of-type {
     background: #fcaf17;
