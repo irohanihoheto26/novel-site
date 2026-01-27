@@ -231,7 +231,7 @@ aside button, #auth-form button:first-of-type {
         </div>
     </div>
         <div id="my-profile-display" style="margin: 10px 0 20px 0;">
-        <span id="display-current-name" style="font-size: 1.8em; font-weight: bold;">読み込み中...</span>
+        <span id="display-current-name" style="font-size: 1em; font-weight: bold;">読み込み中...</span>
         <span style="font-size: 0.8em; color: #888;"> さんとして活動中</span>
     </div>
         <div id="profile-edit-area" class="profile-edit-area">
@@ -380,22 +380,32 @@ const api = window.supabase.createClient(u, k, {
 }
 
     async function loadProfile() {
-        const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-        if (error) console.error(error);
+    const { data, error } = await api.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    if (error) console.error(error);
+    
+    userProfile = data;
+    if (data) {
+        const name = data.display_name || "名無し";
+        document.getElementById('prof-name').value = name;
+        document.getElementById('prof-bio').value = data.bio || "";
         
-        userProfile = data;
-        if (data) {
-            // 作者名を入力欄にセット
-            document.getElementById('prof-name').value = data.display_name || "";
-            // 自己紹介を入力欄にセット（ここが抜けていたはずです！）
-            document.getElementById('prof-bio').value = data.bio || "";
+        // --- ここがポイント！保存されているCSSをテキストエリアにセット ---
+        const cssInput = document.getElementById('prof-css');
+        if (cssInput) {
+            cssInput.value = data.custom_css || ""; 
+        }
 
-            const viewMyPageBtn = document.getElementById('view-my-page-link');
+        // 名前表示の更新
+        const displayEl = document.getElementById('display-current-name');
+        if (displayEl) displayEl.innerText = name;
+
+        // 自分のページ確認リンク
+        const viewMyPageBtn = document.getElementById('view-my-page-link');
         if (viewMyPageBtn) {
             viewMyPageBtn.onclick = () => openAuthorPage(currentUser.id);
         }
-        }
     }
+}
 
     async function getList() {
     const listEl = document.getElementById('list');
