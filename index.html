@@ -889,6 +889,7 @@ cssInput.value = data.custom_css || defaultTemplate;
     }
 
     function openRules() {
+        resetReaderUI(); // ← 冒頭でリセットを実行！
         const bodyEl = document.getElementById('read-body');
         const titleEl = document.getElementById('read-title');
         titleEl.innerText = "ルール（必読）";
@@ -1095,6 +1096,7 @@ function closeAuthorPage() {
     }
 }
     function openAboutPage() {
+        resetReaderUI(); // ← 冒頭でリセットを実行！
     const titleEl = document.getElementById('read-title'); 
     const bodyEl = document.getElementById('read-body');   
     
@@ -1118,6 +1120,22 @@ function closeAuthorPage() {
     // 念のため一番上までスクロール
     document.getElementById('reader-overlay').scrollTop = 0;
 }
+    
+// 表示状態をリセットする「お掃除」
+function resetReaderUI() {
+    const bodyEl = document.getElementById('read-body');
+    const interactiveZone = document.getElementById('reader-interactive-zone');
+    const nameChanger = document.getElementById('name-changer-group');
+
+    // 1. 名前変換などのボタン類を一旦すべて隠す
+    if (interactiveZone) interactiveZone.classList.add('hidden');
+    if (nameChanger) nameChanger.classList.add('hidden');
+
+    // 2. インデント設定を一旦リセット（これがないと混ざる）
+    bodyEl.classList.remove('indent-text');
+    bodyEl.classList.remove('hanging-indent');
+}
+    
     
 document.addEventListener('DOMContentLoaded', () => {
     init();
