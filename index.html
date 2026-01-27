@@ -175,6 +175,15 @@ aside button, #auth-form button:first-of-type {
     color: #fcaf17;
     border-color: #fcaf17;
 }
+    /* 小説を読む画面（Reader）を一番上に */
+#reader-overlay {
+    z-index: 5000 !important; /* 作者ページ(3000)より大きくする */
+}
+
+/* 作者ページ */
+#author-page-overlay {
+    z-index: 3000 !important;
+}
     
     </style>
 
@@ -984,7 +993,6 @@ function forceProfileSetup() {
         checkFollowStatus(authorId);
     }
 
-  // 【統合・修正版】個人ページ（オーバーレイ）を全画面で開く関数
 async function openAuthorPage(authorId) {
     const overlay = document.getElementById('author-page-overlay');
     const worksEl = document.getElementById('author-page-works');
@@ -994,29 +1002,27 @@ async function openAuthorPage(authorId) {
 
     if (!overlay || !worksEl) return;
 
-    // 1. プロフィールとCSSを取得
     const { data: prof, error } = await api.from('profiles').select('*').eq('id', authorId).maybeSingle();
     if (error || !prof) return;
 
-    // 2. その人のカスタムCSSを適用
-    if (styleEl) {
-        styleEl.innerHTML = prof.custom_css || ""; 
-    }
+    // --- 【改造】HTMLとCSSを一つの入力欄から振り分ける ---
+    const fullCode = prof.custom_css || ""; // 今のCSS欄を「全コード」として扱う
+    
+    // <style>タグに囲まれた部分をCSSとして、それ以外をHTMLとして分ける
+    const cssMatch = fullCode.match(/<style>([\s\S]*?)<\/style>/);
+    const cssPart = cssMatch ? cssMatch[1] : fullCode; // <style>がなければ全部CSSとして扱う（互換性のため）
+    const htmlPart = fullCode.replace(/<style>[\s\S]*?<\/style>/, ""); // CSSを除いた部分をHTMLにする
 
-    // 3. オーバーレイ内の情報をセット
+    if (styleEl) styleEl.innerHTML = cssPart; 
+    bioEl.innerHTML = htmlPart || prof.bio || ""; // 独自HTMLがあればそれを、なければ自己紹介を出す
+    // ----------------------------------------------
+
     nameEl.innerText = prof.display_name;
-    
-    // 【重要】ここを innerHTML に変えることで、自己紹介欄に書いたタグが動くようになります
-    bioEl.innerHTML = prof.bio || ""; 
-    
     worksEl.innerHTML = "作品を読み込み中...";
-
-    // 4. 全画面表示にする
     overlay.style.display = 'block';
     
-    closeReader();
+    closeReader(); // 念のため
 
-    // 5. その人の作品だけを取得して表示
     const { data: novels } = await api.from('novels')
         .select('*')
         .eq('author_id', authorId)
@@ -1026,7 +1032,7 @@ async function openAuthorPage(authorId) {
     worksEl.innerHTML = (novels || []).map(n => `
         <div class="novel-row">
             <div class="novel-info">
-                <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                <span class="novel-title" onclick="openReader('${n.id}')" style="cursor:pointer; position:relative; z-index:4000;">${n.title}</span>
                 <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
             </div>
         </div>
