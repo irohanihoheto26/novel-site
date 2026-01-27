@@ -1095,8 +1095,8 @@ function closeAuthorPage() {
     }
 }
     function openAboutPage() {
-    const titleEl = document.getElementById('rules-title'); 
-    const bodyEl = document.getElementById('rules-body');   
+    const titleEl = document.getElementById('read-title'); 
+    const bodyEl = document.getElementById('read-body');   
     
     if (!titleEl || !bodyEl) return;
 
@@ -1114,9 +1114,9 @@ function closeAuthorPage() {
     `;
 
     // ルール用のオーバーレイを表示
-    document.getElementById('rules-overlay').style.display = 'block';
+    document.getElementById('read-overlay').style.display = 'block';
     // 念のため一番上までスクロール
-    document.getElementById('rules-overlay').scrollTop = 0;
+    document.getElementById('read-overlay').scrollTop = 0;
 }
     
 document.addEventListener('DOMContentLoaded', () => {
