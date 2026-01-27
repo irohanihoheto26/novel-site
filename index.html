@@ -415,35 +415,58 @@ const api = window.supabase.createClient(u, k, {
         if (cssInput) {
             // --- ここを強化！ ---
             // DBにCSSがあればそれを、なければ「ベースとなるテンプレート」を表示する
-            const defaultTemplate = `/* 【ベースCSSテンプレート】ここを自由に書き換えてください */
+            const defaultTemplate = `/* 【ベーステンプレート】ここを自由に書き換えてください */
 
-/* ページ全体の背景 */
-#author-page-overlay {
-    background-color: #ffffff !important;
+<h1 class="default-title">サイトタイトル</h1>
+
+<div class="default-bio">
+    ここに自己紹介を入力してください。
+</div>
+
+<div id="custom-works-area"></div>
+
+<style>
+/* --- 標準のデザイン設定 --- */
+
+/* 1. 元々のシステム表示を隠す（二重表示防止） */
+#author-page-name { display: none; }
+
+/* 2. サイトタイトルのデザイン */
+.default-title {
+    font-family: 'Yu Gothic', 'YuGothic', sans-serif;
+    font-weight: bold;
+    font-size: 1.8em;
+    margin: 10px 0;
+    color: #333;
 }
 
-/* 名前（見出し）のスタイル */
-#author-page-name {
-    color: #000000;
-    border-bottom: 3px solid #000;
-}
-
-/* 自己紹介文 */
-#author-page-bio {
+/* 3. 自己紹介のデザイン */
+.default-bio {
+    font-size: 1em;
     color: #666;
+    margin-bottom: 30px;
+    line-height: 1.6;
 }
 
-/* 作品リストのタイトル */
-.novel-title {
-    color: #fcaf17;
-}
-
-/* 作品の枠線や余白 */
+/* 4. 作品リストの見た目（システム標準に近いスタイル） */
 .novel-row {
-    border: 1px solid #eee;
-    margin-bottom: 10px;
-    padding: 15px;
-}`;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.novel-title {
+    font-size: 1.1em;
+    color: #333 !important;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.count-badge {
+    font-size: 0.8em;
+    color: #999;
+    margin-left: 10px;
+}
+</style>
             cssInput.value = data.custom_css || defaultTemplate;
         }
 
