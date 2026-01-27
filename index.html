@@ -209,7 +209,7 @@ aside button, #auth-form button:first-of-type {
 ">WEB小説投稿サイト</p>
     
     <span class="rule-link" onclick="openRules()">ルール（必読）</span>
-<span class="rule-link" onclick="openAboutPage()">このサイトについて</span>
+<span class="rule-link" onclick="openAboutPage()" style="display: block; margin-top: -5px;">このサイトについて</span>    
     
     <input type="text" style="display:none" aria-hidden="true">
     <input type="search" 
@@ -1114,9 +1114,9 @@ function closeAuthorPage() {
     `;
 
     // ルール用のオーバーレイを表示
-    document.getElementById('read-overlay').style.display = 'block';
+    document.getElementById('reader-overlay').style.display = 'block';
     // 念のため一番上までスクロール
-    document.getElementById('read-overlay').scrollTop = 0;
+    document.getElementById('reader-overlay').scrollTop = 0;
 }
     
 document.addEventListener('DOMContentLoaded', () => {
