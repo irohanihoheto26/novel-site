@@ -565,7 +565,11 @@ listEl.innerHTML = filtered.map(n => {
                     / ${n.author_name}
                 </span>
                 <div style="margin-top:5px;">
-                    ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
+                    <div style="margin-top:5px;">
+    ${n.tags && n.tags.length > 0 
+        ? n.tags.map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('') 
+        : ''}
+</div>
                 </div>
             </div>
             <div class="novel-stats" id="stats-${n.id}">
@@ -1113,9 +1117,11 @@ async function openAuthorPage(authorId) {
         const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
         
         // タグのHTML作成（クリックで検索画面へ飛ぶように）
-        const tagsHtml = (n.tags || []).map(t => 
-            `<span class="tag-link" onclick="setSearchTag('${t}'); document.getElementById('author-page-overlay').style.display='none';">#${t}</span>`
-        ).join('');
+        const tagsHtml = (n.tags && n.tags.length > 0) 
+    ? n.tags.map(t => 
+        `<span class="tag-link" onclick="setSearchTag('${t}'); document.getElementById('author-page-overlay').style.display='none';">#${t}</span>`
+    ).join('')
+    : ""; // タグがない時は空文字にする
 
         return `
             <div class="novel-row">
@@ -1132,6 +1138,7 @@ async function openAuthorPage(authorId) {
             </div>
         `;
     }).join('') || "公開作品はありません";
+    
     // 7. もしカスタムエリアに表示したなら、元のエリアは空にする
     if (customArea && customArea !== worksEl) {
         worksEl.innerHTML = "";
