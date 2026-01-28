@@ -184,6 +184,20 @@ aside button, #auth-form button:first-of-type {
 #author-page-overlay {
     z-index: 3000 !important;
 }
+
+/* R18バッジのスタイル */
+.r18-badge {
+    background-color: #ff6347; /* トマトレッド */
+    color: #ffffff;            /* 白文字 */
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;       /* 角丸 */
+    margin-right: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+}
     
     </style>
 
@@ -539,7 +553,11 @@ cssInput.value = data.custom_css || defaultTemplate;
 
         // 4. まず「枠」を描画する（これでスマホでも即座に作品名が出る！）
         const sortType = document.getElementById('sort-order').value;
-        listEl.innerHTML = filtered.map(n => `
+        listEl.innerHTML = filtered.map(n => {
+    // 【追加】R18バッジの判定
+    const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
+
+    return `        
             <div class="novel-row">
                 <div class="novel-info">
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
@@ -609,6 +627,9 @@ cssInput.value = data.custom_css || defaultTemplate;
     if (myWorksList) {
         myWorksList.innerHTML = allMyNovels.map(n => {
             totalChars += (n.content || "").length; 
+            // 【追加】バッジの判定
+        const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
+        const draftBadge = n.is_private ? '<span class="draft-badge">下書き</span>' : '';            
             return `
             <div class="novel-row">
                 <div class="novel-info">
@@ -1120,7 +1141,7 @@ function closeAuthorPage() {
     // 内容を「このサイトについて」に書き換える
     titleEl.innerText = "このサイトについて";
     bodyEl.innerHTML = `
-    <div class="about-section" style="margin-top: -90px;"> <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">サイトの特色</h3>
+    <div class="about-section" style="margin-top: -110px;"> <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">サイトの特色</h3>
     <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　当サイトは、かつて隆盛を誇った「個人サイト」のような自由な空気感を大切にしています。他の投稿サイトでは難しい細かなデザインカスタマイズが可能で、あなたの作品をあなたらしい空間で公開できるのが最大の特徴です。</p>
     
     <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: -50px 0 -15px 0;">創設経緯</h3>
