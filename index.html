@@ -551,30 +551,30 @@ cssInput.value = data.custom_css || defaultTemplate;
         const countEl = document.getElementById('search-result-count');
         if (countEl) countEl.innerText = sw ? `${filtered.length} 件見つかりました` : "";
 
-        // 4. まず「枠」を描画する（これでスマホでも即座に作品名が出る！）
-        const sortType = document.getElementById('sort-order').value;
-        listEl.innerHTML = filtered.map(n => {
+       // 4. まず「枠」を描画する（これでスマホでも即座に作品名が出る！）
+const sortType = document.getElementById('sort-order').value;
+listEl.innerHTML = filtered.map(n => {
     // 【追加】R18バッジの判定
     const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
 
     return `        
-            <div class="novel-row">
-                <div class="novel-info">
-                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-<span 
-    onclick="openAuthorPage('${n.author_id}')" 
-    style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
-    / ${n.author_name}
-</span>                    <div style="margin-top:5px;">
-                        ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
-                    </div>
+        <div class="novel-row">
+            <div class="novel-info">
+                ${r18Badge}<span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
+                    / ${n.author_name}
+                </span>
+                <div style="margin-top:5px;">
+                    ${(n.tags || []).map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}
                 </div>
-                <div class="novel-stats" id="stats-${n.id}">
-                    <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
-                    <span class="stat-item" id="like-count-${n.id}">♥ ...</span>
-                    <span class="stat-item" id="comm-count-${n.id}">💬 ...</span>
-                </div>
-            </div>`).join('') || "作品がありません";
+            </div>
+            <div class="novel-stats" id="stats-${n.id}">
+                <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
+                <span class="stat-item" id="like-count-${n.id}">♥ ...</span>
+                <span class="stat-item" id="comm-count-${n.id}">💬 ...</span>
+            </div>
+        </div>`;
+}).join('') || "作品がありません";
 
         // 5. 非同期で統計データを取ってきて、後から数字を埋める
         filtered.forEach(async (n) => {
@@ -627,14 +627,17 @@ cssInput.value = data.custom_css || defaultTemplate;
     if (myWorksList) {
         myWorksList.innerHTML = allMyNovels.map(n => {
             totalChars += (n.content || "").length; 
-            // 【追加】バッジの判定
-        const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
-        const draftBadge = n.is_private ? '<span class="draft-badge">下書き</span>' : '';            
+            
+            // 1. バッジの判定をここでまとめて行う
+            const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
+            const draftBadge = n.is_private ? '<span class="draft-badge">下書き</span>' : '';            
+            
             return `
             <div class="novel-row">
                 <div class="novel-info">
+                    ${r18Badge}${draftBadge}
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                    ${n.is_private ? '<span class="draft-badge">下書き</span>' : ''}
+                    
                     <div id="my-stats-${n.id}" class="novel-stats">読み込み中...</div>
                 </div>
                 <div>
