@@ -1239,78 +1239,27 @@ function closeAuthorPage() {
     document.getElementById('user-custom-style').innerHTML = "";
 }
 
-    function resetToTemplate() {
+    // プロフィール（マイページ）のリセット
+function resetToTemplate() {
     if (confirm("入力した内容を消して初期デザインに戻しますか？")) {
-        // 先ほどの defaultTemplate の中身をここにセット
-        const template = `/* 【ベーステンプレート】ここを自由に書き換えてください */
-
-<h1 class="default-title">サイトタイトル</h1>
-
-<div class="default-bio">
-    ここに自己紹介を入力してください。
-</div>
-
-<div id="custom-works-area"></div>
-
-<style>
-/* --- 標準のデザイン設定 --- */
-
-/* 1. 元々のシステム表示を隠す（二重表示防止） */
-#author-page-name { display: none; }
-
-/* 2. サイトタイトルのデザイン */
-.default-title {
-    font-family: 'Yu Gothic', 'YuGothic', sans-serif;
-    font-weight: bold;
-    font-size: 1.8em;
-    margin: 10px 0;
-    color: #333;
-}
-
-/* 3. 自己紹介のデザイン */
-.default-bio {
-    font-size: 1em;
-    color: #666;
-    margin-bottom: 30px;
-    line-height: 1.6;
-}
-
-/* 4. 作品リストの見た目（システム標準に近いスタイル） */
-.novel-row {
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.novel-title {
-    font-size: 1.1em;
-    color: #333 !important;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.count-badge {
-    font-size: 0.8em;
-    color: #999;
-    margin-left: 10px;
-}
-</style>`;
-        document.getElementById('prof-css').value = template;
+        const target = document.getElementById('prof-css');
+        if (target) {
+            // 外側で定義されている defaultAuthorTemplate を使う
+            target.value = defaultAuthorTemplate;
+            alert("マイページのテンプレートを反映しました。");
+        }
     }
 }
 
-// ★必ず関数の外（scriptタグの冒頭など）に書く
-const defaultReaderTemplate = `<style>
-#reader-overlay { background-color: #ffffff; color: #333; }
-#read-body { max-width: 700px; margin: 0 auto; line-height: 2; font-family: serif; }
-</style>`;
-
+// 文章画面（Reader）のリセット
 function resetReaderDesign() {
-    console.log("初期化ボタンが押されました"); // 動作確認用
+    console.log("初期化ボタンが押されました"); 
     if (confirm("文章画面のデザインを初期テンプレートに戻しますか？")) {
         const target = document.getElementById('reader-custom-input');
         if (target) {
+            // 外側で定義されている defaultReaderTemplate を使う
             target.value = defaultReaderTemplate;
-            console.log("テンプレートをセットしました");
+            alert("文章画面のテンプレートを反映しました。");
         } else {
             console.error("入力欄 'reader-custom-input' が見つかりません");
         }
