@@ -315,7 +315,7 @@ aside button, #auth-form button:first-of-type {
 
     <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
         <h3 style="font-size: 0.9em; margin-bottom: 10px;">文章画面のカスタマイズ (HTML/CSS)</h3>
-        <p style="font-size: 0.75em; color: #666;">読書画面（Reader）の見た目を変更できます。</p>
+        <p style="font-size: 0.75em; color: #666;">読書画面の見た目を変更できます。</p>
         
         <button type="button" onclick="resetReaderDesign()" style="font-size: 0.8em; margin-bottom: 5px;">
             初期デザインに戻す（クリック後、更新を押し下げ）
@@ -1242,15 +1242,78 @@ function closeAuthorPage() {
     function resetToTemplate() {
     if (confirm("入力した内容を消して初期デザインに戻しますか？")) {
         // 先ほどの defaultTemplate の中身をここにセット
-        const template = ``;
+        const template = `/* 【ベーステンプレート】ここを自由に書き換えてください */
+
+<h1 class="default-title">サイトタイトル</h1>
+
+<div class="default-bio">
+    ここに自己紹介を入力してください。
+</div>
+
+<div id="custom-works-area"></div>
+
+<style>
+/* --- 標準のデザイン設定 --- */
+
+/* 1. 元々のシステム表示を隠す（二重表示防止） */
+#author-page-name { display: none; }
+
+/* 2. サイトタイトルのデザイン */
+.default-title {
+    font-family: 'Yu Gothic', 'YuGothic', sans-serif;
+    font-weight: bold;
+    font-size: 1.8em;
+    margin: 10px 0;
+    color: #333;
+}
+
+/* 3. 自己紹介のデザイン */
+.default-bio {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+/* 4. 作品リストの見た目（システム標準に近いスタイル） */
+.novel-row {
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.novel-title {
+    font-size: 1.1em;
+    color: #333 !important;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.count-badge {
+    font-size: 0.8em;
+    color: #999;
+    margin-left: 10px;
+}
+</style>`;
         document.getElementById('prof-css').value = template;
     }
 }
 
+// ★必ず関数の外（scriptタグの冒頭など）に書く
+const defaultReaderTemplate = `<style>
+#reader-overlay { background-color: #ffffff; color: #333; }
+#read-body { max-width: 700px; margin: 0 auto; line-height: 2; font-family: serif; }
+</style>`;
+
 function resetReaderDesign() {
+    console.log("初期化ボタンが押されました"); // 動作確認用
     if (confirm("文章画面のデザインを初期テンプレートに戻しますか？")) {
-        // 文章画面用の入力欄（後で作るID）にセット
-        document.getElementById('reader-custom-input').value = defaultReaderTemplate;
+        const target = document.getElementById('reader-custom-input');
+        if (target) {
+            target.value = defaultReaderTemplate;
+            console.log("テンプレートをセットしました");
+        } else {
+            console.error("入力欄 'reader-custom-input' が見つかりません");
+        }
     }
 }
     
