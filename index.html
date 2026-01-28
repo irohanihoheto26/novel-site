@@ -126,20 +126,23 @@
 }
         .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
     .filter-bar select { padding: 5px; border: 1px solid #000; font-family: inherit; }
+
     .tag-link {
-    transition: all 0.2s ease; /* 変化をなめらかに */
+    display: inline-block;
+    background: #f0f0f0; /* 薄いグレー背景 */
+    color: #666;         /* 濃いグレー文字 */
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: all 0.2s ease;
+    text-decoration: none;
 }
 
-.tag-link:active {
-    transform: scale(0.95); /* 押した瞬間に少し凹む */
-    background-color: #fcaf17; /* サイトのアクセントカラー（オレンジ）に */
-    color: #fff;
-}
-    .tag-link:hover {
-    background-color: #fcaf17; /* サイトカラーのオレンジ */
-    color: #fff;               /* 文字は白 */
-    border-color: #fcaf17;     /* 枠線もあれば合わせる */
-    text-decoration: none;     /* 下線が出ないように */
+.tag-link:hover {
+    background: #e0e0e0; /* ホバー時は少しだけ濃いグレーに */
+    color: #333;         /* 文字も少しハッキリさせる */
 }
     #word-count-display { font-size: 0.8em; color: #666; text-align: right; margin-bottom: 10px; }
 /* ライブラリの見出しだけ、上に大きな余白と太めの線を入れる */
