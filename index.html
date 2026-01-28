@@ -26,7 +26,14 @@
         .tab-bar { display: flex; gap: 15px; border-bottom: 2px solid #eee; margin-bottom: 25px; }
         .tab-btn { background: none; border: none; color: #888; padding: 10px 0; cursor: pointer; font-weight: bold; }
         .tab-btn.active { color: #000; border-bottom: 2px solid #000; }
-        .novel-row { padding: 15px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .novel-row { 
+    padding: 15px 0; 
+    border-bottom: 1px solid #eee; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; /* centerから変更（タイトルが長くても崩れない） */
+    gap: 15px;
+}
         .novel-title { font-weight: bold; cursor: pointer; text-decoration: underline; }
         .count-badge { font-size: 0.75em; background: #eee; padding: 2px 6px; border-radius: 4px; color: #444; margin-right: 5px; }
         #editor-overlay, #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; }
@@ -185,18 +192,30 @@ aside button, #auth-form button:first-of-type {
     z-index: 3000 !important;
 }
 
-/* R18バッジのスタイル */
 .r18-badge {
-    background-color: #ff6347; /* トマトレッド */
-    color: #ffffff;            /* 白文字 */
+    background-color: #ff6347;
+    color: #ffffff;
     font-size: 0.7em;
     font-weight: bold;
     padding: 2px 8px;
-    border-radius: 12px;       /* 角丸 */
-    margin-right: 8px;
+    border-radius: 12px;
+    margin-left: 8px; /* 左側に隙間を空けてタイトルと離す */
     display: inline-block;
     vertical-align: middle;
-    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+    /* 新規追加：タイトルエリアを広げる設定 */
+.novel-info {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 新規追加：タグが横に並びすぎた時に折り返す設定 */
+.author-page-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    vertical-align: middle;
 }
     
     </style>
@@ -561,15 +580,17 @@ listEl.innerHTML = filtered.map(n => {
         <div class="novel-row">
             <div class="novel-info">
                 <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                ${r18Badge}<span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
+                ${r18Badge}
+                <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
                     / ${n.author_name}
                 </span>
                 <div style="margin-top:5px;">
-                    <div style="margin-top:5px;">
-    ${n.tags && n.tags.length > 0 
-        ? n.tags.map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('') 
-        : ''}
-</div>
+                    ${(n.tags && n.tags.length > 0) 
+                        ? n.tags
+                            .filter(t => t.trim() !== "") 
+                            .map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`)
+                            .join('') 
+                        : ''}
                 </div>
             </div>
             <div class="novel-stats" id="stats-${n.id}">
@@ -578,7 +599,7 @@ listEl.innerHTML = filtered.map(n => {
                 <span class="stat-item" id="comm-count-${n.id}">💬 ...</span>
             </div>
         </div>`;
-}).join('') || "作品がありません";
+}).join('') || '<div style="padding:20px; text-align:center; color:#888;">作品がありません</div>';
 
         // 5. 非同期で統計データを取ってきて、後から数字を埋める
         filtered.forEach(async (n) => {
@@ -1118,9 +1139,10 @@ async function openAuthorPage(authorId) {
         
         // タグのHTML作成（クリックで検索画面へ飛ぶように）
         const tagsHtml = (n.tags && n.tags.length > 0) 
-    ? n.tags.map(t => 
-        `<span class="tag-link" onclick="setSearchTag('${t}'); document.getElementById('author-page-overlay').style.display='none';">#${t}</span>`
-    ).join('')
+    ? n.tags
+        .filter(t => t.trim() !== "") // ★ここにも追加！
+        .map(t => `<span class="tag-link" onclick="setSearchTag('${t}'); document.getElementById('author-page-overlay').style.display='none';">#${t}</span>`)
+        .join('')
     : ""; // タグがない時は空文字にする
 
         return `
