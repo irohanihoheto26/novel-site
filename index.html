@@ -949,29 +949,7 @@ cssInput.value = data.custom_css || defaultTemplate;
             }, 500);
         }
     }    
-async function doSignUp() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    if (!email || !password) return alert("メールアドレスとパスワードを入力してください");
-
-    const { data, error } = await api.auth.signUp({ 
-        email: email, 
-        password: password 
-    });
-
-    if (error) {
-        alert("登録エラー: " + error.message);
-    } else {
-        // 重要：Supabaseの設定でConfirm emailをONにしている場合、
-        // この時点ではセッションが作られない（ログインできない）ようになります。
-        alert("登録用メールを送信しました！\nメール内のリンクをクリックして、認証を完了させてからログインしてください。");
-        
-        // 入力欄をクリアする
-        document.getElementById('email').value = "";
-        document.getElementById('password').value = "";
-    }
-}    
+async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }    
     async function saveProfile() {
     const name = document.getElementById('prof-name').value.trim();
     const bio = document.getElementById('prof-bio').value;
