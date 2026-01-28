@@ -560,8 +560,8 @@ listEl.innerHTML = filtered.map(n => {
     return `        
         <div class="novel-row">
             <div class="novel-info">
-                ${r18Badge}<span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
-                <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
+                <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                ${r18Badge}<span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
                     / ${n.author_name}
                 </span>
                 <div style="margin-top:5px;">
@@ -628,15 +628,17 @@ listEl.innerHTML = filtered.map(n => {
         myWorksList.innerHTML = allMyNovels.map(n => {
             totalChars += (n.content || "").length; 
             
-            // 1. バッジの判定をここでまとめて行う
+            // バッジの判定
             const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
-            const draftBadge = n.is_private ? '<span class="draft-badge">下書き</span>' : '';            
+            const draftBadge = n.is_private ? `<span class="draft-badge">下書き</span>` : "";            
             
             return `
             <div class="novel-row">
                 <div class="novel-info">
-                    ${r18Badge}${draftBadge}
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                    
+                    ${draftBadge}
+                    ${r18Badge}
                     
                     <div id="my-stats-${n.id}" class="novel-stats">読み込み中...</div>
                 </div>
