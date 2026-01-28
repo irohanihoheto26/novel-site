@@ -802,7 +802,7 @@ listEl.innerHTML = filtered.map(n => {
 
     // 2. 作者のカスタムコード（HTML/CSS）を取得して反映
     const readerStyleEl = document.getElementById('reader-custom-style');
-    const defaultUiEl = document.getElementById('reader-default-ui'); // 標準枠の親
+    const defaultUiEl = document.getElementById('reader-default-ui'); 
     let hasCustomCode = false;
 
     if (readerStyleEl) {
@@ -815,22 +815,22 @@ listEl.innerHTML = filtered.map(n => {
             readerStyleEl.innerHTML = prof.reader_custom_code;
             hasCustomCode = true;
             readerStyleEl.style.display = 'block';
-            if (defaultUiEl) defaultUiEl.style.display = 'none'; // カスタムがあるなら標準を隠す
+            if (defaultUiEl) defaultUiEl.style.display = 'none';
         } else {
             readerStyleEl.innerHTML = "";
             readerStyleEl.style.display = 'none';
-            if (defaultUiEl) defaultUiEl.style.display = 'block'; // なければ標準を出す
+            if (defaultUiEl) defaultUiEl.style.display = 'block';
         }
     }
 
-    // 3. 【ここが重要】「今」画面に表示されている方の枠を取得する
-    // カスタムHTML内のID（read-titleなど）を優先し、なければ標準のID（read-title0など）を使う
-    const titleEl = document.getElementById('read-title') || document.getElementById('read-title0');
-    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body0');
-    const readAuthorEl = document.getElementById('read-author') || document.getElementById('read-author0');
+    // 3. 【ここが修正ポイント】「今表示されている方」の要素を狙い撃ちする
+    // hasCustomCode が true なら「0なしID」、false なら「0付きID」を使います
+    const titleEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-title') : document.getElementById('read-title0');
+    const bodyEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-body') : document.getElementById('read-body0');
+    const readAuthorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author') : document.getElementById('read-author0');
     const nameGroup = document.getElementById('name-changer-group');
 
-    // 4. 文字の流し込み
+    // 4. 文字の流し込み（既存の処理を継続）
     if (titleEl) {
         titleEl.innerText = n.title;
         titleEl.style.textDecoration = "none";
@@ -843,10 +843,12 @@ listEl.innerHTML = filtered.map(n => {
         bodyEl.classList.add('indent-text');
     }
 
-    if (nameGroup) nameGroup.classList.remove('hidden');
-    if (readAuthorEl) readAuthorEl.innerText = ""; 
+    // 作者名は、カスタムテンプレートに要素があれば表示、なければ空にする（既存仕様）
+    if (readAuthorEl) readAuthorEl.innerText = hasCustomCode ? n.author_name : ""; 
 
-    // 作者リンク & フォローボタンの生成
+    // --- ここから下は既存の機能をそのまま維持 ---
+    if (nameGroup) nameGroup.classList.remove('hidden');
+
     const authorZone = document.getElementById('author-link-zone');
     if (authorZone) {
         authorZone.innerHTML = `
@@ -865,7 +867,6 @@ listEl.innerHTML = filtered.map(n => {
         checkFollowStatus(n.author_id);
     }
 
-    // 表示処理
     document.getElementById('reader-overlay').style.display = 'block';
     const interactZone = document.getElementById('reader-interactive-zone');
     if (interactZone) interactZone.classList.remove('hidden');
@@ -873,7 +874,6 @@ listEl.innerHTML = filtered.map(n => {
     loadComments(id);
     loadLikeCount(id);
 
-    // コメントエリアの制御（ログインチェック）
     const form = document.getElementById('comment-form-area');
     const msg = document.getElementById('comment-guest-msg');
     if (currentUser) {
@@ -885,16 +885,20 @@ listEl.innerHTML = filtered.map(n => {
     }
 }
     function applyNameChange() {
-        const target = document.getElementById('target-string').value;
-        const replacement = document.getElementById('new-name').value;
-        if (!target) return alert("変換前の文字を入力してください");
-        const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedTarget, 'g');
-// ★修正：カスタム用か標準用、存在する方の本文を書き換える
+    const target = document.getElementById('target-string').value;
+    const replacement = document.getElementById('new-name').value;
+    if (!target) return alert("変換前の文字を入力してください");
+    
+    const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedTarget, 'g');
+    
+    // 今表示されている方の body を取得
     const bodyEl = document.getElementById('read-body') || document.getElementById('read-body0');
+    
     if (bodyEl) {
         bodyEl.innerText = originalContent.replace(regex, replacement || "");
-    }}
+    }
+}
 
     async function loadComments(id) {
         const { data, error } = await api
