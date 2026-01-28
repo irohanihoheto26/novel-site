@@ -301,27 +301,30 @@ aside button, #auth-form button:first-of-type {
         <span style="font-size: 0.8em; color: #888;"> さんとして活動中</span>
     </div>
         <div id="profile-edit-area" class="profile-edit-area">
-            <input type="text" id="prof-name" placeholder="作者名">
-            <textarea id="prof-bio" placeholder="自己紹介" rows="3"></textarea>
-            <label>ページデザイン構成 (HTML/CSS)</label>
-            <span style="color: red; font-size: 0.75em; font-weight: bold; margin-left: 5px;">
-        ※知識のない方は変更しないでください。画面表示が崩れる恐れがあります。
-    </span>
-            <button type="button" onclick="resetToTemplate()" style="font-size: 0.8em; margin-bottom: 5px;">
-    初期デザインに戻す（クリック後、更新を押し下げ）
-</button>
-<textarea id="prof-css" style="width:100%; height:150px;"></textarea>
-            <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
-    <h3 style="font-size: 0.9em; margin-bottom: 10px;">文章画面のカスタマイズ (HTML/CSS)</h3>
-    <p style="font-size: 0.75em; color: #666;">読書画面（Reader）の見た目を変更できます。</p>
-    <textarea id="reader-custom-input" rows="8" placeholder="<style> ここに文章画面用のCSSを書く </style>"></textarea>
+    <input type="text" id="prof-name" placeholder="作者名">
+    <textarea id="prof-bio" placeholder="自己紹介" rows="3"></textarea>
     
-    <div style="display: flex; gap: 10px;">
-        <button type="button" class="btn-outline" onclick="resetReaderDesign()" style="font-size: 0.8em;">デザインを初期化</button>
+    <label>マイページデザインのカスタマイズ (HTML/CSS)</label>
+    <span style="color: red; font-size: 0.75em; font-weight: bold; margin-left: 5px;">
+        ※以下の欄は、CSS等の知識がある方のみ編集してください。画面表示が崩れる恐れがあります。
+    </span>
+    <button type="button" onclick="resetToTemplate()" style="font-size: 0.8em; margin-bottom: 5px;">
+        初期デザインに戻す（クリック後、更新を押し下げ）
+    </button>
+    <textarea id="prof-css" style="width:100%; height:150px;"></textarea>
+
+    <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
+        <h3 style="font-size: 0.9em; margin-bottom: 10px;">文章画面のカスタマイズ (HTML/CSS)</h3>
+        <p style="font-size: 0.75em; color: #666;">読書画面（Reader）の見た目を変更できます。</p>
+        
+        <button type="button" onclick="resetReaderDesign()" style="font-size: 0.8em; margin-bottom: 5px;">
+            初期デザインに戻す（クリック後、更新を押し下げ）
+        </button>
+        <textarea id="reader-custom-input" style="width:100%; height:150px;" placeholder="<style> ここに文章画面用のCSSを書く </style>"></textarea>
     </div>
+
+    <button class="btn-outline" onclick="saveProfile()" style="width:auto; margin-top:20px;">更新</button>
 </div>
-            <button class="btn-outline" onclick="saveProfile()" style="width:auto">更新</button>
-        </div>
         <div id="user-stats-area" style="display: flex; gap: 20px; margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px;">
     <div><strong>合計文字数:</strong> <span id="total-char-count">0</span> 字</div>
     <div><strong>合計いいね:</strong> <span id="total-likes">0</span></div>
@@ -474,16 +477,50 @@ const api = window.supabase.createClient(u, k, {
     if (data) {
         const name = data.display_name || "名無し";
         
-        // 各入力欄に値をセット
         if (document.getElementById('prof-name')) document.getElementById('prof-name').value = name;
         if (document.getElementById('prof-bio')) document.getElementById('prof-bio').value = data.bio || "";
         
-        // --- ここが重要：CSSをテキストエリアにセット ---
+        // 1. 作者ページ用CSSのセット
         const cssInput = document.getElementById('prof-css');
         if (cssInput) {
-            // --- ここを強化！ ---
-            // DBにCSSがあればそれを、なければ「ベースとなるテンプレート」を表示する
-            const defaultTemplate = `/* 【ベーステンプレート】ここを自由に書き換えてください */
+            // 外に出した defaultAuthorTemplate を使うように修正
+            cssInput.value = data.custom_css || defaultAuthorTemplate;
+        }
+
+        // 2. 文章画面用デザインのセット（★ここを追加！）
+        const readerInput = document.getElementById('reader-custom-input');
+        if (readerInput) {
+            // 外に出した defaultReaderTemplate を使う
+            readerInput.value = data.reader_custom_code || defaultReaderTemplate;
+        }
+
+        const displayEl = document.getElementById('display-current-name');
+        if (displayEl) displayEl.innerText = name;
+
+        const viewMyPageBtn = document.getElementById('view-my-page-link');
+        if (viewMyPageBtn) {
+            viewMyPageBtn.onclick = () => openAuthorPage(currentUser.id);
+        }
+    }
+}
+
+    // 文章画面の初期デザイン
+const defaultReaderTemplate = `<style>
+#reader-overlay {
+    background-color: #ffffff;
+    color: #333333;
+}
+#read-body {
+    max-width: 700px;
+    margin: 0 auto;
+    font-size: 1.1em;
+    line-height: 2;
+    font-family: "Yu Mincho", "MS Mincho", serif;
+}
+</style>`;
+
+// 作者ページの初期デザイン
+const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自由に書き換えてください */
 
 <h1 class="default-title">サイトタイトル</h1>
 
@@ -535,23 +572,8 @@ const api = window.supabase.createClient(u, k, {
     margin-left: 10px;
 }
 </style>`;
-            
-// 修正：DBのデータがあっても強制的にテンプレを出す（確認が終わったら元に戻してね）
-cssInput.value = data.custom_css || defaultTemplate;
-        }
 
-        // 現在の名前表示を更新
-        const displayEl = document.getElementById('display-current-name');
-        if (displayEl) displayEl.innerText = name;
-
-        // 自分のページ確認リンクの設定
-        const viewMyPageBtn = document.getElementById('view-my-page-link');
-        if (viewMyPageBtn) {
-            viewMyPageBtn.onclick = () => openAuthorPage(currentUser.id);
-        }
-    }
-}
-
+    
     async function getList() {
     const listEl = document.getElementById('list');
     if (!listEl) return;
