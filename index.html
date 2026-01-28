@@ -890,8 +890,11 @@ listEl.innerHTML = filtered.map(n => {
         if (!target) return alert("変換前の文字を入力してください");
         const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedTarget, 'g');
-        document.getElementById('read-body').innerText = originalContent.replace(regex, replacement || "");
-    }
+// ★修正：カスタム用か標準用、存在する方の本文を書き換える
+    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body0');
+    if (bodyEl) {
+        bodyEl.innerText = originalContent.replace(regex, replacement || "");
+    }}
 
     async function loadComments(id) {
         const { data, error } = await api
@@ -1074,18 +1077,33 @@ listEl.innerHTML = filtered.map(n => {
     }
 
     function openRules() {
-        resetReaderUI(); // ← 冒頭でリセットを実行！
-        const bodyEl = document.getElementById('read-body');
-        const titleEl = document.getElementById('read-title');
+    // 1. デザインを標準に戻す
+    const defaultUiEl = document.getElementById('reader-default-ui');
+    const readerStyleEl = document.getElementById('reader-custom-style');
+    if (defaultUiEl) defaultUiEl.style.display = 'block';
+    if (readerStyleEl) readerStyleEl.style.display = 'none';
+        
+    resetReaderUI(); 
+
+    // 2. ★ここが重要！ 標準の「0付きID」を取得する
+    const titleEl = document.getElementById('read-title0');
+    const authorEl = document.getElementById('read-author0');
+    const bodyEl = document.getElementById('read-body0');
+
+    // 3. 要素が存在することを確認してから中身を書き換える
+    if (titleEl) {
         titleEl.innerText = "ルール（必読）";
         titleEl.style.textDecoration = "underline";
         titleEl.style.textUnderlineOffset = "10px";
-        document.getElementById('read-author').innerText = "運営";
+    }
+    
+    if (authorEl) {
+        authorEl.innerText = "運営";
+    }
+
+    if (bodyEl) {
         bodyEl.classList.remove('indent-text');
         bodyEl.classList.add('hanging-indent');
-        document.getElementById('name-changer-group').classList.add('hidden');
-
-        // ↓ innerText を innerHTML に変更し、中身を <br> や <span> で構成します
         bodyEl.innerHTML = `
             当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。<br><br>
             ・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。<br>
@@ -1093,10 +1111,16 @@ listEl.innerHTML = filtered.map(n => {
             ・<span style="background-color: #ffff00;">R指定が必要な場合は必ず設定</span>を行ってください。<br><br>
             ルールを守って、創作活動を楽しみましょう。
         `;
-
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.add('hidden');
     }
+
+    // 4. 表示
+    document.getElementById('reader-overlay').style.display = 'block';
+    const changer = document.getElementById('name-changer-group');
+    if (changer) changer.classList.add('hidden');
+    
+    const interact = document.getElementById('reader-interactive-zone');
+    if (interact) interact.classList.add('hidden');
+}
 
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
@@ -1345,17 +1369,20 @@ function resetReaderDesign() {
     
 // 表示状態をリセットする「お掃除」
 function resetReaderUI() {
-    const bodyEl = document.getElementById('read-body');
+    // カスタム用か標準用、どちらかの本文エリアを取得
+    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body0');
     const interactiveZone = document.getElementById('reader-interactive-zone');
     const nameChanger = document.getElementById('name-changer-group');
 
-    // 1. 名前変換などのボタン類を一旦すべて隠す
     if (interactiveZone) interactiveZone.classList.add('hidden');
     if (nameChanger) nameChanger.classList.add('hidden');
 
-    // 2. インデント設定を一旦リセット（これがないと混ざる）
-    bodyEl.classList.remove('indent-text');
-    bodyEl.classList.remove('hanging-indent');
+    // ★ここが重要：bodyEl が存在する場合のみ classList を操作する
+    if (bodyEl) {
+        bodyEl.classList.remove('indent-text');
+        bodyEl.classList.remove('hanging-indent');
+        bodyEl.innerHTML = ""; 
+    }
 }
     async function deleteAccount() {
     // 1段階目の確認
