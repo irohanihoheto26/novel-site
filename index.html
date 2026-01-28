@@ -1108,15 +1108,30 @@ async function openAuthorPage(authorId) {
     const targetEl = customArea || worksEl; 
 
     // 6. リストを生成して表示
-    targetEl.innerHTML = (novels || []).map(n => `
-        <div class="novel-row">
-            <div class="novel-info">
-                <span class="novel-title" onclick="openReader('${n.id}')" style="cursor:pointer; position:relative; z-index:4000;">${n.title}</span>
-                <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
-            </div>
-        </div>
-    `).join('') || "公開作品はありません";
+    targetEl.innerHTML = (novels || []).map(n => {
+        // R18バッジの作成
+        const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
+        
+        // タグのHTML作成（クリックで検索画面へ飛ぶように）
+        const tagsHtml = (n.tags || []).map(t => 
+            `<span class="tag-link" onclick="setSearchTag('${t}'); document.getElementById('author-page-overlay').style.display='none';">#${t}</span>`
+        ).join('');
 
+        return `
+            <div class="novel-row">
+                <div class="novel-info">
+                    <span class="novel-title" onclick="openReader('${n.id}')" style="cursor:pointer; position:relative; z-index:4000;">${n.title}</span>
+                    <div style="display: inline-flex; align-items: center; gap: 8px; margin-left: 10px;">
+                        <span class="count-badge">${(n.content || "").length.toLocaleString()}文字</span>
+                        ${r18Badge}
+                        <div class="author-page-tags" style="display: inline-flex; gap: 5px;">
+                            ${tagsHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('') || "公開作品はありません";
     // 7. もしカスタムエリアに表示したなら、元のエリアは空にする
     if (customArea && customArea !== worksEl) {
         worksEl.innerHTML = "";
