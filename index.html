@@ -767,63 +767,70 @@ listEl.innerHTML = filtered.map(n => {
     }
 
     async function openReader(id) {
-        currentReadingId = id;
-        const bodyEl = document.getElementById('read-body');
-        const titleEl = document.getElementById('read-title');
-        const nameGroup = document.getElementById('name-changer-group');
+    currentReadingId = id;
+    const bodyEl = document.getElementById('read-body');
+    const titleEl = document.getElementById('read-title');
+    const nameGroup = document.getElementById('name-changer-group');
 
-        titleEl.style.textDecoration = "none";
-        bodyEl.classList.remove('hanging-indent');
-        bodyEl.classList.add('indent-text');
-        if (nameGroup) nameGroup.classList.remove('hidden');
+    titleEl.style.textDecoration = "none";
+    bodyEl.classList.remove('hanging-indent');
+    bodyEl.classList.add('indent-text');
+    if (nameGroup) nameGroup.classList.remove('hidden');
 
-        const { data: n } = await api.from('novels')
-        .select('*, profiles(reader_custom_code)') 
-        .eq('id', id)
-        .single();
-        if(!n) return;
+    // 1. 小説データだけをシンプルに取得 (profiles(...) を消しました)
+    const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+    if(!n) return;
 
-        const readerStyleEl = document.getElementById('reader-custom-style');
+    // 2. 作者のプロフィール（カスタムコード）を別途取得
+    const readerStyleEl = document.getElementById('reader-custom-style');
     if (readerStyleEl) {
-        // 作者が設定したコードがあればそれを、なければ空にする
-        readerStyleEl.innerHTML = n.profiles?.reader_custom_code || "";
+        const { data: prof } = await api.from('profiles')
+            .select('reader_custom_code')
+            .eq('id', n.author_id)
+            .maybeSingle();
+        
+        readerStyleEl.innerHTML = prof?.reader_custom_code || "";
     }
-        originalContent = n.content;
-        titleEl.innerText = n.title;
-        const readAuthorEl = document.getElementById('read-author');
+
+    originalContent = n.content;
+    titleEl.innerText = n.title;
+    const readAuthorEl = document.getElementById('read-author');
     if (readAuthorEl) readAuthorEl.innerText = "";
-        bodyEl.innerText = n.content; 
+    bodyEl.innerText = n.content; 
 
-        document.getElementById('author-link-zone').innerHTML = `
-            作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
-            ${(currentUser && n.author_id !== currentUser.id) ? 
-                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
-                    style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
-                    border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
-                    font-weight: bold; border-radius: 4px; cursor: pointer;">
-                    フォロー
-                </button>` 
-                : ''}
-        `;
-        // フォロー状態を反映
-        if (currentUser && n.author_id !== currentUser.id) {
-            checkFollowStatus(n.author_id);
-        }
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.remove('hidden');
-        loadComments(id);
-        loadLikeCount(id);
+    // --- 作者リンク & フォローボタン ---
+    document.getElementById('author-link-zone').innerHTML = `
+        作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
+        ${(currentUser && n.author_id !== currentUser.id) ? 
+            `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
+                style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
+                border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
+                font-weight: bold; border-radius: 4px; cursor: pointer;">
+                フォロー
+            </button>` 
+            : ''}
+    `;
 
-        const form = document.getElementById('comment-form-area');
-        const msg = document.getElementById('comment-guest-msg');
-        if (currentUser) {
-            form.classList.remove('hidden');
-            msg.classList.add('hidden');
-        } else {
-            form.classList.add('hidden');
-            msg.classList.remove('hidden');
-        }
+    if (currentUser && n.author_id !== currentUser.id) {
+        checkFollowStatus(n.author_id);
     }
+
+    document.getElementById('reader-overlay').style.display = 'block';
+    document.getElementById('reader-interactive-zone').classList.remove('hidden');
+    loadComments(id);
+    loadLikeCount(id);
+
+    // コメントフォームの表示制御
+    const form = document.getElementById('comment-form-area');
+    const msg = document.getElementById('comment-guest-msg');
+    if (currentUser) {
+        form.classList.remove('hidden');
+        msg.classList.add('hidden');
+    } else {
+        form.classList.add('hidden');
+        msg.classList.remove('hidden');
+    }
+}
 
     function applyNameChange() {
         const target = document.getElementById('target-string').value;
