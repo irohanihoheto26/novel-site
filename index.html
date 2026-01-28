@@ -202,9 +202,8 @@ aside button, #auth-form button:first-of-type {
 
 /* 作者ページ */
 #author-page-overlay {
-    z-index: 3000 !important;
+    z-index: 6000 !important; /* 読書画面(5000)より大きい数値にする */
 }
-
 .r18-badge {
     background-color: #ff6347;
     color: #ffffff;
@@ -754,11 +753,12 @@ listEl.innerHTML = filtered.map(n => {
 
         originalContent = n.content;
         titleEl.innerText = n.title;
-        document.getElementById('read-author').innerText = n.author_name;
+        const readAuthorEl = document.getElementById('read-author');
+    if (readAuthorEl) readAuthorEl.innerText = "";
         bodyEl.innerText = n.content; 
 
         document.getElementById('author-link-zone').innerHTML = `
-            作者: <strong onclick="filterByAuthor('${n.author_name}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
+            作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
             ${(currentUser && n.author_id !== currentUser.id) ? 
                 `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
                     style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
