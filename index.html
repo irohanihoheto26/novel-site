@@ -800,37 +800,61 @@ listEl.innerHTML = filtered.map(n => {
 
     // 2. 作者のカスタムコード（HTML/CSS）を取得して反映
     const readerStyleEl = document.getElementById('reader-custom-style');
+    let hasCustomCode = false;
+
     if (readerStyleEl) {
         const { data: prof } = await api.from('profiles')
             .select('reader_custom_code')
             .eq('id', n.author_id)
             .maybeSingle();
         
-        // ここでユーザーのHTML/CSSを流し込む
-        readerStyleEl.innerHTML = prof?.reader_custom_code || "";
+        if (prof?.reader_custom_code) {
+            readerStyleEl.innerHTML = prof.reader_custom_code;
+            hasCustomCode = true;
+        } else {
+            readerStyleEl.innerHTML = ""; // 設定がない時は空に
+        }
     }
 
-    // 3. 【ここが重要】HTMLが流し込まれた「後」で、要素を一度だけ取得する
+    // 3. 元々のHTML要素（システム標準）を取得
+    // ※ 混乱を避けるため、querySelector で「直下のh2/div」を特定して操作します
+    const originalTitle = document.querySelector('#reader-overlay > .overlay-content > h2#read-title');
+    const originalBody = document.querySelector('#reader-overlay > .overlay-content > div#read-body');
+    const originalAuthor = document.querySelector('#reader-overlay > .overlay-content > #read-author');
+
+    // ★重要：カスタムコードがある場合は、元々の枠組みを非表示にする
+    if (hasCustomCode) {
+        if (originalTitle) originalTitle.style.display = 'none';
+        if (originalBody) originalBody.style.display = 'none';
+        if (originalAuthor) originalAuthor.style.display = 'none';
+    } else {
+        if (originalTitle) originalTitle.style.display = 'block';
+        if (originalBody) originalBody.style.display = 'block';
+        if (originalAuthor) originalAuthor.style.display = 'block';
+    }
+
+    // 4. 改めて「今」画面にある要素を取得して文字を入れる
+    // (hasCustomCodeがtrueならカスタム側を、falseならシステム側を掴みます)
     const titleEl = document.getElementById('read-title');
     const bodyEl = document.getElementById('read-body');
     const nameGroup = document.getElementById('name-changer-group');
     const readAuthorEl = document.getElementById('read-author');
 
-    // --- 既存の機能を維持 ---
     if (titleEl) {
         titleEl.innerText = n.title;
         titleEl.style.textDecoration = "none";
     }
 
     if (bodyEl) {
-        originalContent = n.content; // ネームチェンジ用にオリジナルを保持
+        originalContent = n.content;
         bodyEl.innerText = n.content;
         bodyEl.classList.remove('hanging-indent');
         bodyEl.classList.add('indent-text');
     }
 
     if (nameGroup) nameGroup.classList.remove('hidden');
-    if (readAuthorEl) readAuthorEl.innerText = ""; // 基本表示をクリア
+    // readAuthorEl は基本クリアし、下部の author-link-zone で表示
+    if (readAuthorEl) readAuthorEl.innerText = ""; 
 
     // 作者リンク & フォローボタンの生成
     const authorZone = document.getElementById('author-link-zone');
