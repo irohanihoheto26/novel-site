@@ -233,6 +233,7 @@ aside button, #auth-form button:first-of-type {
     </style>
 
     <style id="user-custom-style"></style>
+    <style id="reader-custom-style"></style>
 
 </head>
 <body>
@@ -310,7 +311,15 @@ aside button, #auth-form button:first-of-type {
     初期デザインに戻す（クリック後、更新を押し下げ）
 </button>
 <textarea id="prof-css" style="width:100%; height:150px;"></textarea>
-
+            <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
+    <h3 style="font-size: 0.9em; margin-bottom: 10px;">文章画面のカスタマイズ (HTML/CSS)</h3>
+    <p style="font-size: 0.75em; color: #666;">読書画面（Reader）の見た目を変更できます。</p>
+    <textarea id="reader-custom-input" rows="8" placeholder="<style> ここに文章画面用のCSSを書く </style>"></textarea>
+    
+    <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-outline" onclick="resetReaderDesign()" style="font-size: 0.8em;">デザインを初期化</button>
+    </div>
+</div>
             <button class="btn-outline" onclick="saveProfile()" style="width:auto">更新</button>
         </div>
         <div id="user-stats-area" style="display: flex; gap: 20px; margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px;">
@@ -748,9 +757,17 @@ listEl.innerHTML = filtered.map(n => {
         bodyEl.classList.add('indent-text');
         if (nameGroup) nameGroup.classList.remove('hidden');
 
-        const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+        const { data: n } = await api.from('novels')
+        .select('*, profiles(reader_custom_code)') 
+        .eq('id', id)
+        .single();
         if(!n) return;
 
+        const readerStyleEl = document.getElementById('reader-custom-style');
+    if (readerStyleEl) {
+        // 作者が設定したコードがあればそれを、なければ空にする
+        readerStyleEl.innerHTML = n.profiles?.reader_custom_code || "";
+    }
         originalContent = n.content;
         titleEl.innerText = n.title;
         const readAuthorEl = document.getElementById('read-author');
@@ -1030,27 +1047,26 @@ listEl.innerHTML = filtered.map(n => {
         }
     }    
 async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }    
-    async function saveProfile() {
+async function saveProfile() {
     const name = document.getElementById('prof-name').value.trim();
-    const bio = document.getElementById('prof-bio').value;
-    const css = document.getElementById('prof-css').value; // ←追加
+    
+    if (!name) return alert("作者名は必須です！");
 
-    if (!name) {
-        alert("作者名は必須です！");
-        return;
-    }
+    const updates = {
+        id: currentUser.id,
+        display_name: name,
+        bio: document.getElementById('prof-bio').value,
+        custom_css: document.getElementById('prof-css').value,
+        reader_custom_code: document.getElementById('reader-custom-input').value, // 文章画面用
+        updated_at: new Date()
+    };
 
-    const { error } = await api.from('profiles').upsert({ 
-        id: currentUser.id, 
-        display_name: name, 
-        bio: bio,
-        custom_css: css   // ←追加
-    });
+    const { error } = await api.from('profiles').upsert(updates);
 
     if (error) {
         alert("エラー: " + error.message);
     } else {
-        alert("設定完了！投稿できるようになりました。");
+        alert("設定を保存しました！");
         location.reload();
     }
 }
@@ -1203,6 +1219,39 @@ function closeAuthorPage() {
         document.getElementById('prof-css').value = template;
     }
 }
+    // 文章画面（Reader）用の初期テンプレート
+const defaultReaderTemplate = `<style>
+/* 文章画面全体の背景と文字色 */
+#reader-overlay {
+    background-color: #ffffff;
+    color: #333333;
+}
+
+/* 本文エリアの調整 */
+#read-body {
+    max-width: 700px;
+    margin: 0 auto;
+    font-size: 1.1em;
+    line-height: 2;
+    font-family: "Yu Mincho", "MS Mincho", serif;
+}
+
+/* タイトルのデザイン */
+#read-title {
+    text-align: center;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #eee;
+    font-family: "Yu Gothic", sans-serif;
+}
+</style>`;
+
+function resetReaderTemplate() {
+    if (confirm("文章画面のデザインを初期テンプレートに戻しますか？")) {
+        // 文章画面用の入力欄（後で作るID）にセット
+        document.getElementById('reader-custom-input').value = defaultReaderTemplate;
+    }
+}
+    
     function openAboutPage() {
         resetReaderUI(); // ← 冒頭でリセットを実行！
     const titleEl = document.getElementById('read-title'); 
