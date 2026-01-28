@@ -792,16 +792,7 @@ listEl.innerHTML = filtered.map(n => {
 
     async function openReader(id) {
     currentReadingId = id;
-    const bodyEl = document.getElementById('read-body');
-    const titleEl = document.getElementById('read-title');
-    const nameGroup = document.getElementById('name-changer-group');
-
-    // UIの初期化
-    titleEl.style.textDecoration = "none";
-    bodyEl.classList.remove('hanging-indent');
-    bodyEl.classList.add('indent-text');
-    if (nameGroup) nameGroup.classList.remove('hidden');
-
+    
     // 1. 小説データの取得
     const { data: n } = await api.from('novels').select('*').eq('id', id).single();
     if(!n) return;
@@ -814,30 +805,46 @@ listEl.innerHTML = filtered.map(n => {
             .eq('id', n.author_id)
             .maybeSingle();
         
-        // ★ ここがポイント！
-        // innerHTML に入れることで、ユーザーが書いた <style> も <div> もすべて反映されます。
+        // ここでユーザーのHTML/CSSを流し込む
         readerStyleEl.innerHTML = prof?.reader_custom_code || "";
     }
 
-    // --- 既存の機能を維持 ---
-    originalContent = n.content; // ネームチェンジ用にオリジナルを保持
-    titleEl.innerText = n.title;
+    // 3. 【ここが重要】HTMLが流し込まれた「後」で、要素を一度だけ取得する
+    const titleEl = document.getElementById('read-title');
+    const bodyEl = document.getElementById('read-body');
+    const nameGroup = document.getElementById('name-changer-group');
     const readAuthorEl = document.getElementById('read-author');
+
+    // --- 既存の機能を維持 ---
+    if (titleEl) {
+        titleEl.innerText = n.title;
+        titleEl.style.textDecoration = "none";
+    }
+
+    if (bodyEl) {
+        originalContent = n.content; // ネームチェンジ用にオリジナルを保持
+        bodyEl.innerText = n.content;
+        bodyEl.classList.remove('hanging-indent');
+        bodyEl.classList.add('indent-text');
+    }
+
+    if (nameGroup) nameGroup.classList.remove('hidden');
     if (readAuthorEl) readAuthorEl.innerText = ""; // 基本表示をクリア
-    bodyEl.innerText = n.content; 
 
     // 作者リンク & フォローボタンの生成
-    document.getElementById('author-link-zone').innerHTML = `
-        作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
-        ${(currentUser && n.author_id !== currentUser.id) ? 
-            `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
-                style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
-                border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
-                font-weight: bold; border-radius: 4px; cursor: pointer;">
-                フォロー
-            </button>` 
-            : ''}
-    `;
+    const authorZone = document.getElementById('author-link-zone');
+    if (authorZone) {
+        authorZone.innerHTML = `
+            作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
+            ${(currentUser && n.author_id !== currentUser.id) ? 
+                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
+                    style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
+                    border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
+                    font-weight: bold; border-radius: 4px; cursor: pointer;">
+                    フォロー
+                </button>` : ''}
+        `;
+    }
 
     if (currentUser && n.author_id !== currentUser.id) {
         checkFollowStatus(n.author_id);
@@ -845,7 +852,9 @@ listEl.innerHTML = filtered.map(n => {
 
     // 表示処理
     document.getElementById('reader-overlay').style.display = 'block';
-    document.getElementById('reader-interactive-zone').classList.remove('hidden');
+    const interactZone = document.getElementById('reader-interactive-zone');
+    if (interactZone) interactZone.classList.remove('hidden');
+
     loadComments(id);
     loadLikeCount(id);
 
