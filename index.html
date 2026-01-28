@@ -1343,28 +1343,52 @@ function resetReaderDesign() {
 }
     
     function openAboutPage() {
-        resetReaderUI(); // ← 冒頭でリセットを実行！
-    const titleEl = document.getElementById('read-title'); 
-    const bodyEl = document.getElementById('read-body');   
-    
-    if (!titleEl || !bodyEl) return;
+    // 1. デザインを標準（デフォルトUI）に切り替える
+    const defaultUiEl = document.getElementById('reader-default-ui');
+    const readerStyleEl = document.getElementById('reader-custom-style');
+    if (defaultUiEl) defaultUiEl.style.display = 'block';
+    if (readerStyleEl) readerStyleEl.style.display = 'none';
 
-    // 内容を「このサイトについて」に書き換える
-    titleEl.innerText = "このサイトについて";
-    bodyEl.innerHTML = `
-    <div class="about-section" style="margin-top: -110px;"> <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">サイトの特色</h3>
-    <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　当サイトは、かつて隆盛を誇った「個人サイト」のような自由な空気感を大切にしています。他の投稿サイトでは難しい細かなデザインカスタマイズが可能で、あなたの作品をあなたらしい空間で公開できるのが最大の特徴です。</p>
+    // 2. お掃除（既存のクラスや文字を消す）
+    resetReaderUI(); 
     
-    <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: -50px 0 -15px 0;">創設経緯</h3>
-    <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　SNSや大手プラットフォームの普及により、自分だけの「城」である個人サイトは激減しました。しかし、流れていくタイムラインではなく、自分の作品を自分の好きな色で飾り、静かに置いておける場所が今こそ必要だと感じています。</p>
-    <p style="font-size: 0.95em; margin: 0; line-height: 1.2;">　数行の短い創作文から設定資料、日記代わりの文章まで、肩の力を抜いて自由にお楽しみください。</p>
-</div>
-    `;
+    // 3. 標準枠のIDを取得する（ここを0付きに変更）
+    const titleEl = document.getElementById('read-title0');
+    const authorEl = document.getElementById('read-author0');
+    const bodyEl = document.getElementById('read-body0');
+    
+    // 4. 要素があれば内容を書き換える
+    if (titleEl) {
+        titleEl.innerText = "このサイトについて";
+        titleEl.style.textDecoration = "none"; // 下線などがあればリセット
+    }
 
-    // ルール用のオーバーレイを表示
-    document.getElementById('reader-overlay').style.display = 'block';
-    // 念のため一番上までスクロール
-    document.getElementById('reader-overlay').scrollTop = 0;
+    if (authorEl) {
+        authorEl.innerText = ""; // 案内ページなので作者名は空に
+    }
+
+    if (bodyEl) {
+        bodyEl.innerHTML = `
+        <div class="about-section" style="margin-top: -20px;"> 
+            <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px;">サイトの特色</h3>
+            <p style="font-size: 0.95em; line-height: 1.6;">当サイトは、かつて隆盛を誇った「個人サイト」のような自由な空気感を大切にしています。他の投稿サイトでは難しい細かなデザインカスタマイズが可能で、あなたの作品をあなたらしい空間で公開できるのが最大の特徴です。</p>
+            
+            <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px;">創設経緯</h3>
+            <p style="font-size: 0.95em; line-height: 1.6;">SNSや大手プラットフォームの普及により、自分だけの「城」である個人サイトは激減しました。しかし、流れていくタイムラインではなく、自分の作品を自分の好きな色で飾り、静かに置いておける場所が今こそ必要だと感じています。</p>
+            <p style="font-size: 0.95em; line-height: 1.6;">数行の短い創作文から設定資料、日記代わりの文章まで、肩の力を抜いて自由にお楽しみください。</p>
+        </div>`;
+    }
+
+    // 5. オーバーレイを表示
+    const overlay = document.getElementById('reader-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+        overlay.scrollTop = 0;
+    }
+
+    // 不要なUIを隠す
+    const interactZone = document.getElementById('reader-interactive-zone');
+    if (interactZone) interactZone.classList.add('hidden');
 }
     
 // 表示状態をリセットする「お掃除」
