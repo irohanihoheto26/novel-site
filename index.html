@@ -5,173 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragment Library</title>
 <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300&display=swap" rel="stylesheet">    <style>
-   /* ==========================================
-   1. 基本レイアウト・変数
-   ========================================== */
-:root {
-    --sidebar-width: 280px;
-    --accent-color: #fcaf17; /* システムのキーカラー（オレンジ） */
-}
-
-body {
-    font-family: "Yu Gothic Medium", "Yu Gothic", "游ゴシック体", "游ゴシック", sans-serif;
-    background: #fff;
-    color: #000;
-    margin: 0;
-    display: flex;
-    min-height: 100vh;
-}
-
-/* ==========================================
-   2. サイドバー (Aside)
-   ========================================== */
-aside {
-    width: var(--sidebar-width);
-    height: 100vh;
-    border-right: 2px solid #000;
-    padding: 40px 20px;
-    box-sizing: border-box;
-    position: fixed;
-    left: 0;
-    top: 0;
-    overflow-y: auto;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
-}
-
-aside h1 {
-    font-family: 'Dela Gothic One', sans-serif !important;
-    font-size: 2.2em;
-    margin: 0 0 10px;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-aside button {
-    background: var(--accent-color);
-    color: #fff;
-    border: 1px solid var(--accent-color);
-    padding: 12px;
-    cursor: pointer;
-    width: 100%;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.rule-link {
-    font-size: 0.85em;
-    color: #666;
-    text-decoration: underline;
-    cursor: pointer;
-    margin-bottom: 30px;
-    display: block;
-}
-
-.search-box-side {
-    padding: 10px 10px 10px 30px;
+   :root { --sidebar-width: 280px; }
+        body { font-family: "Yu Gothic", "YuGothic", sans-serif; background: #fff; color: #000; margin: 0; display: flex; min-height: 100vh; }
+        aside { width: var(--sidebar-width); height: 100vh; border-right: 2px solid #000; padding: 40px 20px; box-sizing: border-box; position: fixed; left: 0; top: 0; overflow-y: auto; background: #fff; display: flex; flex-direction: column; z-index: 100; }
+        main { margin-left: var(--sidebar-width); flex: 1; padding: 40px; max-width: 900px; box-sizing: border-box; }
+        aside h1 { font-family: 'Antonio', sans-serif; font-size: 2.2em; margin: 0 0 10px; text-transform: uppercase; cursor: pointer; }
+        .rule-link { font-size: 0.85em; color: #666; text-decoration: underline; cursor: pointer; margin-bottom: 30px; display: block; }
+        .search-box-side {
+    padding: 10px 10px 10px 30px; /* 左側にアイコン用の隙間を空ける */
     border: 1px solid #000;
     width: 100%;
     box-sizing: border-box;
     margin-bottom: 20px;
-    background: url('https://api.iconify.design/mdi/magnify.svg') no-repeat 8px center;
+    background: url('https://api.iconify.design/mdi/magnify.svg') no-repeat 8px center; /* 虫眼鏡アイコン */
     background-size: 18px;
 }
-
-/* ==========================================
-   3. メインコンテンツ
-   ========================================== */
-main {
-    margin-left: var(--sidebar-width);
-    flex: 1;
-    padding: 40px;
-    max-width: 900px;
-    box-sizing: border-box;
-}
-
-.section-header {
-    display: flex;
-    align-items: baseline;
-    gap: 15px;
-    border-bottom: 2px solid #000;
-    margin-bottom: 20px;
-}
-
-#library-section-header {
-    margin-top: 80px;
-    padding-top: 40px;
-    border-top: 3px double #000;
-    display: flex;
-    align-items: baseline;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-/* ==========================================
-   4. 小説・作品リスト
-   ========================================== */
-.novel-row {
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+        .section-header { display: flex; align-items: baseline; gap: 15px; border-bottom: 2px solid #000; margin-bottom: 20px; }
+        .settings-link { font-size: 0.7em; color: #666; text-decoration: underline; cursor: pointer; }
+        .profile-edit-area { background: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 30px; display: none; }
+        .tab-bar { display: flex; gap: 15px; border-bottom: 2px solid #eee; margin-bottom: 25px; }
+        .tab-btn { background: none; border: none; color: #888; padding: 10px 0; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { color: #000; border-bottom: 2px solid #000; }
+        .novel-row { 
+    padding: 15px 0; 
+    border-bottom: 1px solid #eee; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; /* centerから変更（タイトルが長くても崩れない） */
     gap: 15px;
 }
+        .novel-title { font-weight: bold; cursor: pointer; text-decoration: underline; }
+        .count-badge { font-size: 0.75em; background: #eee; padding: 2px 6px; border-radius: 4px; color: #444; margin-right: 5px; }
+        #editor-overlay, #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; }
+        .overlay-content { max-width: 700px; margin: 40px auto; padding: 20px; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
+        button { background: #000; color: #fff; border: none; padding: 12px; cursor: pointer; width: 100%; margin-bottom: 5px; }
+        .btn-outline { background: #fff; color: #000; border: 1px solid #000; }
+        .comment-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.9em; }
+        .hidden { display: none !important; }
+        .novel-stats { font-size: 0.85em; color: #888; margin-left: 10px; display: inline-flex; gap: 8px; }
+        .stat-item { display: inline-flex; align-items: center; gap: 3px; }
+        .sticky-close { position: sticky; top: 0; background: rgba(255,255,255,0.95); padding: 10px 0; z-index: 2100; border-bottom: 1px solid #eee; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-right: 8px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #000; }
+        #r18-check:checked + .slider { background-color: #d00; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .checkbox-group { display: flex; gap: 25px; margin-bottom: 20px; align-items: center; }
+        .checkbox-group label { display: flex; align-items: center; font-size: 0.9em; font-weight: bold; cursor: pointer; }
+        /* スマホ・タブレット用の設定（画面幅が800px以下の場合） */
+@media screen and (max-width: 800px) {
+    body {
+        flex-direction: column;
+    }
 
-.novel-info {
-    flex: 1;
-    min-width: 0;
+    aside {
+        width: 100%;
+        height: auto; /* 高さを内容に合わせる */
+        position: static; /* 固定を完全に解除 */
+        border-right: none;
+        border-bottom: 2px solid #000;
+        padding: 15px;
+        z-index: 10;
+    }
+
+    main {
+        margin-left: 0;
+        padding: 15px;
+        width: 100%;
+        box-sizing: border-box; /* はみ出し防止 */
+    }
+
+    /* ボタンが縦に並びすぎると場所を取るので、横並びに調整 */
+    #logged-in-nav {
+        display: flex;
+        gap: 10px;
+    }
+    
+    #logged-in-nav button {
+        flex: 1;
+        padding: 8px;
+        font-size: 0.9em;
+    }
 }
-
-.novel-title {
-    font-weight: bold;
-    cursor: pointer;
-    text-decoration: underline;
-}
-
-.count-badge {
-    font-size: 0.75em;
-    background: #eee;
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: #444;
-    margin-right: 5px;
-}
-
+        /* 下書きラベルの新しいデザイン */
 .draft-badge {
-    background-color: #e0f2ff;
-    color: #004080;
+    background-color: #e0f2ff; /* 水色 */
+    color: #004080;           /* 濃い青文字（読みやすさ重視） */
     font-size: 0.75em;
     font-weight: bold;
     padding: 3px 10px;
-    border-radius: 15px;
+    border-radius: 15px;      /* 角丸 */
     margin-left: 8px;
     display: inline-block;
     vertical-align: middle;
 }
 
-.r18-badge {
-    background-color: #d00;
-    color: #ffffff;
-    font-size: 0.7em;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: 4px;
-    margin-left: 8px;
-    display: inline-block;
-    vertical-align: middle;
-    white-space: nowrap;
+/* 削除ボタンのスタイル */
+.btn-delete {
+    cursor: pointer;
+    color: #cc0000;
+    font-size: 0.8em;
+    margin-left: 10px;
+    text-decoration: underline;
 }
+.btn-delete:hover {
+    color: #ff0000;
+}
+        /* 本文の1行目を1文字分空ける設定 */
+.indent-text {
+    text-indent: 1em;
+}
+        /* 箇条書き用：2行目以降も1字下げた位置に揃える */
+.hanging-indent {
+    padding-left: 1em;   /* 全体を1文字分右に寄せる */
+    text-indent: -1em;  /* 1行目だけを1文字分左に戻す */
+    margin-bottom: 1em; /* 段落ごとの隙間 */
+}
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-bar select { padding: 5px; border: 1px solid #000; font-family: inherit; }
 
-/* ==========================================
-   5. カスタマイズ済みタグ (グレー)
-   ========================================== */
-.tag-link {
+    .tag-link {
     display: inline-block;
-    background: #f0f0f0;
-    color: #666;
+    background: #f0f0f0; /* 薄いグレー背景 */
+    color: #666;         /* 濃いグレー文字 */
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.75em;
@@ -182,166 +141,93 @@ main {
 }
 
 .tag-link:hover {
-    background: #e0e0e0;
-    color: #333;
+    background: #e0e0e0; /* ホバー時は少しだけ濃いグレーに */
+    color: #333;         /* 文字も少しハッキリさせる */
 }
-
-/* ==========================================
-   6. プロフィール編集エリア
-   ========================================== */
-.profile-edit-area {
-    background: #f9f9f9;
-    padding: 20px;
+    #word-count-display { font-size: 0.8em; color: #666; text-align: right; margin-bottom: 10px; }
+/* ライブラリの見出しだけ、上に大きな余白と太めの線を入れる */
+#library-section-header {
+    margin-top: 80px; /* ここでガッツリ下げます */
+    padding-top: 40px;
+    border-top: 3px double #000; /* 二重線にして「ここから別物」感を出す */
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+    /* ライブラリ全体の背景をわずかにグレーにして、マイページと切り離す */
+#list {
+    background: #fafafa;
+    padding: 10px;
+    border-radius: 8px;
+}
+        /* マイページのリストだけ幅を制限して中央に寄せる */
+#my-works-list {
+    max-width: 600px; /* お好みの幅に調整してください */
+    margin: 0 auto 0 0; /* 左寄せのまま幅だけ狭める場合はこちら */
     border: 1px solid #eee;
-    margin-bottom: 30px;
-    display: none;
-}
-
-.settings-link {
-    font-size: 0.7em;
-    color: #666;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-/* ==========================================
-   7. オーバーレイ（読書画面・エディタ）
-   ========================================== */
-#editor-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    padding: 0 15px;
     background: #fff;
-    z-index: 2000;
-    overflow-y: auto;
 }
 
-/* 読書画面(5000) ＜ 作者ページ(6000) の順序に修正 */
+/* 1. 基本は游ゴシックにする（管理画面やライブラリ用） */
+body, h2, h3, .novel-title, #display-current-name {
+    font-family: "Yu Gothic Medium", "Yu Gothic", "游ゴシック体", "游ゴシック", sans-serif;
+}
+
+/* 2. サイトタイトルだけは Dela Gothic One を強制する */
+aside h1 {
+    font-family: 'Dela Gothic One', sans-serif !important;
+}
+/* サイトタイトルだけは元のデザインを残したい場合は以下を個別に設定 */
+aside h1 {
+    /* もしタイトルも游ゴシックにするならここも変更 */
+}
+    
+    /* ログインボタンや新規投稿ボタンをオレンジに */
+aside button, #auth-form button:first-of-type {
+    background: #fcaf17;
+    border: 1px solid #fcaf17;
+}
+
+/* リンクなどのホバー色 */
+.tab-btn.active {
+    color: #fcaf17;
+    border-color: #fcaf17;
+}
+    /* 小説を読む画面（Reader）を一番上に */
 #reader-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #fff;
-    z-index: 5000 !important;
-    overflow-y: auto;
+    z-index: 5000 !important; /* 作者ページ(3000)より大きくする */
 }
 
+/* 作者ページ */
 #author-page-overlay {
-    z-index: 6000 !important;
+    z-index: 6000 !important; /* 読書画面(5000)より大きい数値にする */
 }
-
-.overlay-content {
-    max-width: 700px;
-    margin: 40px auto;
-    padding: 20px;
-}
-
-.sticky-close {
-    position: sticky;
-    top: 0;
-    background: rgba(255,255,255,0.95);
-    padding: 10px 0;
-    z-index: 2100;
-    border-bottom: 1px solid #eee;
-}
-
-/* ==========================================
-   8. UIパーツ (スイッチ・ボタン・入力欄)
-   ========================================== */
-input, textarea {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    font-family: inherit;
-}
-
-.btn-outline {
-    background: #fff;
-    color: #000;
-    border: 1px solid #000;
-}
-
-.btn-delete {
-    cursor: pointer;
-    color: #cc0000;
-    font-size: 0.8em;
-    margin-left: 10px;
-    text-decoration: underline;
-}
-
-.switch {
-    position: relative;
+.r18-badge {
+    background-color: #ff6347;
+    color: #ffffff;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px; /* 左側に隙間を空けてタイトルと離す */
     display: inline-block;
-    width: 40px;
-    height: 20px;
-    margin-right: 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+    /* 新規追加：タイトルエリアを広げる設定 */
+.novel-info {
+    flex: 1;
+    min-width: 0;
 }
 
-.switch input { opacity: 0; width: 0; height: 0; }
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 20px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 14px; width: 14px;
-    left: 3px; bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider { background-color: #000; }
-#r18-check:checked + .slider { background-color: #d00; }
-input:checked + .slider:before { transform: translateX(20px); }
-
-/* ==========================================
-   9. レスポンシブ (スマホ対応)
-   ========================================== */
-@media screen and (max-width: 800px) {
-    body { flex-direction: column; }
-    aside {
-        width: 100%;
-        height: auto;
-        position: static;
-        border-right: none;
-        border-bottom: 2px solid #000;
-        padding: 15px;
-        z-index: 10;
-    }
-    main {
-        margin-left: 0;
-        padding: 15px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    #logged-in-nav { display: flex; gap: 10px; }
-    #logged-in-nav button { flex: 1; padding: 8px; font-size: 0.9em; }
-}
-
-/* ==========================================
-   10. 本文装飾 (インデント)
-   ========================================== */
-.indent-text { text-indent: 1em; }
-.hanging-indent {
-    padding-left: 1em;
-    text-indent: -1em;
-    margin-bottom: 1em;
+/* 新規追加：タグが横に並びすぎた時に折り返す設定 */
+.author-page-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    vertical-align: middle;
 }
     
     </style>
