@@ -386,7 +386,10 @@ const api = window.supabase.createClient(u, k, {
         await loadProfile();
         await loadUserContent();
     }
-
+// 【追加】プロフィール（作者名）が「名無し」のまま、または未設定なら強制設定
+        if (!userProfile || !userProfile.display_name || userProfile.display_name === "名無し") {
+            forceProfileSetup();}
+            
     // 3. currentUser が確定してから作品リストを取得
     await getList();
 
@@ -862,6 +865,12 @@ cssInput.value = data.custom_css || defaultTemplate;
     }
 
     async function doPost() {
+        // 【追加】投稿前の最終チェック
+    if (!userProfile || !userProfile.display_name || userProfile.display_name === "名無し") {
+        alert("投稿するにはプロフィール設定で「作者名」を登録してください。");
+        forceProfileSetup(); // 設定欄を表示
+        return; // ここで処理を終了し、DBに送らせない
+    }
         const payload = {
             title: document.getElementById('title-input').value,
             content: document.getElementById('content-input').value,
