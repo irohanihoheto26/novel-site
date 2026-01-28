@@ -126,11 +126,21 @@
 }
         .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
     .filter-bar select { padding: 5px; border: 1px solid #000; font-family: inherit; }
-    .tag-link { 
-        display: inline-block; background: #f0f0f0; color: #333; padding: 2px 8px; 
-        border-radius: 4px; font-size: 0.75em; cursor: pointer; margin-right: 5px; 
-    }
-    .tag-link:hover { background: #000; color: #fff; }
+    .tag-link {
+    transition: all 0.2s ease; /* 変化をなめらかに */
+}
+
+.tag-link:active {
+    transform: scale(0.95); /* 押した瞬間に少し凹む */
+    background-color: #fcaf17; /* サイトのアクセントカラー（オレンジ）に */
+    color: #fff;
+}
+    .tag-link:hover {
+    background-color: #fcaf17; /* サイトカラーのオレンジ */
+    color: #fff;               /* 文字は白 */
+    border-color: #fcaf17;     /* 枠線もあれば合わせる */
+    text-decoration: none;     /* 下線が出ないように */
+}
     #word-count-display { font-size: 0.8em; color: #666; text-align: right; margin-bottom: 10px; }
 /* ライブラリの見出しだけ、上に大きな余白と太めの線を入れる */
 #library-section-header {
@@ -632,9 +642,19 @@ listEl.innerHTML = filtered.map(n => {
 }
 
     function setSearchTag(tagName) {
-        document.getElementById('search-input').value = tagName;
-        getList();
+    // 1. 検索窓にタグ名を入れる
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.value = tagName;
+
+    // 2. 検索を実行（リストを更新）
+    getList();
+
+    // 3. 【追加】ライブラリの見出し（またはリストの先頭）までスクロール
+    const libraryHeader = document.getElementById('library-section-header');
+    if (libraryHeader) {
+        libraryHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+}
 
     async function loadUserContent() {
     if (!currentUser) return;
