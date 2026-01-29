@@ -952,15 +952,15 @@ document.addEventListener('change', function(e) {
     // ★名前変換の判定と表示制御
     if (nameGroup) {
         if (n.default_name && n.default_name.trim() !== "") {
-            // 名前変換あり：表示する（CSSの !important を上書きするために直接指定）
-            nameGroup.style.display = "flex";
+            // CSSの !important すら上書きして強制表示
+            nameGroup.style.setProperty('display', 'flex', 'important');
             const savedName = localStorage.getItem('user-default-name');
             if (savedName) {
                 document.getElementById('user-custom-name').value = savedName;
             }
         } else {
-            // 名前変換なし：非表示にする
-            nameGroup.style.display = "none";
+            // CSSの !important すら上書きして強制非表示
+            nameGroup.style.setProperty('display', 'none', 'important');
         }
     }
     bodyEl.innerText = n.content; 
