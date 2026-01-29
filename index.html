@@ -384,12 +384,14 @@ aside button, #auth-form button:first-of-type {
         <div class="sticky-close">
             <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 0 15px;">
                 <button class="btn-outline" onclick="closeReader()" style="width:auto; margin:0;">← 閉じる</button>
-                <div id="name-changer-group" style="display: flex; align-items: center; gap: 5px; flex-grow: 1; justify-content: flex-end;">
-                    <input type="text" id="target-string" placeholder="変換前" style="width: 80px; margin: 0; padding: 5px; font-size: 0.8em;">
-                    <span>→</span>
-                    <input type="text" id="new-name" placeholder="変換後" style="width: 80px; margin: 0; padding: 5px; font-size: 0.8em;">
-                    <button onclick="applyNameChange()" style="width: auto; padding: 5px 15px; margin: 0; font-size: 0.8em;">変換</button>
-                </div>
+                <div id="name-changer-group" class="hidden" style="margin-top: 10px; display: flex; gap: 5px; align-items: center; justify-content: center;">
+    <input type="text" id="user-custom-name" placeholder="あなたの名前" 
+           style="width: 120px; padding: 5px 10px; border-radius: 20px; border: 1px solid #ccc; font-size: 0.8em; margin-bottom: 0;">
+    <button onclick="applyNameConvert()" 
+            style="width: auto; padding: 5px 15px; border-radius: 20px; background: #fcaf17; font-size: 0.8em; margin-bottom: 0;">
+        変換
+    </button>
+</div>
             </div>
         </div>
         <h2 id="read-title"></h2>
@@ -850,6 +852,8 @@ document.addEventListener('change', function(e) {
     const { data: n, error } = await api.from('novels').select('*').eq('id', id).single();
     if(error || !n) return alert("作品が見つかりません");
 
+    currentOpenedNovel = n;
+
     // 2. 作者のプロフィール（カスタムコード）を別途取得
     const { data: prof } = await api.from('profiles')
         .select('display_name, reader_custom_code')
@@ -862,6 +866,20 @@ document.addEventListener('change', function(e) {
     titleEl.innerText = n.title;
     const readAuthorEl = document.getElementById('read-author');
     if (readAuthorEl) readAuthorEl.innerText = "";
+    // ★名前変換の判定と表示制御
+    if (nameGroup) {
+        if (n.default_name && n.default_name.trim() !== "") {
+            // スイッチONの作品：表示して保存済みの名前を入れる
+            nameGroup.classList.remove('hidden');
+            const savedName = localStorage.getItem('user-default-name');
+            if (savedName) {
+                document.getElementById('user-custom-name').value = savedName;
+            }
+        } else {
+            // スイッチOFFの作品：隠す
+            nameGroup.classList.add('hidden');
+        }
+    }
     bodyEl.innerText = n.content; 
 
     // --- 作者リンク & フォローボタン ---
@@ -931,7 +949,7 @@ document.getElementById('author-link-zone').innerHTML = `
         listEl.innerHTML = data.map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
             // 名前は保存されている user_name を使用する
-            const name = c.profiles?.display_name || c.user_name || "名無し";
+            const name = c.user_name || "名無し";
             
             const manageBtns = isMine ? `
                 <span onclick="deleteComment('${c.id}')" 
