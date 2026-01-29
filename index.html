@@ -426,9 +426,14 @@ aside button, #auth-form button:first-of-type {
         <input type="text" id="tags-input" placeholder="タグ (カンマ区切り)">
         <textarea id="caption-input" placeholder="キャプション（あらすじ等）" rows="3"></textarea>
         <div class="checkbox-group">
-            <label><span class="switch"><input type="checkbox" id="r18-check"><span class="slider"></span></span>R-18</label>
-            <label><span class="switch"><input type="checkbox" id="private-check"><span class="slider"></span></span>非公開(下書き)</label>
-        </div>
+    <label><span class="switch"><input type="checkbox" id="r18-check"><span class="slider"></span></span>R-18</label>
+    <label><span class="switch"><input type="checkbox" id="private-check"><span class="slider"></span></span>非公開(下書き)</label>
+    <label><span class="switch"><input type="checkbox" id="name-convert-check"><span class="slider"></span></span>名前変換機能を使う</label>
+</div>
+
+<div id="default-name-area" class="hidden" style="margin-top: 10px;">
+    <input type="text" id="default-name-input" placeholder="変換前の名前（例：雛子）" style="width: 100%; max-width: 300px;">
+</div>
         <textarea id="content-input" rows="20" placeholder="本文を入力..."></textarea>
         <div id="word-count-display">文字数: <span id="current-count">0</span></div>
         <button onclick="doPost()">公開／保存する</button>
@@ -788,6 +793,19 @@ listEl.innerHTML = filtered.map(n => {
             document.getElementById('private-check').checked = !!n.is_private;
             document.getElementById('current-count').innerText = (n.content || "").length.toLocaleString();
             document.querySelector('#editor-overlay h2').innerText = "作品を編集";
+
+            // --- ★追加：編集時にDBの値を反映させる ---
+        if (n.default_name) {
+            document.getElementById('name-convert-check').checked = true;
+            document.getElementById('default-name-area').classList.remove('hidden');
+            document.getElementById('default-name-input').value = n.default_name;
+        } else {
+            document.getElementById('name-convert-check').checked = false;
+            document.getElementById('default-name-area').classList.add('hidden');
+            document.getElementById('default-name-input').value = "";
+        }
+        // --- ★ここまで ---
+            
         } else {
             document.getElementById('title-input').value = "";
             document.getElementById('tags-input').value = "";
@@ -800,6 +818,22 @@ listEl.innerHTML = filtered.map(n => {
         }
         document.getElementById('editor-overlay').style.display = 'block';
     }
+
+    // 名前変換スイッチの切り替えイベント
+// HTMLが読み込まれた後に実行されるように設定
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'name-convert-check') {
+        const area = document.getElementById('default-name-area');
+        if (e.target.checked) {
+            area.classList.remove('hidden');
+        } else {
+            area.classList.add('hidden');
+            // スイッチをOFFにしたら入力欄もクリアしたい場合は以下を追加
+            document.getElementById('default-name-input').value = "";
+        }
+    }
+});
+    
 
     async function openReader(id) {
     currentReadingId = id;
@@ -1029,6 +1063,10 @@ document.getElementById('author-link-zone').innerHTML = `
         forceProfileSetup(); // 設定欄を表示
         return; // ここで処理を終了し、DBに送らせない
     }
+// ★追加：名前変換の設定を取得
+    const isNameConvert = document.getElementById('name-convert-check').checked;
+    const defaultName = isNameConvert ? document.getElementById('default-name-input').value.trim() : "";
+        
         const payload = {
             title: document.getElementById('title-input').value,
             content: document.getElementById('content-input').value,
@@ -1036,6 +1074,8 @@ document.getElementById('author-link-zone').innerHTML = `
             tags: document.getElementById('tags-input').value.split(',').map(t => t.trim()).filter(t => t),
             is_r18: document.getElementById('r18-check').checked,
             is_private: document.getElementById('private-check').checked,
+            // ★追加：DBのカラムに保存
+            default_name: defaultName,
             author_id: currentUser.id,
             author_name: userProfile?.display_name || "名無し"
         };
