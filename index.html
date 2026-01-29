@@ -273,50 +273,51 @@ aside button, #auth-form button:first-of-type {
         position: fixed;
         bottom: 25px;
         left: 50%;
-        /* 左右中央(translateX(-50%))を維持しつつ、隠れる時は下に移動 */
+        /* 中央配置と隠れる動きを両立 */
         transform: translateX(-50%) translateY(0);
         
-        /* サイズ指定を auto に戻す（これで高さが固定されすぎない） */
-        width: auto;
-        height: auto;
-        white-space: nowrap; /* 1行に収める */
+        /* ★重要：高さをボタン1個分（約45px）に固定して「壁」を消す */
+        width: 320px !important;   /* iPhone等で丁度いい幅 */
+        height: 45px !important;  /* 縦長にならないよう強制固定 */
         
         display: flex !important;
-        flex-direction: row !important;
+        flex-direction: row !important; /* 絶対に横並び */
         align-items: center !important;
+        justify-content: center !important;
         gap: 10px;
 
+        /* ★背景をこの小さいエリアだけに限定する */
         background: rgba(255, 255, 255, 0.85) !important;
-        padding: 8px 15px;
-        border-radius: 50px; /* カプセル型にするとよりボタンらしくなります */
+        padding: 0 10px !important;
+        border-radius: 25px;      /* カプセル型 */
         border: 1px solid rgba(0,0,0,0.1);
         z-index: 9999;
         
-        /* スムーズに隠れるためのアニメーション設定 */
         transition: transform 0.3s ease-out, opacity 0.3s ease;
-        pointer-events: none; 
+        pointer-events: none;     /* 背景以外は指が突き抜ける */
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;         /* はみ出しをカット */
     }
 
-    /* ★ JSで nav-hidden クラスがついた時の動き */
+    /* 隠れる時の設定 */
     .sticky-close.nav-hidden {
-        /* 下に 150% 飛ばして隠す。translateX は維持！ */
-        transform: translateX(-50%) translateY(150%);
+        transform: translateX(-50%) translateY(150%) !important;
         opacity: 0;
     }
 
+    /* ボタンや入力欄を実体化させる */
     .sticky-close > * {
         pointer-events: auto;
+        flex: none !important; /* 勝手に広がらないようにする */
     }
-}
 
-    /* 名前変換グループも強制横並び */
+    /* 名前変換グループの縦伸びを阻止 */
     #name-changer-group {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        gap: 5px;
-        width: auto !important;
+        height: 100% !important;
+        margin: 0 !important;
     }
 }
     
