@@ -1029,29 +1029,48 @@ document.getElementById('author-link-zone').innerHTML = `
     }
 
     function openRules() {
-        resetReaderUI(); // ← 冒頭でリセットを実行！
-        const bodyEl = document.getElementById('read-body');
-        const titleEl = document.getElementById('read-title');
-        titleEl.innerText = "ルール（必読）";
-        titleEl.style.textDecoration = "underline";
-        titleEl.style.textUnderlineOffset = "10px";
-        document.getElementById('read-author').innerText = "運営";
-        bodyEl.classList.remove('indent-text');
-        bodyEl.classList.add('hanging-indent');
-        document.getElementById('name-changer-group').classList.add('hidden');
+    resetReaderUI(); 
+    const bodyEl = document.getElementById('read-body');
+    const titleEl = document.getElementById('read-title');
+    const authorEl = document.getElementById('read-author');
 
-        // ↓ innerText を innerHTML に変更し、中身を <br> や <span> で構成します
-        bodyEl.innerHTML = `
-            当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。<br><br>
-            ・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。<br>
-            ・<span style="border-bottom: 2px solid #000;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。<br>
-            ・<span style="background-color: #ffff00;">R指定が必要な場合は必ず設定</span>を行ってください。<br><br>
-            ルールを守って、創作活動を楽しみましょう。
-        `;
+    if (!titleEl || !bodyEl) return;
 
-        document.getElementById('reader-overlay').style.display = 'block';
-        document.getElementById('reader-interactive-zone').classList.add('hidden');
-    }
+    // タイトルの設定
+    titleEl.innerText = "ルール（必読）";
+    titleEl.style.textDecoration = "underline";
+    titleEl.style.textUnderlineOffset = "10px";
+    
+    if (authorEl) authorEl.innerText = "運営";
+
+    // インデント設定を削除（リセット関数でも消していますが念のため）
+    bodyEl.classList.remove('indent-text');
+    bodyEl.classList.remove('hanging-indent');
+
+    // 「サイトについて」と同じく、divで囲って行間やマージンを制御
+    bodyEl.innerHTML = `
+    <div class="rules-section" style="margin-top: -20px; line-height: 1.6; font-size: 0.95em;">
+        <p style="margin-bottom: 20px;">当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。</p>
+        
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 15px;">
+                ・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。
+            </li>
+            <li style="margin-bottom: 15px;">
+                ・<span style="border-bottom: 2px solid #000; font-weight: bold;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。
+            </li>
+            <li style="margin-bottom: 15px;">
+                ・<span style="background-color: #ffff00; padding: 0 2px;">R指定が必要な場合は必ず設定</span>を行ってください。
+            </li>
+        </ul>
+        
+        <p style="margin-top: 25px;">ルールを守って、創作活動を楽しみましょう。</p>
+    </div>
+    `;
+
+    document.getElementById('reader-overlay').style.display = 'block';
+    document.getElementById('reader-overlay').scrollTop = 0;
+}
 
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
     function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
@@ -1064,6 +1083,7 @@ document.getElementById('author-link-zone').innerHTML = `
         // パラメータなしのトップページへ強制移動
         window.location.replace(window.location.pathname);
     }
+    
     function toggleAuthForm() { document.getElementById('auth-form').classList.toggle('hidden'); }
     async function doLogIn() {
         const email = document.getElementById('email').value;
@@ -1312,6 +1332,7 @@ function resetReaderUI() {
     bodyEl.classList.remove('indent-text');
     bodyEl.classList.remove('hanging-indent');
 }
+    
     async function deleteAccount() {
     // 1段階目の確認
     if (!confirm("本当に退会しますか？\n投稿したすべての作品、コメント、プロフィールが完全に消去されます。")) return;
