@@ -270,41 +270,43 @@ aside button, #auth-form button:first-of-type {
 /* スマホ用の浮遊設定（エリアだけ浮かせ、ボタンのデザインはそのまま） */
 @media screen and (max-width: 800px) {
     .sticky-close {
-        position: fixed;
-        bottom: 25px;
-        left: 50%;
-        /* 中央配置と隠れる動きを両立 */
+        /* ★ 上側の固定を完全に解除する */
+        position: fixed !important;
+        top: auto !important; 
+        
+        /* ★ 下側に配置する */
+        bottom: 30px !important; 
+        left: 50% !important;
         transform: translateX(-50%) translateY(0);
         
-        /* ★重要：高さをボタン1個分（約45px）に固定して「壁」を消す */
-        width: 320px !important;   /* iPhone等で丁度いい幅 */
-        height: 45px !important;  /* 縦長にならないよう強制固定 */
+        /* サイズをコンパクトに固定 */
+        width: 320px !important;
+        height: 48px !important;
         
         display: flex !important;
-        flex-direction: row !important; /* 絶対に横並び */
+        flex-direction: row !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 10px;
+        gap: 12px;
 
-        /* ★背景をこの小さいエリアだけに限定する */
-        background: rgba(255, 255, 255, 0.85) !important;
-        padding: 0 10px !important;
-        border-radius: 25px;      /* カプセル型 */
+        background: rgba(255, 255, 255, 0.9) !important;
+        padding: 0 15px !important;
+        border-radius: 30px;
         border: 1px solid rgba(0,0,0,0.1);
-        z-index: 9999;
+        z-index: 9999 !important;
         
+        /* スクロールで隠れるアニメーション */
         transition: transform 0.3s ease-out, opacity 0.3s ease;
-        pointer-events: none;     /* 背景以外は指が突き抜ける */
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        overflow: hidden;         /* はみ出しをカット */
+        pointer-events: none; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     }
 
-    /* 隠れる時の設定 */
+    /* 隠れる時の動き */
     .sticky-close.nav-hidden {
-        transform: translateX(-50%) translateY(150%) !important;
+        /* translateX(-50%)を維持しつつ、下に沈ませる */
+        transform: translateX(-50%) translateY(120%) !important;
         opacity: 0;
     }
-
     /* ボタンや入力欄を実体化させる */
     .sticky-close > * {
         pointer-events: auto;
