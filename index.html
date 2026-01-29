@@ -578,7 +578,7 @@ const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自�
 
     try {
         // 1. 基本データの取得（統計は含めない）
-        let query = api.from('novels').select('*').eq('is_private', false);
+        let query = api.from('novels').select('*, profiles(display_name)').eq('is_private', false);
         let { data: novels, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
 
@@ -623,7 +623,7 @@ listEl.innerHTML = filtered.map(n => {
                 <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                 ${r18Badge}
                 <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
-                    / ${n.author_name}
+                    / ${n.profiles?.display_name || n.author_name}
                 </span>
                 <div style="margin-top:5px;">
                     ${(n.tags && n.tags.length > 0) 
@@ -799,17 +799,19 @@ listEl.innerHTML = filtered.map(n => {
     bodyEl.innerText = n.content; 
 
     // --- 作者リンク & フォローボタン ---
-    document.getElementById('author-link-zone').innerHTML = `
-        作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
-        ${(currentUser && n.author_id !== currentUser.id) ? 
-            `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
-                style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
-                border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
-                font-weight: bold; border-radius: 4px; cursor: pointer;">
-                フォロー
-            </button>` 
-            : ''}
-    `;
+document.getElementById('author-link-zone').innerHTML = `
+    作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">
+        ${n.profiles?.display_name || n.author_name}
+    </strong>
+    ${(currentUser && n.author_id !== currentUser.id) ? 
+        `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
+            style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
+            border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
+            font-weight: bold; border-radius: 4px; cursor: pointer;">
+            フォロー
+        </button>` 
+        : ''}
+`;
 
     if (currentUser && n.author_id !== currentUser.id) {
         checkFollowStatus(n.author_id);
@@ -844,7 +846,7 @@ listEl.innerHTML = filtered.map(n => {
     async function loadComments(id) {
         const { data, error } = await api
             .from('comments')
-            .select('*') // profilesとの結合をやめてシンプルにする
+            .select('*, profiles:user_id(display_name)') // profilesとの結合をやめてシンプルにする
             .eq('novel_id', id)
             .order('created_at', {ascending: true});
 
@@ -863,7 +865,7 @@ listEl.innerHTML = filtered.map(n => {
         listEl.innerHTML = data.map(c => {
             const isMine = currentUser && c.user_id === currentUser.id;
             // 名前は保存されている user_name を使用する
-            const name = c.user_name || "名無し";
+            const name = c.profiles?.display_name || c.user_name || "名無し";
             
             const manageBtns = isMine ? `
                 <span onclick="deleteComment('${c.id}')" 
