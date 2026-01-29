@@ -118,12 +118,6 @@
 .indent-text {
     text-indent: 1em;
 }
-        /* 箇条書き用：2行目以降も1字下げた位置に揃える */
-.hanging-indent {
-    padding-left: 1em;   /* 全体を1文字分右に寄せる */
-    text-indent: -1em;  /* 1行目だけを1文字分左に戻す */
-    margin-bottom: 1em; /* 段落ごとの隙間 */
-}
         .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
     .filter-bar select { padding: 5px; border: 1px solid #000; font-family: inherit; }
 
@@ -1042,23 +1036,16 @@ document.getElementById('author-link-zone').innerHTML = `
     if (authorEl) authorEl.innerText = "運営";
 
     bodyEl.classList.remove('indent-text');
-    bodyEl.classList.remove('hanging-indent');
 
     // 箇条書きを1つのボックスにまとめ、ネガティブマージンで上に引き上げます
     bodyEl.innerHTML = `
-    <div class="rules-container" style="margin-top: -30px; line-height: 1.4; font-size: 0.95em;">
+    <div class="rules-container" style="margin-top: -80px; line-height: 1.4; font-size: 0.95em;">
         <p style="margin: 0 0 10px 0;">当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。</p>
         
         <div class="rules-list-box" style="margin: 0; padding-left: 1.2em;">
-            <div style="text-indent: -1.2em; margin-bottom: 2px;">
-                ・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。
-            </div>
-            <div style="text-indent: -1.2em; margin-bottom: 2px;">
-                ・<span style="border-bottom: 1px solid #000; font-weight: bold;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。
-            </div>
-            <div style="text-indent: -1.2em; margin-bottom: 0;">
-                ・<span style="background-color: #ffff00; padding: 0 2px;">R指定が必要な場合は必ず設定</span>を行ってください。
-            </div>
+            <div style="text-indent: -1.2em; margin-bottom: -20px;">・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。</div>
+            <div style="text-indent: -1.2em; margin-bottom: -20px;">・<span style="border-bottom: 1px solid #000; font-weight: bold;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。</div>
+            <div style="text-indent: -1.2em; margin-bottom: -20px;">・<span style="background-color: #ffff00; padding: 0 2px;">R指定が必要な場合は必ず設定</span>を行ってください。</div>
         </div>
         
         <p style="margin: 10px 0 0 0;">ルールを守って、創作活動を楽しみましょう。</p>
