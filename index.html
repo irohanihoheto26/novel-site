@@ -930,7 +930,7 @@ document.getElementById('author-link-zone').innerHTML = `
     async function loadComments(id) {
         const { data, error } = await api
             .from('comments')
-            .select('*, profiles:user_id(display_name)') // profilesとの結合をやめてシンプルにする
+            .select('*') // profilesとの結合をやめてシンプルにする
             .eq('novel_id', id)
             .order('created_at', {ascending: true});
 
