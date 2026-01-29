@@ -436,6 +436,12 @@ aside button, #auth-form button:first-of-type {
 
     <button class="btn-outline" onclick="saveProfile()" style="width:auto; margin-top:20px;">更新</button>
 </div>
+        <div id="notification-banner" class="hidden" style="background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="notification-text" style="color: #856404; font-weight: bold;"></div>
+        <button onclick="clearNotifications()" style="background: #856404; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">確認しました</button>
+    </div>
+</div>
         <div id="user-stats-area" style="display: flex; gap: 20px; margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px;">
     <div><strong>合計文字数:</strong> <span id="total-char-count">0</span> 字</div>
     <div><strong>合計いいね:</strong> <span id="total-likes">0</span></div>
@@ -1079,10 +1085,20 @@ document.getElementById('author-link-zone').innerHTML = `
             console.error("コメント投稿エラー:", error.message);
             alert("コメントに失敗しました。");
         } else {
-            document.getElementById('comment-input').value = "";
-            loadComments(currentReadingId);
+        // ★【追加】通知を送る処理
+        if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
+            await api.from('notifications').insert({
+                target_user_id: currentOpenedNovel.author_id,
+                from_user_name: displayName, // 設定した名前で通知
+                type: 'comment',
+                novel_title: currentOpenedNovel.title
+            });
         }
+
+        document.getElementById('comment-input').value = "";
+        loadComments(currentReadingId);
     }
+}
 
     async function deleteComment(id) {
         if (!confirm("このコメントを削除しますか？")) return;
@@ -1134,6 +1150,16 @@ document.getElementById('author-link-zone').innerHTML = `
                 alert("いいねに失敗しました。設定を確認してください。");
                 return;
             }
+            // ★【追加】通知を送る処理
+        // 自分の作品へのいいねには通知しない
+        if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
+            await api.from('notifications').insert({
+                target_user_id: currentOpenedNovel.author_id,
+                from_user_name: userProfile?.display_name || "名無しさん",
+                type: 'like',
+                novel_title: currentOpenedNovel.title
+            });
+        }
         }
 
         // 4. カウントを更新
@@ -1344,17 +1370,76 @@ function forceProfileSetup() {
     }
 
     async function toggleFollow(authorId) {
-        if (!currentUser) return alert("ログインが必要です");
-        const { data: existing } = await api.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', authorId).maybeSingle();
+    if (!currentUser) return alert("ログインが必要です");
 
-        if (existing) {
-            await api.from('follows').delete().eq('id', existing.id);
+    const { data: existing } = await api.from('follows')
+        .select('*')
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', authorId)
+        .maybeSingle();
+
+    if (existing) {
+        // フォロー解除
+        await api.from('follows').delete().eq('id', existing.id);
+    } else {
+        // フォロー実行
+        const { error: insertError } = await api.from('follows').insert({ 
+            follower_id: currentUser.id, 
+            following_id: authorId 
+        });
+
+        if (!insertError) {
+            // ★通知を送る処理（フォロー成功時のみ）
+            if (authorId !== currentUser.id) {
+                await api.from('notifications').insert({
+                    target_user_id: authorId,
+                    from_user_name: userProfile?.display_name || "名無しさん",
+                    type: 'follow',
+                    novel_title: "" 
+                });
+            }
         } else {
-            await api.from('follows').insert({ follower_id: currentUser.id, following_id: authorId });
+            console.error("フォローエラー:", insertError.message);
         }
-        checkFollowStatus(authorId);
     }
+    // 最後に必ず表示を更新
+    checkFollowStatus(authorId);
+}
 
+    async function checkNotifications() {
+    if (!currentUser) return;
+
+    const { data, error } = await api
+        .from('notifications')
+        .select('*')
+        .eq('target_user_id', currentUser.id)
+        .eq('is_read', false);
+
+    if (data && data.length > 0) {
+        const banner = document.getElementById('notification-banner');
+        const text = document.getElementById('notification-text');
+        
+        // 最初の1件、または「新着○件あります」と表示
+        const note = data[0];
+        let message = `${note.from_user_name}さんが`;
+        if (note.type === 'like') message += `「${note.novel_title}」にいいねしました！`;
+        if (note.type === 'comment') message += `「${note.novel_title}」にコメントしました！`;
+        if (note.type === 'follow') message += `あなたをフォローしました！`;
+
+        text.innerText = message + (data.length > 1 ? `（他 ${data.length - 1} 件）` : "");
+        banner.classList.remove('hidden');
+    }
+}
+
+// 確認ボタンを押して消去（既読にする）
+async function clearNotifications() {
+    await api.from('notifications')
+        .update({ is_read: true })
+        .eq('target_user_id', currentUser.id);
+    
+    document.getElementById('notification-banner').classList.add('hidden');
+}
+    
 async function openAuthorPage(authorId) {
     const overlay = document.getElementById('author-page-overlay');
     const worksEl = document.getElementById('author-page-works');
