@@ -812,21 +812,25 @@ listEl.innerHTML = filtered.map(n => {
     overlay.scrollTop = 0;
     resetReaderUI(); 
 
-    // 3. コメントの取得
+    // 3. コメントの取得（カラム名を body に修正）
     const { data: comments } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', { ascending: true });
-    const commentsHtml = (comments || []).map(c => `
-        <div class="comment-item" style="border-bottom: 1px dotted #ccc; padding: 10px 0;">
-            <div style="font-size: 0.8em; color: #888;">${c.user_name || '名無しさん'} - ${new Date(c.created_at).toLocaleDateString()}</div>
-            <div style="margin-top: 5px;">${c.content.replace(/\n/g, '<br>')}</div>
-        </div>
-    `).join('') || "<p style='color:#888;'>まだ感想はありません。</p>";
+    
+    const commentsHtml = (comments || []).map(c => {
+        // c.content ではなく c.body を使用。また undefined 回避のため || "" を追加。
+        const commentBody = (c.body || "").replace(/\n/g, '<br>');
+        return `
+            <div class="comment-item" style="border-bottom: 1px dotted #ccc; padding: 10px 0;">
+                <div style="font-size: 0.8em; color: #888;">${c.user_name || '名無しさん'} - ${new Date(c.created_at).toLocaleDateString()}</div>
+                <div style="margin-top: 5px;">${commentBody}</div>
+            </div>
+        `;
+    }).join('') || "<p style='color:#888;'>まだ感想はありません。</p>";
 
-    // コメント入力フォーム（これを commentsHtml の後に追加することで入力欄を復活させます）
     const commentFormHtml = `
         <div id="comment-form-area" style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:8px;">
             <input type="text" id="comment-user-name" placeholder="お名前（空欄で名無し）" style="width:100%; margin-bottom:10px;">
             <textarea id="comment-text" placeholder="感想を送る" style="width:100%; height:80px;"></textarea>
-            <button onclick="sendComment('${n.id}')" style="margin-top:10px;">感想を送信する</button>
+            <button onclick="sendComment('${n.id}')" style="margin-top:10px; cursor:pointer;">感想を送信する</button>
         </div>
     `;
 
@@ -835,21 +839,17 @@ listEl.innerHTML = filtered.map(n => {
         // --- カスタムUI ---
         defaultUi.style.display = 'none';
         customStyle.style.display = 'block';
-        
-        // テンプレートをまず流し込む
         customStyle.innerHTML = prof.reader_custom_code;
         
-        // テンプレート内の要素に値をセット
         const tEl = document.getElementById('read-title');
         const aEl = document.getElementById('read-author');
         const bEl = document.getElementById('read-body');
-        const cEl = document.getElementById('read-comments'); // テンプレートにこれがあれば流し込む
+        const cEl = document.getElementById('read-comments');
 
         if (tEl) tEl.innerText = n.title;
         if (aEl) aEl.innerText = n.author_name;
         if (bEl) {
             bEl.innerHTML = n.content.replace(/\n/g, '<br>');
-            // 名前変換用にオリジナルを保持
             bEl.dataset.original = n.content.replace(/\n/g, '<br>');
         }
         if (cEl) cEl.innerHTML = commentsHtml + commentFormHtml;
@@ -859,19 +859,23 @@ listEl.innerHTML = filtered.map(n => {
         defaultUi.style.display = 'block';
         customStyle.style.display = 'none';
 
-        document.getElementById('read-title-default').innerText = n.title;
-        document.getElementById('read-author-default').innerText = n.author_name;
+        const titleEl = document.getElementById('read-title-default');
+        const authorEl = document.getElementById('read-author-default');
+        if (titleEl) titleEl.innerText = n.title;
+        if (authorEl) authorEl.innerText = n.author_name;
         
         const bEl = document.getElementById('read-body-default');
-        bEl.innerHTML = n.content.replace(/\n/g, '<br>');
-        bEl.dataset.original = n.content.replace(/\n/g, '<br>');
-        bEl.classList.add('indent-text');
+        if (bEl) {
+            bEl.innerHTML = n.content.replace(/\n/g, '<br>');
+            bEl.dataset.original = n.content.replace(/\n/g, '<br>');
+            bEl.classList.add('indent-text');
+        }
 
         const cArea = document.getElementById('read-comments-default');
         if (cArea) cArea.innerHTML = commentsHtml + commentFormHtml;
     }
 
-    // 5. 共通UI
+    // 5. 共通UI表示
     if (interactiveZone) interactiveZone.classList.remove('hidden');
     if (nameChanger) nameChanger.classList.remove('hidden');
 
