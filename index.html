@@ -985,17 +985,24 @@ document.getElementById('author-link-zone').innerHTML = `
 }
 
     function applyNameChange() {
-    // 1. IDをHTMLと一致させる (target-string → 不要 / new-name → user-custom-name)
+    // 1. 読者が入力した名前を取得
     const replacement = document.getElementById('user-custom-name').value;
     
-    // 2. 変換対象を作者設定の default_name から取得する
-    const target = currentNovelData ? currentNovelData.default_name : "";
+    // 2. openReaderで保存した変数「currentOpenedNovel」から作者設定の名前を取得
+    const target = currentOpenedNovel ? currentOpenedNovel.default_name : "";
 
     if (!target || !replacement) return alert("名前を入力してください");
 
-    // 3. 変換処理 (innerTextより高速なtextContentを推奨)
+    // 3. 変換処理
     const regex = new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-    document.getElementById('read-body').textContent = originalContent.replace(regex, replacement);
+    const bodyElem = document.getElementById('read-body');
+    
+    if (bodyElem && typeof originalContent !== 'undefined') {
+        bodyElem.textContent = originalContent.replace(regex, replacement);
+        
+        // 【おまけ】次回の入力の手間を省くため保存しておく
+        localStorage.setItem('user-default-name', replacement);
+    }
 }
 
     async function loadComments(id) {
