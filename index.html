@@ -824,11 +824,21 @@ listEl.innerHTML = filtered.map(n => {
         if (defaultUiEl) defaultUiEl.style.display = 'none';
         }
 
-    // 3. 要素の特定（以前の正しいセレクタに戻します）
-    // ID名の末尾（0付きか、なし文字か）を厳密に判定
-    const titleEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-title') : document.getElementById('read-title-default');
-    const bodyEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-tbody-default') : document.getElementById('read-body-default');
-    const readAuthorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author-default') : document.getElementById('read-author-default');
+   // 3. 要素の特定（ID名をテンプレートおよび -default に正確に合わせる）
+    let titleEl, bodyEl, readAuthorEl;
+
+    if (hasCustomCode) {
+        // カスタムUI（テンプレート）使用時：テンプレート内の ID を狙い撃ち
+        titleEl      = readerStyleEl.querySelector('#read-title');
+        bodyEl       = readerStyleEl.querySelector('#read-body');
+        readAuthorEl = readerStyleEl.querySelector('#read-author');
+    } else {
+        // 標準UI使用時：-default 付きの ID を使用
+        titleEl      = document.getElementById('read-title-default');
+        bodyEl       = document.getElementById('read-body-default');
+        readAuthorEl = document.getElementById('read-author-default');
+    }
+    
     const nameGroup = document.getElementById('name-changer-group');
 
     // 4. 文字の流し込み
