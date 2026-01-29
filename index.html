@@ -985,13 +985,18 @@ document.getElementById('author-link-zone').innerHTML = `
 }
 
     function applyNameChange() {
-        const target = document.getElementById('target-string').value;
-        const replacement = document.getElementById('new-name').value;
-        if (!target) return alert("変換前の文字を入力してください");
-        const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedTarget, 'g');
-        document.getElementById('read-body').innerText = originalContent.replace(regex, replacement || "");
-    }
+    // 1. IDをHTMLと一致させる (target-string → 不要 / new-name → user-custom-name)
+    const replacement = document.getElementById('user-custom-name').value;
+    
+    // 2. 変換対象を作者設定の default_name から取得する
+    const target = currentNovelData ? currentNovelData.default_name : "";
+
+    if (!target || !replacement) return alert("名前を入力してください");
+
+    // 3. 変換処理 (innerTextより高速なtextContentを推奨)
+    const regex = new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    document.getElementById('read-body').textContent = originalContent.replace(regex, replacement);
+}
 
     async function loadComments(id) {
         const { data, error } = await api
