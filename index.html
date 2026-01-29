@@ -1044,22 +1044,22 @@ document.getElementById('author-link-zone').innerHTML = `
     bodyEl.classList.remove('indent-text');
     bodyEl.classList.remove('hanging-indent');
 
-    // line-heightを1.1（極限）に。padding-leftとtext-indentで折り返しを整列。
+    // line-heightを1.0にし、余計なmarginをすべて0に叩き落とします。
     bodyEl.innerHTML = `
-    <div class="rules-section" style="margin-top: -20px; line-height: 1.1; font-size: 0.95em; word-break: break-all;">
-        <p style="margin-bottom: 8px;">当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。</p>
+    <div class="rules-section" style="margin-top: -40px; line-height: 1.2; font-size: 0.95em; word-break: break-all;">
+        <p style="margin: 0 0 5px 0;">当サイトは個人による二次創作小説の展示・アーカイブを目的とした専用サイトです。</p>
         
-        <div style="padding-left: 1.2em; text-indent: -1.2em; margin-bottom: 5px;">
+        <div style="padding-left: 1.1em; text-indent: -1.1em; margin: 0;">
             ・検索避けのため、<span style="color: #ff4d4d; font-weight: bold;">原作名をそのまま表示することは避けて</span>ください。
         </div>
-        <div style="padding-left: 1.2em; text-indent: -1.2em; margin-bottom: 5px;">
-            ・<span style="border-bottom: 2px solid #000; font-weight: bold;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。
+        <div style="padding-left: 1.1em; text-indent: -1.1em; margin: 0;">
+            ・<span style="border-bottom: 1px solid #000; font-weight: bold;">公序良俗に反する内容の投稿、無断転載、AI学習利用は固く禁止</span>いたします。
         </div>
-        <div style="padding-left: 1.2em; text-indent: -1.2em; margin-bottom: 8px;">
+        <div style="padding-left: 1.1em; text-indent: -1.1em; margin: 0;">
             ・<span style="background-color: #ffff00; padding: 0 2px;">R指定が必要な場合は必ず設定</span>を行ってください。
         </div>
         
-        <p style="margin-top: 10px;">ルールを守って、創作活動を楽しみましょう。</p>
+        <p style="margin: 5px 0 0 0;">ルールを守って、創作活動を楽しみましょう。</p>
     </div>
     `;
 
