@@ -265,35 +265,38 @@ aside button, #auth-form button:first-of-type {
         bottom: 25px;
         left: 50%;
         transform: translateX(-50%);
-        padding: 8px 15px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.8);
-        pointer-events: none;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        width: auto;             /* 中身のサイズに合わせる */
-        height: auto;            /* 縦に伸びないようにする */
-        max-width: 95%;          /* 画面からはみ出さない */
+
+        /* ★ここをpxで強制指定（autoが効かない場合の最終手段） */
+        width: 320px !important;   /* iPhoneSEなどでも収まる幅 */
+        height: 50px !important;  /* ボタン1個分の高さに固定 */
         
-        /* ★重要：横並びにする */
-        flex-direction: row !important; 
-        flex-wrap: nowrap;       /* 折り返さない */
+        /* ★中身を絶対横に並べる */
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 10px !important;
+
+        background: rgba(255, 255, 255, 0.85) !important;
+        padding: 0 10px !important; /* 上下はheight固定なので左右だけ */
+        border-radius: 12px;
+        z-index: 9999 !important;
+        pointer-events: none; /* スクロール通過用 */
     }
-    /* ボタンや入力欄だけは指に反応するように戻す */
+
+    /* 中身の要素が変に広がらないようにする */
     .sticky-close > * {
         pointer-events: auto;
+        flex: none !important; /* 伸びるのを禁止 */
     }
-    .close-btn-style {
-        background: #444;      /* スマホは濃いグレーで見やすく */
-        color: #fff !important;
-        border: none;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    /* 名前変換グループも横並びに */
+
+    /* 名前変換グループも強制横並び */
     #name-changer-group {
         display: flex !important;
         flex-direction: row !important;
-        align-items: center;
+        align-items: center !important;
         gap: 5px;
+        width: auto !important;
     }
 }
     
