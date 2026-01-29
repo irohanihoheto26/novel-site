@@ -579,7 +579,7 @@ const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自�
     try {
         // 1. 基本データの取得（統計は含めない）
         let query = api.from('novels')
-            .select('*, profiles:author_id(display_name)')
+            .select('*, profiles(display_name)')
             .eq('is_private', false);
         let { data: novels, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
