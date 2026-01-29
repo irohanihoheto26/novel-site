@@ -227,7 +227,7 @@ aside button, #auth-form button:first-of-type {
 .sticky-close {
     position: sticky;
     top: 0;
-    background: rgba(255, 255, 255, 0.8)
+    background: rgba(255, 255, 255, 0.8);
     padding: 10px 0;
     z-index: 2100;
     border: none;             /* 枠線を消す */
@@ -251,6 +251,7 @@ aside button, #auth-form button:first-of-type {
     width: auto;              /* 横幅を文字に合わせる */
     text-align: center;
     transition: background 0.2s;
+    pointer-events: auto;
 }
 
 .close-btn-style:hover {
@@ -265,9 +266,17 @@ aside button, #auth-form button:first-of-type {
         left: 50%;
         transform: translateX(-50%);
         width: auto;
+        flex-direction: row; 
+        padding: 8px 15px;
+        border-radius: 10px;
         background: rgba(255, 255, 255, 0.8);
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    
+    /* ボタンや入力欄だけは指に反応するように戻す */
+    .sticky-close > * {
+        pointer-events: auto;
+    }
     .close-btn-style {
         background: #444;      /* スマホは濃いグレーで見やすく */
         color: #fff !important;
