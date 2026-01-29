@@ -795,81 +795,72 @@ listEl.innerHTML = filtered.map(n => {
 
     async function openReader(id) {
     currentReadingId = id;
-    
-    // 1. 小説データの取得
+    const bodyEl = document.getElementById('read-body');
+    const titleEl = document.getElementById('read-title');
+    const nameGroup = document.getElementById('name-changer-group');
+    const styleEl = document.getElementById('reader-custom-style'); // HTMLの <style id="...">
+
+    // 表示のリセット
+    if (titleEl) titleEl.style.textDecoration = "none";
+    if (bodyEl) {
+        bodyEl.classList.remove('hanging-indent');
+        bodyEl.classList.add('indent-text');
+    }
+    if (nameGroup) nameGroup.classList.remove('hidden');
+
+    // 1. 小説データ取得
     const { data: n } = await api.from('novels').select('*').eq('id', id).single();
     if(!n) return;
 
-    const readerStyleEl = document.getElementById('reader-custom-style');
-    const defaultUiEl = document.getElementById('reader-default-ui'); 
-    let hasCustomCode = false;
-
-    // 2. デザインの注入
+    // 2. 作者プロフィール（カスタムコード）取得と「切り分け」
     const { data: prof } = await api.from('profiles').select('reader_custom_code').eq('id', n.author_id).maybeSingle();
-    
-    // カラムにテンプレートが入っている場合、それを優先
-    const codeToUse = (prof?.reader_custom_code && prof.reader_custom_code.trim() !== "") 
-                      ? prof.reader_custom_code 
-                      : defaultReaderTemplate;
+    const fullCode = prof?.reader_custom_code || defaultReaderTemplate;
 
-    if (readerStyleEl) {
-        readerStyleEl.innerHTML = codeToUse;
-        hasCustomCode = true;
-        readerStyleEl.style.display = 'block';
-        if (defaultUiEl) defaultUiEl.style.display = 'none';
+    // --- マイページと同じ「切り分け魔法」 ---
+    const cssMatch = fullCode.match(/<style>([\s\S]*?)<\/style>/);
+    const cssPart = cssMatch ? cssMatch[1] : "";
+    const htmlPart = fullCode.replace(/<style>[\s\S]*?<\/style>/, "");
+
+    // 3. 適用
+    if (styleEl) styleEl.innerHTML = cssPart; // CSSを専用タグへ
+    // テンプレートに書かれたHTML（<h1>など）を、まず本文エリアの前に出すか、
+    // あるいは構造を自由にしたい場合は、特定の場所に流し込む
+    // ここでは一番安全な「本文の前にカスタムHTMLを置く」方法にします
+    if (htmlPart.trim() !== "") {
+        bodyEl.innerHTML = htmlPart + `<div id="real-content"></div>`;
+        const contentArea = document.getElementById('real-content') || bodyEl;
+        contentArea.innerText = n.content;
+    } else {
+        bodyEl.innerText = n.content;
     }
 
-    // 3. 要素の特定（ID -default とテンプレートの両方に対応）
-    const titleEl  = readerStyleEl.querySelector('#read-title') || document.getElementById('read-title-default');
-    const bodyEl   = readerStyleEl.querySelector('#read-body')  || document.getElementById('read-body-default');
-    const authorEl = readerStyleEl.querySelector('#read-author') || document.getElementById('read-author-default');
-    const authorZone = document.getElementById('author-link-zone'); // 静的HTML側の共通パーツ
-
-    // 4. タイトル・本文の流し込み
+    originalContent = n.content;
     if (titleEl) titleEl.innerText = n.title;
-    if (authorEl) authorEl.innerText = n.author_name;
-    if (bodyEl) {
-        originalContent = n.content; 
-        bodyEl.innerHTML = n.content.replace(/\n/g, '<br>');
-        bodyEl.classList.add('indent-text');
-    }
-
-    // 5. 共通パーツ（作者：うみうし ＋ フォローボタン）の復元
-    if (authorZone) {
-        authorZone.innerHTML = `
-            作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
-            ${(currentUser && n.author_id !== currentUser.id) ? 
-                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
-                    style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
-                    border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
-                    font-weight: bold; border-radius: 4px; cursor: pointer;">
-                    フォロー
-                </button>` : ''}
-        `;
-    }
-
-    // 6. UIの最終表示と機能の実行
-    document.getElementById('reader-overlay').style.display = 'block';
     
-    const nameGroup = document.getElementById('name-changer-group');
-    if (nameGroup) nameGroup.classList.remove('hidden');
+    const readAuthorEl = document.getElementById('read-author');
+    if (readAuthorEl) readAuthorEl.innerText = "";
 
-    const interactZone = document.getElementById('reader-interactive-zone');
-    if (interactZone) interactZone.classList.remove('hidden');
+    // 4. 以降は元の「動いていたコード」と同じ
+    document.getElementById('author-link-zone').innerHTML = `
+        作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
+        ${(currentUser && n.author_id !== currentUser.id) ? 
+            `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" style="...">フォロー</button>` : ''}
+    `;
 
-    // コメント・いいねの読み込み機能を実行
-    if (typeof loadComments === "function") loadComments(id); 
+    document.getElementById('reader-overlay').style.display = 'block';
+    document.getElementById('reader-interactive-zone').classList.remove('hidden');
+    loadComments(id);
     loadLikeCount(id);
 
-    // コメント入力欄の表示制御（ログイン判定）
+    // ログイン判定によるフォーム表示
     const form = document.getElementById('comment-form-area');
     const msg = document.getElementById('comment-guest-msg');
     if (currentUser) {
-        if (form) form.classList.remove('hidden');
-        if (msg) msg.classList.add('hidden');
+        if(form) form.classList.remove('hidden');
+        if(msg) msg.classList.add('hidden');
     } else {
-        if (form) form.classList.add('hidden');
-        if (msg) msg.classList.remove('hidden');
+        if(form) form.classList.add('hidden');
+        if(msg) msg.classList.remove('hidden');
     }
 }
 
