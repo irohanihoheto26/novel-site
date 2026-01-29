@@ -812,17 +812,17 @@ listEl.innerHTML = filtered.map(n => {
             .maybeSingle();
         
         if (prof?.reader_custom_code && prof.reader_custom_code.trim() !== "") {
-            // ここでカスタムHTMLを注入
+            // 作者が自分で設定したコードがある場合
             readerStyleEl.innerHTML = prof.reader_custom_code;
-            hasCustomCode = true;
-            readerStyleEl.style.display = 'block';
-            if (defaultUiEl) defaultUiEl.style.display = 'none';
         } else {
-            readerStyleEl.innerHTML = "";
-            readerStyleEl.style.display = 'none';
-            if (defaultUiEl) defaultUiEl.style.display = 'block';
+            // 作者が未設定なら、あなたが作った「執筆：」のデザインを使う
+            readerStyleEl.innerHTML = defaultReaderTemplate;
         }
-    }
+        
+        hasCustomCode = true; // どちらにせよ、readerStyleEl（カスタム枠）を使う
+        readerStyleEl.style.display = 'block';
+        if (defaultUiEl) defaultUiEl.style.display = 'none';
+        }
 
     // 3. 要素の特定（以前の正しいセレクタに戻します）
     // ID名の末尾（0付きか、なし文字か）を厳密に判定
