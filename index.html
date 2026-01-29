@@ -793,36 +793,89 @@ listEl.innerHTML = filtered.map(n => {
         document.getElementById('editor-overlay').style.display = 'block';
     }
 
-    async function loadLikeCount(id) {
-    const countEl = document.getElementById('read-like-count');
-    const likeBtn = document.getElementById('like-btn');
-    const likeText = document.getElementById('read-like-text');
-    if (!countEl || !likeBtn) return;
+    async function openReader(id) {
+    currentReadingId = id;
+    const overlay = document.getElementById('reader-overlay');
+    const defaultUi = document.getElementById('reader-default-ui');
+    const customStyle = document.getElementById('reader-custom-style');
+    const interactiveZone = document.getElementById('reader-interactive-zone');
+    const nameChanger = document.getElementById('name-changer-group');
 
-    // 全体のカウントを取得（型エラー防止のためNumber化）
-    const { count } = await api.from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('novel_id', Number(id));
-    
-    countEl.innerText = count || 0;
+    // 1. 作品データと作者プロフィールの取得
+    const { data: n, error } = await api.from('novels').select('*').eq('id', id).maybeSingle();
+    if (error || !n) return alert("作品が見つかりません");
 
-    if (currentUser) {
-        const { data } = await api.from('likes')
-            .select('*')
-            .eq('novel_id', Number(id))
-            .eq('user_id', currentUser.id)
-            .maybeSingle();
+    const { data: prof } = await api.from('profiles').select('reader_custom_code').eq('id', n.author_id).maybeSingle();
 
-        if (data) {
-            likeBtn.style.background = "#ff4d4d";
-            likeBtn.style.color = "#fff";
-            if (likeText) likeText.innerText = "いいね済み";
-        } else {
-            likeBtn.style.background = "#fff";
-            likeBtn.style.color = "#000";
-            if (likeText) likeText.innerText = "いいね";
+    // 2. UI初期化
+    overlay.style.display = 'block';
+    overlay.scrollTop = 0;
+    resetReaderUI(); 
+
+    // 3. 【追加】コメント（感想）の取得
+    // commentsテーブルがある想定です。適宜テーブル名を合わせてください。
+    const { data: comments } = await api
+        .from('comments')
+        .select('*')
+        .eq('novel_id', id)
+        .order('created_at', { ascending: true });
+
+    const commentsHtml = (comments || []).map(c => `
+        <div class="comment-item" style="border-bottom: 1px dotted #ccc; padding: 10px 0;">
+            <div style="font-size: 0.8em; color: #888;">${c.user_name || '名無しさん'} - ${new Date(c.created_at).toLocaleDateString()}</div>
+            <div style="margin-top: 5px;">${c.content.replace(/\n/g, '<br>')}</div>
+        </div>
+    `).join('') || "<p style='color:#888;'>まだ感想はありません。</p>";
+
+    // 4. 表示の切り分け
+    if (prof && prof.reader_custom_code && prof.reader_custom_code.trim() !== "") {
+        // --- カスタムUI ---
+        defaultUi.style.display = 'none';
+        customStyle.style.display = 'block';
+        
+        const code = prof.reader_custom_code;
+        const cssMatch = code.match(/<style>([\s\S]*?)<\/style>/);
+        customStyle.innerHTML = cssMatch ? cssMatch[1] : "";
+        
+        let htmlPart = code.replace(/<style>[\s\S]*?<\/style>/, "");
+        htmlPart = htmlPart.replace(/{{title}}/g, n.title)
+                           .replace(/{{author}}/g, n.author_name)
+                           .replace(/{{content}}/g, n.content.replace(/\n/g, '<br>'))
+                           .replace(/{{comments}}/g, commentsHtml); // カスタム側にもコメントを流し込む
+        
+        const bodyEl = document.getElementById('read-body');
+        if (bodyEl) {
+            bodyEl.innerHTML = htmlPart;
+            applyNameChange(); 
         }
+    } else {
+        // --- 標準UI ---
+        defaultUi.style.display = 'block';
+        customStyle.style.display = 'none';
+
+        document.getElementById('read-title-default').innerText = n.title;
+        document.getElementById('read-author-default').innerText = n.author_name;
+        
+        const bodyEl = document.getElementById('read-body-default');
+        bodyEl.innerHTML = n.content.replace(/\n/g, '<br>');
+        bodyEl.classList.add('indent-text');
+
+        // 標準UI用のコメント表示エリア（ID: read-comments-default がある想定）
+        const commentArea = document.getElementById('read-comments-default');
+        if (commentArea) commentArea.innerHTML = commentsHtml;
+        
+        applyNameChange();
     }
+
+    // 5. 共通UI（いいね・フォロー・名前変換）の表示
+    if (interactiveZone) interactiveZone.classList.remove('hidden');
+    if (nameChanger) nameChanger.classList.remove('hidden');
+
+    loadLikeCount(id);
+    checkFollowStatus(n.author_id);
+    
+    const followBtn = document.getElementById('follow-btn');
+    if (followBtn) followBtn.onclick = () => toggleFollow(n.author_id);
 }
     function applyNameChange() {
     const target = document.getElementById('target-string').value;
