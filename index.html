@@ -578,9 +578,7 @@ const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自�
 
     try {
         // 1. 基本データの取得（統計は含めない）
-        let query = api.from('novels')
-            .select('*, profiles(display_name)')
-            .eq('is_private', false);
+        let query = api.from('novels').select('*').eq('is_private', false);
         let { data: novels, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
 
@@ -625,8 +623,8 @@ listEl.innerHTML = filtered.map(n => {
                 <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                 ${r18Badge}
                 <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
-                    / ${n.profiles?.display_name || n.author_name}
-                </span>
+    / <span id="author-name-${n.id}">${n.author_name}</span>
+</span>
                 <div style="margin-top:5px;">
                     ${(n.tags && n.tags.length > 0) 
                         ? n.tags
@@ -647,6 +645,14 @@ listEl.innerHTML = filtered.map(n => {
         // 5. 非同期で統計データを取ってきて、後から数字を埋める
         filtered.forEach(async (n) => {
             try {
+                // --- ★ここから追加：最新の名前を取得して書き換える ---
+        const { data: p } = await api.from('profiles').select('display_name').eq('id', n.author_id).maybeSingle();
+        if (p?.display_name) {
+            const nameEl = document.getElementById(`author-name-${n.id}`);
+            if (nameEl) nameEl.innerText = p.display_name;
+        }
+        // --- ★ここまで追加 ---
+                
                 const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
                 const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
                 
@@ -780,19 +786,16 @@ listEl.innerHTML = filtered.map(n => {
     if (nameGroup) nameGroup.classList.remove('hidden');
 
     // 1. 小説データだけをシンプルに取得 (profiles(...) を消しました)
-    const { data: n } = await api.from('novels').select('*, profiles:author_id(display_name)').eq('id', id).single();
-    if(!n) return;
+    const { data: n, error } = await api.from('novels').select('*').eq('id', id).single();
+    if(error || !n) return alert("作品が見つかりません");
 
     // 2. 作者のプロフィール（カスタムコード）を別途取得
-    const readerStyleEl = document.getElementById('reader-custom-style');
-    if (readerStyleEl) {
-        const { data: prof } = await api.from('profiles')
-            .select('reader_custom_code')
-            .eq('id', n.author_id)
-            .maybeSingle();
-        
-        readerStyleEl.innerHTML = prof?.reader_custom_code || "";
-    }
+    const { data: prof } = await api.from('profiles')
+        .select('display_name, reader_custom_code')
+        .eq('id', n.author_id)
+        .maybeSingle();
+
+    const latestName = prof?.display_name || n.author_name;
 
     originalContent = n.content;
     titleEl.innerText = n.title;
@@ -803,7 +806,8 @@ listEl.innerHTML = filtered.map(n => {
     // --- 作者リンク & フォローボタン ---
 document.getElementById('author-link-zone').innerHTML = `
     作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">
-        ${n.profiles?.display_name || n.author_name} </strong>
+            ${latestName} 
+        </strong>
     ${(currentUser && n.author_id !== currentUser.id) ? 
         `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
             style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
