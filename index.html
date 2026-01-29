@@ -367,9 +367,9 @@ aside button, #auth-form button:first-of-type {
         </div>
         <div id="reader-custom-style"></div>
         <div id="reader-default-ui">
-        <h2 id="read-title0"></h2>
-        <div id="read-author0" style="text-align: right; font-weight: bold;"></div>
-        <div id="read-body0" style="white-space: pre-wrap; line-height: 2.2; margin: 40px 0;"></div>
+        <h2 id="read-title-default"></h2>
+        <div id="read-author-default" style="text-align: right; font-weight: bold;"></div>
+        <div id="read-body-default" style="white-space: pre-wrap; line-height: 2.2; margin: 40px 0;"></div>
             </div>
         <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; text-align: center;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px;">
@@ -825,9 +825,9 @@ listEl.innerHTML = filtered.map(n => {
 
     // 3. 【ここが修正ポイント】「今表示されている方」の要素を狙い撃ちする
     // hasCustomCode が true なら「0なしID」、false なら「0付きID」を使います
-    const titleEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-title') : document.getElementById('read-title0');
-    const bodyEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-body') : document.getElementById('read-body0');
-    const readAuthorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author') : document.getElementById('read-author0');
+    const titleEl  = hasCustomCode ? document.querySelector('#reader-custom-style #read-title')  : document.getElementById('read-title-default');
+    const bodyEl   = hasCustomCode ? document.querySelector('#reader-custom-style #read-body')   : document.getElementById('read-body-default');
+    const authorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author') : document.getElementById('read-author-default');
     const nameGroup = document.getElementById('name-changer-group');
 
     // 4. 文字の流し込み（既存の処理を継続）
@@ -844,7 +844,7 @@ listEl.innerHTML = filtered.map(n => {
     }
 
     // 作者名は、カスタムテンプレートに要素があれば表示、なければ空にする（既存仕様）
-    if (readAuthorEl) readAuthorEl.innerText = hasCustomCode ? n.author_name : ""; 
+    if (authorEl) authorEl.innerText = hasCustomCode ? n.author_name : ""; 
 
     // --- ここから下は既存の機能をそのまま維持 ---
     if (nameGroup) nameGroup.classList.remove('hidden');
@@ -893,7 +893,7 @@ listEl.innerHTML = filtered.map(n => {
     const regex = new RegExp(escapedTarget, 'g');
     
     // 今表示されている方の body を取得
-    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body0');
+    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body-default');
     
     if (bodyEl) {
         bodyEl.innerText = originalContent.replace(regex, replacement || "");
@@ -1090,9 +1090,9 @@ listEl.innerHTML = filtered.map(n => {
     resetReaderUI(); 
 
     // 2. ★ここが重要！ 標準の「0付きID」を取得する
-    const titleEl = document.getElementById('read-title0');
-    const authorEl = document.getElementById('read-author0');
-    const bodyEl = document.getElementById('read-body0');
+    const titleEl = document.getElementById('read-title-default');
+    const authorEl = document.getElementById('read-author-default');
+    const bodyEl = document.getElementById('read-body-default');
 
     // 3. 要素が存在することを確認してから中身を書き換える
     if (titleEl) {
@@ -1127,7 +1127,18 @@ listEl.innerHTML = filtered.map(n => {
 }
 
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
-    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function closeReader() {
+    document.getElementById('reader-overlay').style.display = 'none';
+    resetReaderUI(); // 閉じる時にもお掃除
+    
+    // カスタムスタイルを完全に消去して干渉を防ぐ
+    const readerStyleEl = document.getElementById('reader-custom-style');
+    if (readerStyleEl) {
+        readerStyleEl.innerHTML = "";
+        readerStyleEl.style.display = 'none';
+    }
+}
+    
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
     async function doLogOut() {
         await api.auth.signOut();
@@ -1357,9 +1368,9 @@ function resetReaderDesign() {
     resetReaderUI(); 
     
     // 3. 標準枠のIDを取得する（ここを0付きに変更）
-    const titleEl = document.getElementById('read-title0');
-    const authorEl = document.getElementById('read-author0');
-    const bodyEl = document.getElementById('read-body0');
+    const titleEl = document.getElementById('read-title-default');
+    const authorEl = document.getElementById('read-author-default');
+    const bodyEl = document.getElementById('read-body-default');
     
     // 4. 要素があれば内容を書き換える
     if (titleEl) {
@@ -1374,10 +1385,10 @@ function resetReaderDesign() {
     if (bodyEl) {
         bodyEl.innerHTML = `
         <div class="about-section" style="margin-top: -100px;"> 
-            <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding:-60px;">サイトの特色</h3>
+            <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 7px;">サイトの特色</h3>
             <p style="font-size: 0.95em; line-height: 1.6;">　当サイトは、かつて隆盛を誇った「個人サイト」のような自由な空気感を大切にしています。他の投稿サイトでは難しい細かなデザインカスタマイズが可能で、あなたの作品をあなたらしい空間で公開できるのが最大の特徴です。</p>
             
-            <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding:-60px;">創設経緯</h3>
+            <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 7px;">創設経緯</h3>
             <p style="font-size: 0.95em; line-height: 1.6;">　SNSや大手プラットフォームの普及により、自分だけの「城」である個人サイトは激減しました。しかし、流れていくタイムラインではなく、自分の作品を自分の好きな色で飾り、静かに置いておける場所が今こそ必要だと感じています。</p>
             <p style="font-size: 0.95em; line-height: 1.6;">　数行の短い創作文から設定資料、日記代わりの文章まで、肩の力を抜いて自由にお楽しみください。</p>
         </div>`;
@@ -1398,7 +1409,7 @@ function resetReaderDesign() {
 // 表示状態をリセットする「お掃除」
 function resetReaderUI() {
     // カスタム用か標準用、どちらかの本文エリアを取得
-    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body0');
+    const bodyEl = document.getElementById('read-body') || document.getElementById('read-body-default');
     const interactiveZone = document.getElementById('reader-interactive-zone');
     const nameChanger = document.getElementById('name-changer-group');
 
