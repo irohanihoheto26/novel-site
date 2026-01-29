@@ -826,9 +826,9 @@ listEl.innerHTML = filtered.map(n => {
 
     // 3. 要素の特定（以前の正しいセレクタに戻します）
     // ID名の末尾（0付きか、なし文字か）を厳密に判定
-    const titleEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-title') : document.getElementById('read-title0');
-    const bodyEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-body') : document.getElementById('read-body0');
-    const readAuthorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author') : document.getElementById('read-author0');
+    const titleEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-title') : document.getElementById('read-title-default');
+    const bodyEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-tbody-default') : document.getElementById('read-body-default');
+    const readAuthorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author-default') : document.getElementById('read-author-default');
     const nameGroup = document.getElementById('name-changer-group');
 
     // 4. 文字の流し込み
