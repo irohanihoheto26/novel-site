@@ -223,37 +223,56 @@ aside button, #auth-form button:first-of-type {
     gap: 5px;
     vertical-align: middle;
 }
-    /* PC・基本のスタイル（上部に固定） */
+  /* 親エリアの背景や枠は消してスッキリさせる */
 .sticky-close {
     position: sticky;
     top: 0;
-    background: rgba(255,255,255,0.95);
+    background: transparent; /* 背景を消す */
     padding: 10px 0;
     z-index: 2100;
-    border-bottom: 1px solid #eee;
-    transition: transform 0.3s ease; /* アニメーション用 */
+    border: none;             /* 枠線を消す */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
 }
 
-/* スマホ用のスタイル（下部に浮かせる） */
+/* 「閉じる」ボタン単体のデザイン */
+.close-btn-style {
+    background: #e0e0e0;      /* グレー背景 */
+    color: #444 !important;   /* 文字色 */
+    padding: 5px 15px;        /* 小さめサイズ */
+    border-radius: 6px;       /* 少しだけ角丸 */
+    font-size: 0.85em;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #ccc;   /* 軽い枠線 */
+    display: inline-block;
+    width: auto;              /* 横幅を文字に合わせる */
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.close-btn-style:hover {
+    background: #d0d0d0;      /* ホバーで少し暗く */
+}
+
+/* スマホ用の浮遊設定（エリアだけ浮かせ、ボタンのデザインはそのまま） */
 @media screen and (max-width: 800px) {
     .sticky-close {
-        position: fixed; /* stickyからfixedに変更 */
-        top: auto;
-        bottom: 20px;    /* 下から少し浮かせる */
+        position: fixed;
+        bottom: 25px;
         left: 50%;
-        transform: translateX(-50%); /* 中央寄せ */
-        width: 90%;      /* 画面端までいかない幅 */
-        max-width: 400px;
-        border: 2px solid #000;
-        border-radius: 30px; /* 角丸でボタンっぽく */
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        padding: 10px 20px;
-        border-bottom: 2px solid #000; /* 下線ではなく枠線にする */
+        transform: translateX(-50%);
+        width: 100%;
+        background: transparent;
     }
-
-    /* スクロール時に隠すためのクラス（後述のJSで制御） */
-    .sticky-close.nav-hidden {
-        transform: translate(-50%, 150%); /* 画面外（下）へ飛ばす */
+    
+    .close-btn-style {
+        background: #444;      /* スマホは濃いグレーで見やすく */
+        color: #fff !important;
+        border: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 }
     
@@ -383,7 +402,7 @@ aside button, #auth-form button:first-of-type {
     <div class="overlay-content">
         <div class="sticky-close">
             <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 0 15px;">
-                <button class="btn-outline" onclick="closeReader()" style="width:auto; margin:0;">← 閉じる</button>
+                <button class="close-btn-style" onclick="closeReader()" style="width:auto; margin:0;">← 閉じる</button>
                 <div id="name-changer-group" class="hidden" style="margin-top: 10px; display: flex; gap: 5px; align-items: center; justify-content: center;">
     <input type="text" id="user-custom-name" placeholder="あなたの名前" 
            style="width: 120px; padding: 5px 10px; border-radius: 20px; border: 1px solid #ccc; font-size: 0.8em; margin-bottom: 0;">
@@ -444,7 +463,7 @@ aside button, #auth-form button:first-of-type {
 </div>
 <div id="author-page-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:3000; overflow-y:auto;">
     <div class="overlay-content" style="padding: 20px;">
-        <button class="btn-outline" onclick="closeAuthorPage()" style="width:auto; margin-bottom: 20px;">← 戻る</button>
+        <button class="close-btn-style" onclick="closeAuthorPage()" style="width:auto; margin:0;">← 戻る</button>
 
         <div id="author-profile-header">
             <h1 id="author-page-name" style="font-family: 'Yu Gothic', 'YuGothic', sans-serif; font-weight: bold;"></h1>
