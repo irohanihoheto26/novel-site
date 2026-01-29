@@ -223,6 +223,39 @@ aside button, #auth-form button:first-of-type {
     gap: 5px;
     vertical-align: middle;
 }
+    /* PC・基本のスタイル（上部に固定） */
+.sticky-close {
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.95);
+    padding: 10px 0;
+    z-index: 2100;
+    border-bottom: 1px solid #eee;
+    transition: transform 0.3s ease; /* アニメーション用 */
+}
+
+/* スマホ用のスタイル（下部に浮かせる） */
+@media screen and (max-width: 800px) {
+    .sticky-close {
+        position: fixed; /* stickyからfixedに変更 */
+        top: auto;
+        bottom: 20px;    /* 下から少し浮かせる */
+        left: 50%;
+        transform: translateX(-50%); /* 中央寄せ */
+        width: 90%;      /* 画面端までいかない幅 */
+        max-width: 400px;
+        border: 2px solid #000;
+        border-radius: 30px; /* 角丸でボタンっぽく */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        padding: 10px 20px;
+        border-bottom: 2px solid #000; /* 下線ではなく枠線にする */
+    }
+
+    /* スクロール時に隠すためのクラス（後述のJSで制御） */
+    .sticky-close.nav-hidden {
+        transform: translate(-50%, 150%); /* 画面外（下）へ飛ばす */
+    }
+}
     
     </style>
 
@@ -1352,6 +1385,26 @@ function resetReaderUI() {
 document.addEventListener('DOMContentLoaded', () => {
     init();
 });
+
+    let lastScrollTop = 0;
+const readerOverlay = document.getElementById('reader-overlay');
+
+readerOverlay.addEventListener('scroll', function() {
+    const stickyEl = document.querySelector('.sticky-close');
+    if (!stickyEl || window.innerWidth > 800) return; // スマホのみ適用
+
+    let st = readerOverlay.scrollTop;
+    
+    if (st > lastScrollTop && st > 100) {
+        // 下にスクロール中：隠す
+        stickyEl.classList.add('nav-hidden');
+    } else {
+        // 上にスクロール中、または一番上：出す
+        stickyEl.classList.remove('nav-hidden');
+    }
+    lastScrollTop = st;
+}, { passive: true });
+    
 </script>
     
 </body>
