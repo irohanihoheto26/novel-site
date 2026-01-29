@@ -795,95 +795,101 @@ listEl.innerHTML = filtered.map(n => {
 
     async function openReader(id) {
     currentReadingId = id;
-    const overlay = document.getElementById('reader-overlay');
-    const defaultUi = document.getElementById('reader-default-ui');
-    const customStyle = document.getElementById('reader-custom-style');
-    const interactiveZone = document.getElementById('reader-interactive-zone');
-    const nameChanger = document.getElementById('name-changer-group');
-
-    // 1. データ取得
-    const { data: n, error } = await api.from('novels').select('*').eq('id', id).maybeSingle();
-    if (error || !n) return alert("作品が見つかりません");
-
-    const { data: prof } = await api.from('profiles').select('reader_custom_code').eq('id', n.author_id).maybeSingle();
-
-    // 2. UI初期化
-    overlay.style.display = 'block';
-    overlay.scrollTop = 0;
-    resetReaderUI(); 
-
-    // 3. コメントの取得（カラム名を body に修正）
-    const { data: comments } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', { ascending: true });
     
-    const commentsHtml = (comments || []).map(c => {
-        // c.content ではなく c.body を使用。また undefined 回避のため || "" を追加。
-        const commentBody = (c.body || "").replace(/\n/g, '<br>');
-        return `
-            <div class="comment-item" style="border-bottom: 1px dotted #ccc; padding: 10px 0;">
-                <div style="font-size: 0.8em; color: #888;">${c.user_name || '名無しさん'} - ${new Date(c.created_at).toLocaleDateString()}</div>
-                <div style="margin-top: 5px;">${commentBody}</div>
-            </div>
-        `;
-    }).join('') || "<p style='color:#888;'>まだ感想はありません。</p>";
+    // 1. 小説データの取得
+    const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+    if(!n) return;
 
-    const commentFormHtml = `
-        <div id="comment-form-area" style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:8px;">
-            <input type="text" id="comment-user-name" placeholder="お名前（空欄で名無し）" style="width:100%; margin-bottom:10px;">
-            <textarea id="comment-text" placeholder="感想を送る" style="width:100%; height:80px;"></textarea>
-            <button onclick="sendComment('${n.id}')" style="margin-top:10px; cursor:pointer;">感想を送信する</button>
-        </div>
-    `;
+    // 2. 作者のカスタムコード（HTML/CSS）を取得して反映
+    const readerStyleEl = document.getElementById('reader-custom-style');
+    const defaultUiEl = document.getElementById('reader-default-ui'); 
+    let hasCustomCode = false;
 
-    // 4. 表示の切り分け
-    if (prof && prof.reader_custom_code && prof.reader_custom_code.trim() !== "") {
-        // --- カスタムUI ---
-        defaultUi.style.display = 'none';
-        customStyle.style.display = 'block';
-        customStyle.innerHTML = prof.reader_custom_code;
+    if (readerStyleEl) {
+        const { data: prof } = await api.from('profiles')
+            .select('reader_custom_code')
+            .eq('id', n.author_id)
+            .maybeSingle();
         
-        const tEl = document.getElementById('read-title');
-        const aEl = document.getElementById('read-author');
-        const bEl = document.getElementById('read-body');
-        const cEl = document.getElementById('read-comments');
-
-        if (tEl) tEl.innerText = n.title;
-        if (aEl) aEl.innerText = n.author_name;
-        if (bEl) {
-            bEl.innerHTML = n.content.replace(/\n/g, '<br>');
-            bEl.dataset.original = n.content.replace(/\n/g, '<br>');
+        if (prof?.reader_custom_code && prof.reader_custom_code.trim() !== "") {
+            // ここでカスタムHTMLを注入
+            readerStyleEl.innerHTML = prof.reader_custom_code;
+            hasCustomCode = true;
+            readerStyleEl.style.display = 'block';
+            if (defaultUiEl) defaultUiEl.style.display = 'none';
+        } else {
+            readerStyleEl.innerHTML = "";
+            readerStyleEl.style.display = 'none';
+            if (defaultUiEl) defaultUiEl.style.display = 'block';
         }
-        if (cEl) cEl.innerHTML = commentsHtml + commentFormHtml;
-
-    } else {
-        // --- 標準UI ---
-        defaultUi.style.display = 'block';
-        customStyle.style.display = 'none';
-
-        const titleEl = document.getElementById('read-title-default');
-        const authorEl = document.getElementById('read-author-default');
-        if (titleEl) titleEl.innerText = n.title;
-        if (authorEl) authorEl.innerText = n.author_name;
-        
-        const bEl = document.getElementById('read-body-default');
-        if (bEl) {
-            bEl.innerHTML = n.content.replace(/\n/g, '<br>');
-            bEl.dataset.original = n.content.replace(/\n/g, '<br>');
-            bEl.classList.add('indent-text');
-        }
-
-        const cArea = document.getElementById('read-comments-default');
-        if (cArea) cArea.innerHTML = commentsHtml + commentFormHtml;
     }
 
-    // 5. 共通UI表示
-    if (interactiveZone) interactiveZone.classList.remove('hidden');
-    if (nameChanger) nameChanger.classList.remove('hidden');
+    // 3. 要素の特定（以前の正しいセレクタに戻します）
+    // ID名の末尾（0付きか、なし文字か）を厳密に判定
+    const titleEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-title') : document.getElementById('read-title0');
+    const bodyEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-body') : document.getElementById('read-body0');
+    const readAuthorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author') : document.getElementById('read-author0');
+    const nameGroup = document.getElementById('name-changer-group');
 
+    // 4. 文字の流し込み
+    if (titleEl) {
+        titleEl.innerText = n.title;
+    }
+
+    if (bodyEl) {
+        // 名前変換用にオリジナルを保持（既存ロジック）
+        originalContent = n.content; 
+        // innerHTMLを使って改行を反映
+        bodyEl.innerHTML = n.content.replace(/\n/g, '<br>');
+        bodyEl.classList.remove('hanging-indent');
+        bodyEl.classList.add('indent-text');
+    }
+
+    if (readAuthorEl) {
+        readAuthorEl.innerText = n.author_name; 
+    }
+
+    // 5. 共通パーツの表示制御
+    if (nameGroup) nameGroup.classList.remove('hidden');
+
+    const authorZone = document.getElementById('author-link-zone');
+    if (authorZone) {
+        authorZone.innerHTML = `
+            作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
+            ${(currentUser && n.author_id !== currentUser.id) ? 
+                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
+                    style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
+                    border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
+                    font-weight: bold; border-radius: 4px; cursor: pointer;">
+                    フォロー
+                </button>` : ''}
+        `;
+    }
+
+    if (currentUser && n.author_id !== currentUser.id) {
+        checkFollowStatus(n.author_id);
+    }
+
+    document.getElementById('reader-overlay').style.display = 'block';
+    const interactZone = document.getElementById('reader-interactive-zone');
+    if (interactZone) interactZone.classList.remove('hidden');
+
+    // --- ここが重要！削られていたコメントといいねの再読み込み ---
+    if (typeof loadComments === "function") {
+        loadComments(id); 
+    }
     loadLikeCount(id);
-    checkFollowStatus(n.author_id);
-    
-    const followBtn = document.getElementById('follow-btn');
-    if (followBtn) followBtn.onclick = () => toggleFollow(n.author_id);
+
+    // コメントフォームの表示・非表示（以前のログイン判定を復元）
+    const form = document.getElementById('comment-form-area');
+    const msg = document.getElementById('comment-guest-msg');
+    if (currentUser) {
+        if (form) form.classList.remove('hidden');
+        if (msg) msg.classList.add('hidden');
+    } else {
+        if (form) form.classList.add('hidden');
+        if (msg) msg.classList.remove('hidden');
+    }
 }
 
 // 名前変換機能の修正（HTMLタグを壊さないように修正）
