@@ -265,13 +265,18 @@ aside button, #auth-form button:first-of-type {
         bottom: 25px;
         left: 50%;
         transform: translateX(-50%);
-        width: auto;
-        flex-direction: row; 
         padding: 8px 15px;
         border-radius: 10px;
         background: rgba(255, 255, 255, 0.8);
         pointer-events: none;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: auto;             /* 中身のサイズに合わせる */
+        height: auto;            /* 縦に伸びないようにする */
+        max-width: 95%;          /* 画面からはみ出さない */
+        
+        /* ★重要：横並びにする */
+        flex-direction: row !important; 
+        flex-wrap: nowrap;       /* 折り返さない */
     }
     /* ボタンや入力欄だけは指に反応するように戻す */
     .sticky-close > * {
@@ -282,6 +287,13 @@ aside button, #auth-form button:first-of-type {
         color: #fff !important;
         border: none;
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    /* 名前変換グループも横並びに */
+    #name-changer-group {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 5px;
     }
 }
     
