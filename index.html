@@ -930,8 +930,7 @@ document.addEventListener('change', function(e) {
     titleEl.style.textDecoration = "none";
     bodyEl.classList.remove('hanging-indent');
     bodyEl.classList.add('indent-text');
-    if (nameGroup) nameGroup.classList.remove('hidden');
-
+    
     // 1. 小説データだけをシンプルに取得 (profiles(...) を消しました)
     const { data: n, error } = await api.from('novels').select('*').eq('id', id).single();
     if(error || !n) return alert("作品が見つかりません");
