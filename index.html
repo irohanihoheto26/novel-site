@@ -223,37 +223,48 @@ aside button, #auth-form button:first-of-type {
     gap: 5px;
     vertical-align: middle;
 }
-    /* PC・基本のスタイル（上部に固定） */
+    /* PC・共通の基本スタイル */
 .sticky-close {
     position: sticky;
     top: 0;
-    background: rgba(255,255,255,0.95);
-    padding: 10px 0;
+    background: #f0f0f0; /* グレー背景 */
+    padding: 10px 20px;
     z-index: 2100;
-    border-bottom: 1px solid #eee;
-    transition: transform 0.3s ease; /* アニメーション用 */
+    border-bottom: 1px solid #ddd;
+    border-radius: 8px;   /* PCでも少し角丸に */
+    margin-bottom: 20px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 /* スマホ用のスタイル（下部に浮かせる） */
 @media screen and (max-width: 800px) {
     .sticky-close {
-        position: fixed; /* stickyからfixedに変更 */
+        position: fixed;
         top: auto;
-        bottom: 20px;    /* 下から少し浮かせる */
+        bottom: 30px;    /* 下から浮かせる */
         left: 50%;
-        transform: translateX(-50%); /* 中央寄せ */
-        width: 90%;      /* 画面端までいかない幅 */
-        max-width: 400px;
-        border: 2px solid #000;
-        border-radius: 30px; /* 角丸でボタンっぽく */
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        padding: 10px 20px;
-        border-bottom: 2px solid #000; /* 下線ではなく枠線にする */
+        transform: translateX(-50%);
+        width: auto;      /* 文字幅に合わせる */
+        min-width: 120px; /* 小さすぎ防止 */
+        background: #444; /* スマホは少し濃いめのグレーで視認性アップ */
+        color: #fff;      /* 文字を白に */
+        border: none;
+        border-radius: 50px; /* 完全に丸いカプセル型 */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        text-align: center;
+        padding: 12px 25px;
     }
 
-    /* スクロール時に隠すためのクラス（後述のJSで制御） */
+    /* 「閉じる」ボタン自体の文字色もスマホでは白くする */
+    .sticky-close button, 
+    .sticky-close span {
+        color: #fff !important;
+    }
+
+    /* スクロール時に隠すためのクラス */
     .sticky-close.nav-hidden {
-        transform: translate(-50%, 150%); /* 画面外（下）へ飛ばす */
+        transform: translate(-50%, 150%);
+        opacity: 0;
     }
 }
     
