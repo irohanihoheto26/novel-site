@@ -793,95 +793,35 @@ listEl.innerHTML = filtered.map(n => {
         document.getElementById('editor-overlay').style.display = 'block';
     }
 
-    async function openReader(id) {
-    currentReadingId = id;
+    async function loadLikeCount(id) {
+    const countEl = document.getElementById('read-like-count');
+    const likeBtn = document.getElementById('like-btn');
+    const likeText = document.getElementById('read-like-text');
+    if (!countEl || !likeBtn) return;
+
+    // 全体のカウントを取得（型エラー防止のためNumber化）
+    const { count } = await api.from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('novel_id', Number(id));
     
-    // 1. 小説データの取得
-    const { data: n } = await api.from('novels').select('*').eq('id', id).single();
-    if(!n) return;
+    countEl.innerText = count || 0;
 
-    // 2. 作者のカスタムコード（HTML/CSS）を取得して反映
-    const readerStyleEl = document.getElementById('reader-custom-style');
-    const defaultUiEl = document.getElementById('reader-default-ui'); 
-    let hasCustomCode = false;
-
-    if (readerStyleEl) {
-        const { data: prof } = await api.from('profiles')
-            .select('reader_custom_code')
-            .eq('id', n.author_id)
-            .maybeSingle();
-        
-        if (prof?.reader_custom_code && prof.reader_custom_code.trim() !== "") {
-            readerStyleEl.innerHTML = prof.reader_custom_code;
-            hasCustomCode = true;
-            readerStyleEl.style.display = 'block';
-            if (defaultUiEl) defaultUiEl.style.display = 'none';
-        } else {
-            readerStyleEl.innerHTML = "";
-            readerStyleEl.style.display = 'none';
-            if (defaultUiEl) defaultUiEl.style.display = 'block';
-        }
-    }
-
-    // 3. 【ここが修正ポイント】「今表示されている方」の要素を狙い撃ちする
-    // hasCustomCode が true なら「0なしID」、false なら「0付きID」を使います
-    const titleEl  = hasCustomCode ? document.querySelector('#reader-custom-style #read-title')  : document.getElementById('read-title-default');
-    const bodyEl   = hasCustomCode ? document.querySelector('#reader-custom-style #read-body')   : document.getElementById('read-body-default');
-    const authorEl = hasCustomCode ? document.querySelector('#reader-custom-style #read-author') : document.getElementById('read-author-default');
-    const nameGroup = document.getElementById('name-changer-group');
-
-    // 4. 文字の流し込み（既存の処理を継続）
-    if (titleEl) {
-        titleEl.innerText = n.title;
-        titleEl.style.textDecoration = "none";
-    }
-
-    if (bodyEl) {
-        originalContent = n.content;
-        bodyEl.innerText = n.content;
-        bodyEl.classList.remove('hanging-indent');
-        bodyEl.classList.add('indent-text');
-    }
-
-    // 作者名は、カスタムテンプレートに要素があれば表示、なければ空にする（既存仕様）
-    if (authorEl) authorEl.innerText = hasCustomCode ? n.author_name : ""; 
-
-    // --- ここから下は既存の機能をそのまま維持 ---
-    if (nameGroup) nameGroup.classList.remove('hidden');
-
-    const authorZone = document.getElementById('author-link-zone');
-    if (authorZone) {
-        authorZone.innerHTML = `
-            作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">${n.author_name}</strong>
-            ${(currentUser && n.author_id !== currentUser.id) ? 
-                `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
-                    style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
-                    border: 2px solid #fcaf17; background: #fff; color: #fcaf17; 
-                    font-weight: bold; border-radius: 4px; cursor: pointer;">
-                    フォロー
-                </button>` : ''}
-        `;
-    }
-
-    if (currentUser && n.author_id !== currentUser.id) {
-        checkFollowStatus(n.author_id);
-    }
-
-    document.getElementById('reader-overlay').style.display = 'block';
-    const interactZone = document.getElementById('reader-interactive-zone');
-    if (interactZone) interactZone.classList.remove('hidden');
-
-    loadComments(id);
-    loadLikeCount(id);
-
-    const form = document.getElementById('comment-form-area');
-    const msg = document.getElementById('comment-guest-msg');
     if (currentUser) {
-        if (form) form.classList.remove('hidden');
-        if (msg) msg.classList.add('hidden');
-    } else {
-        if (form) form.classList.add('hidden');
-        if (msg) msg.classList.remove('hidden');
+        const { data } = await api.from('likes')
+            .select('*')
+            .eq('novel_id', Number(id))
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+
+        if (data) {
+            likeBtn.style.background = "#ff4d4d";
+            likeBtn.style.color = "#fff";
+            if (likeText) likeText.innerText = "いいね済み";
+        } else {
+            likeBtn.style.background = "#fff";
+            likeBtn.style.color = "#000";
+            if (likeText) likeText.innerText = "いいね";
+        }
     }
 }
     function applyNameChange() {
@@ -987,7 +927,7 @@ listEl.innerHTML = filtered.map(n => {
         const { data: existingLike, error: checkError } = await api
             .from('likes')
             .select('*')
-            .eq('novel_id', currentReadingId) // ここで型エラーが出ている
+            .eq('novel_id', Number(currentReadingId)) // ここで型エラーが出ている
             .eq('user_id', currentUser.id)
             .maybeSingle();
 
@@ -1167,7 +1107,6 @@ listEl.innerHTML = filtered.map(n => {
 async function doSignUp() { const { error } = await api.auth.signUp({ email: document.getElementById('email').value, password: document.getElementById('password').value }); if(error) alert(error.message); else alert("メールを確認してください"); }    
 async function saveProfile() {
     const name = document.getElementById('prof-name').value.trim();
-    
     if (!name) return alert("作者名は必須です！");
 
     const updates = {
@@ -1175,18 +1114,25 @@ async function saveProfile() {
         display_name: name,
         bio: document.getElementById('prof-bio').value,
         custom_css: document.getElementById('prof-css').value,
-        reader_custom_code: document.getElementById('reader-custom-input').value, // 文章画面用
+        reader_custom_code: document.getElementById('reader-custom-input').value,
         updated_at: new Date()
     };
 
-    const { error } = await api.from('profiles').upsert(updates);
+    // 1. プロフィールの更新
+    const { error: profError } = await api.from('profiles').upsert(updates);
+    if (profError) return alert("保存エラー: " + profError.message);
 
-    if (error) {
-        alert("エラー: " + error.message);
-    } else {
-        alert("設定を保存しました！");
-        location.reload();
+    // 2. 過去作品の作者名も一括更新（ここを追加！）
+    const { error: novelError } = await api.from('novels')
+        .update({ author_name: name })
+        .eq('author_id', currentUser.id);
+
+    if (novelError) {
+        console.warn("作品名の同期に失敗しました（データがない場合は正常です）");
     }
+
+    alert("設定を保存しました！");
+    location.reload();
 }
 
     function filterByAuthor(name) {
@@ -1195,6 +1141,7 @@ async function saveProfile() {
         switchTab('all');
         getList();
     }
+    
 function forceProfileSetup() {
         // 設定エリアを表示
         const settingsArea = document.getElementById('profile-edit-area');
