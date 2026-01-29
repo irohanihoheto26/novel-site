@@ -578,7 +578,9 @@ const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自�
 
     try {
         // 1. 基本データの取得（統計は含めない）
-        let query = api.from('novels').select('*, profiles(display_name)').eq('is_private', false);
+        let query = api.from('novels')
+            .select('*, profiles:author_id(display_name)')
+            .eq('is_private', false);
         let { data: novels, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
 
@@ -778,7 +780,7 @@ listEl.innerHTML = filtered.map(n => {
     if (nameGroup) nameGroup.classList.remove('hidden');
 
     // 1. 小説データだけをシンプルに取得 (profiles(...) を消しました)
-    const { data: n } = await api.from('novels').select('*').eq('id', id).single();
+    const { data: n } = await api.from('novels').select('*, profiles:author_id(display_name)').eq('id', id).single();
     if(!n) return;
 
     // 2. 作者のプロフィール（カスタムコード）を別途取得
@@ -801,8 +803,7 @@ listEl.innerHTML = filtered.map(n => {
     // --- 作者リンク & フォローボタン ---
 document.getElementById('author-link-zone').innerHTML = `
     作者: <strong onclick="openAuthorPage('${n.author_id}')" style="cursor:pointer; text-decoration:underline;">
-        ${n.profiles?.display_name || n.author_name}
-    </strong>
+        ${n.profiles?.display_name || n.author_name} </strong>
     ${(currentUser && n.author_id !== currentUser.id) ? 
         `<button id="follow-btn" onclick="toggleFollow('${n.author_id}')" 
             style="width:auto; padding:4px 12px; margin-left:10px; font-size:0.8em; 
