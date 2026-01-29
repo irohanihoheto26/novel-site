@@ -801,7 +801,7 @@ listEl.innerHTML = filtered.map(n => {
     const interactiveZone = document.getElementById('reader-interactive-zone');
     const nameChanger = document.getElementById('name-changer-group');
 
-    // 1. 作品データと作者プロフィールの取得
+    // 1. データ取得
     const { data: n, error } = await api.from('novels').select('*').eq('id', id).maybeSingle();
     if (error || !n) return alert("作品が見つかりません");
 
@@ -812,14 +812,8 @@ listEl.innerHTML = filtered.map(n => {
     overlay.scrollTop = 0;
     resetReaderUI(); 
 
-    // 3. 【追加】コメント（感想）の取得
-    // commentsテーブルがある想定です。適宜テーブル名を合わせてください。
-    const { data: comments } = await api
-        .from('comments')
-        .select('*')
-        .eq('novel_id', id)
-        .order('created_at', { ascending: true });
-
+    // 3. コメントの取得
+    const { data: comments } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', { ascending: true });
     const commentsHtml = (comments || []).map(c => `
         <div class="comment-item" style="border-bottom: 1px dotted #ccc; padding: 10px 0;">
             <div style="font-size: 0.8em; color: #888;">${c.user_name || '名無しさん'} - ${new Date(c.created_at).toLocaleDateString()}</div>
@@ -827,27 +821,39 @@ listEl.innerHTML = filtered.map(n => {
         </div>
     `).join('') || "<p style='color:#888;'>まだ感想はありません。</p>";
 
+    // コメント入力フォーム（これを commentsHtml の後に追加することで入力欄を復活させます）
+    const commentFormHtml = `
+        <div id="comment-form-area" style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:8px;">
+            <input type="text" id="comment-user-name" placeholder="お名前（空欄で名無し）" style="width:100%; margin-bottom:10px;">
+            <textarea id="comment-text" placeholder="感想を送る" style="width:100%; height:80px;"></textarea>
+            <button onclick="sendComment('${n.id}')" style="margin-top:10px;">感想を送信する</button>
+        </div>
+    `;
+
     // 4. 表示の切り分け
     if (prof && prof.reader_custom_code && prof.reader_custom_code.trim() !== "") {
         // --- カスタムUI ---
         defaultUi.style.display = 'none';
         customStyle.style.display = 'block';
         
-        const code = prof.reader_custom_code;
-        const cssMatch = code.match(/<style>([\s\S]*?)<\/style>/);
-        customStyle.innerHTML = cssMatch ? cssMatch[1] : "";
+        // テンプレートをまず流し込む
+        customStyle.innerHTML = prof.reader_custom_code;
         
-        let htmlPart = code.replace(/<style>[\s\S]*?<\/style>/, "");
-        htmlPart = htmlPart.replace(/{{title}}/g, n.title)
-                           .replace(/{{author}}/g, n.author_name)
-                           .replace(/{{content}}/g, n.content.replace(/\n/g, '<br>'))
-                           .replace(/{{comments}}/g, commentsHtml); // カスタム側にもコメントを流し込む
-        
-        const bodyEl = document.getElementById('read-body');
-        if (bodyEl) {
-            bodyEl.innerHTML = htmlPart;
-            applyNameChange(); 
+        // テンプレート内の要素に値をセット
+        const tEl = document.getElementById('read-title');
+        const aEl = document.getElementById('read-author');
+        const bEl = document.getElementById('read-body');
+        const cEl = document.getElementById('read-comments'); // テンプレートにこれがあれば流し込む
+
+        if (tEl) tEl.innerText = n.title;
+        if (aEl) aEl.innerText = n.author_name;
+        if (bEl) {
+            bEl.innerHTML = n.content.replace(/\n/g, '<br>');
+            // 名前変換用にオリジナルを保持
+            bEl.dataset.original = n.content.replace(/\n/g, '<br>');
         }
+        if (cEl) cEl.innerHTML = commentsHtml + commentFormHtml;
+
     } else {
         // --- 標準UI ---
         defaultUi.style.display = 'block';
@@ -856,18 +862,16 @@ listEl.innerHTML = filtered.map(n => {
         document.getElementById('read-title-default').innerText = n.title;
         document.getElementById('read-author-default').innerText = n.author_name;
         
-        const bodyEl = document.getElementById('read-body-default');
-        bodyEl.innerHTML = n.content.replace(/\n/g, '<br>');
-        bodyEl.classList.add('indent-text');
+        const bEl = document.getElementById('read-body-default');
+        bEl.innerHTML = n.content.replace(/\n/g, '<br>');
+        bEl.dataset.original = n.content.replace(/\n/g, '<br>');
+        bEl.classList.add('indent-text');
 
-        // 標準UI用のコメント表示エリア（ID: read-comments-default がある想定）
-        const commentArea = document.getElementById('read-comments-default');
-        if (commentArea) commentArea.innerHTML = commentsHtml;
-        
-        applyNameChange();
+        const cArea = document.getElementById('read-comments-default');
+        if (cArea) cArea.innerHTML = commentsHtml + commentFormHtml;
     }
 
-    // 5. 共通UI（いいね・フォロー・名前変換）の表示
+    // 5. 共通UI
     if (interactiveZone) interactiveZone.classList.remove('hidden');
     if (nameChanger) nameChanger.classList.remove('hidden');
 
@@ -877,19 +881,21 @@ listEl.innerHTML = filtered.map(n => {
     const followBtn = document.getElementById('follow-btn');
     if (followBtn) followBtn.onclick = () => toggleFollow(n.author_id);
 }
-    function applyNameChange() {
+
+// 名前変換機能の修正（HTMLタグを壊さないように修正）
+function applyNameChange() {
     const target = document.getElementById('target-string').value;
     const replacement = document.getElementById('new-name').value;
-    if (!target) return alert("変換前の文字を入力してください");
+    if (!target) return; // 警告は出さず、入力がない時は何もしない
     
     const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(escapedTarget, 'g');
     
-    // 今表示されている方の body を取得
     const bodyEl = document.getElementById('read-body') || document.getElementById('read-body-default');
     
-    if (bodyEl) {
-        bodyEl.innerText = originalContent.replace(regex, replacement || "");
+    if (bodyEl && bodyEl.dataset.original) {
+        // innerText ではなく innerHTML を使い、保存しておいたオリジナルから変換
+        bodyEl.innerHTML = bodyEl.dataset.original.replace(regex, replacement || "");
     }
 }
 
