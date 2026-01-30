@@ -1857,8 +1857,10 @@ function resetReaderUI() {
     }
 
     if (interactiveZone) interactiveZone.classList.add('hidden');
-    if (nameChanger) nameChanger.classList.add('hidden');
-
+    if (nameChanger) {
+            nameChanger.style.display = 'none'; // 直接「消えろ」と命じる
+            nameChanger.classList.add('hidden'); 
+        }
     bodyEl.classList.remove('indent-text');
     bodyEl.classList.remove('hanging-indent');
     
