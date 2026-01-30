@@ -1008,7 +1008,16 @@ document.getElementById('author-link-zone').innerHTML = `
     
     // 背景が暗い原因（.overlay-contentなど）を強制的に透明にする一文をJS側で合体させる
     const resetHelper = `
-        #reader-overlay, .overlay-content, #reader-overlay div { background-color: transparent; border:none; box-shadow:none; }
+        #reader-overlay, 
+        .overlay-content, 
+        #reader-overlay button,
+        #reader-overlay .close-btn-style { 
+            /* 背景や枠線を一度クリアして、ユーザーのデザインを邪魔しないようにする */
+            background-color: transparent; 
+            border: none; 
+            box-shadow: none;
+            /* 色の指定を「継承（親の設定に従う）」にして、ユーザーの指定を通りやすくする */
+            color: inherit; }
     `;
 
     styleTag.textContent = resetHelper + customCode.replace(/<style>|<\/style>/g, '');
