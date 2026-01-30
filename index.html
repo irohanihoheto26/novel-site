@@ -570,7 +570,6 @@ const defaultReaderTemplate = `<style>
     margin: 0 auto;
     font-size: 1.1em;
     line-height: 2;
-    font-family: "Yu Mincho", "MS Mincho", serif;
 }
 </style>`;
 
@@ -990,23 +989,25 @@ document.getElementById('author-link-zone').innerHTML = `
         checkFollowStatus(n.author_id);
     }
 
-        // --- ★ここから追加：作者のカスタムデザインを適用 ---
-    // 以前のカスタムスタイルがあれば削除してリセット
+    // --- ★ここから修正：作者のカスタムデザインを適用 ---
     const oldStyle = document.getElementById('dynamic-reader-style');
     if (oldStyle) oldStyle.remove();
 
-    // 新しいスタイルタグを作成
-    const styleTag = document.createElement('div'); 
+    // 1. スタイルタグとして作成（divではなくstyleを使うのが正解）
+    const styleTag = document.createElement('style'); 
     styleTag.id = 'dynamic-reader-style';
     
-    // 作者が設定したコードがあればそれを使う、なければデフォルトを適用
-    const customStyle = (prof && prof.reader_custom_code) 
-                        ? prof.reader_custom_code 
-                        : defaultReaderTemplate;
+    // 2. コードを取得。タグが含まれている場合は中身だけにする
+    let customCode = (prof && prof.reader_custom_code) 
+                       ? prof.reader_custom_code 
+                       : defaultReaderTemplate;
+    
+    // <style>タグが入力に含まれていても、CSSとして正しく解釈されるよう中身だけ抽出
+    styleTag.textContent = customCode.replace(/<style>|<\/style>/g, '');
 
-    styleTag.innerHTML = customStyle; 
+    // 3. headの一番最後に追加（これでサイトの共通CSSより優先順位が確実に上になる）
     document.head.appendChild(styleTag);
-    // --- ★ここまで追加 ---
+    // --- ★ここまで修正 ---
         
     document.getElementById('reader-overlay').style.display = 'block';
     document.getElementById('reader-interactive-zone').classList.remove('hidden');
