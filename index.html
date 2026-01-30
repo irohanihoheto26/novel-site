@@ -1116,40 +1116,44 @@ document.getElementById('author-link-zone').innerHTML = `
     }).join('');
 }
 
-    async function postComment() {
-        const b = document.getElementById('comment-input').value.trim();
-        if(!b || !currentUser) return;
+   async function postComment() {
+    const b = document.getElementById('comment-input').value.trim();
+    // ★ ここでチェックボックスの状態を取得（これが抜けていたのでUnexpected identifierになります）
+    const isPrivate = document.getElementById('comment-is-private').checked;
+    
+    if(!b || !currentUser) return;
 
-        // userProfile(マイページ情報)があればそれを使う、なければメールアドレス
-        const displayName = (userProfile && userProfile.display_name) 
-                            ? userProfile.display_name 
-                            : currentUser.email.split('@')[0];
+    const displayName = (userProfile && userProfile.display_name) 
+                        ? userProfile.display_name 
+                        : currentUser.email.split('@')[0];
 
-        const { error } = await api.from('comments').insert({ 
-            novel_id: currentReadingId, 
-            user_id: currentUser.id, 
-            user_name: displayName, 
-            body: b,
-            is_private: isPrivate
-        });
+    const { error } = await api.from('comments').insert({ 
+        novel_id: currentReadingId, 
+        user_id: currentUser.id, 
+        user_name: displayName, 
+        body: b,
+        is_private: isPrivate // カンマはOK！
+    });
 
-        if (error) {
-            console.error("コメント投稿エラー:", error.message);
-            alert("コメントに失敗しました。");
-        } else {
-        // ★【追加】通知を送る処理
+    if (error) {
+        console.error("コメント投稿エラー:", error.message);
+        alert("コメントに失敗しました。");
+    } else {
         if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
             await api.from('notifications').insert({
                 target_user_id: currentOpenedNovel.author_id,
-                from_user_name: displayName, // 設定した名前で通知
+                from_user_name: displayName,
                 type: 'comment',
-                novel_title: currentOpenedNovel.title
+                novel_title: currentOpenedNovel.title, // ★ここにカンマが必要！
                 is_private: isPrivate
             });
         }
 
         document.getElementById('comment-input').value = "";
-        document.getElementById('comment-is-private').checked = false;
+        // チェックボックスをリセット
+        if (document.getElementById('comment-is-private')) {
+            document.getElementById('comment-is-private').checked = false;
+        }
         loadComments(currentReadingId);
     }
 }
