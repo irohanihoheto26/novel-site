@@ -432,7 +432,7 @@ aside button, #auth-form button:first-of-type {
             初期デザインに戻す（クリック後、更新を押し下げ）
         </button>
         <textarea id="reader-custom-input" style="width:100%; height:150px;" placeholder="<style> ここに文章画面用のCSSを書く </style>"></textarea>
-    </div><button onclick="saveProfile()">設定を保存</button></div>
+    </div><button onclick="saveProfile()">更新</button></div>
 
     <div id="notification-banner" class="hidden" style="background: #fff9f0; border: 1px solid #ffebcc; padding: 15px; margin-bottom: 20px; border-radius: 12px; position: relative; min-height: 50px;">
     <button onclick="clearNotifications()" style="position: absolute; top: 10px; right: 10px; background: #fcaf17; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; width: auto; line-height: 1.2;">
@@ -989,28 +989,32 @@ document.getElementById('author-link-zone').innerHTML = `
         checkFollowStatus(n.author_id);
     }
 
-    // --- ★ここから修正：作者のカスタムデザインを適用 ---
+    // --- (前半のデータ取得などはそのまま) ---
+
+    // 先に表示させる！
+    document.getElementById('reader-overlay').style.display = 'block';
+    document.getElementById('reader-interactive-zone').classList.remove('hidden');
+
+    // 表示された直後に「最強のスタイル」を後出しで叩き込む
     const oldStyle = document.getElementById('dynamic-reader-style');
     if (oldStyle) oldStyle.remove();
 
-    // 1. スタイルタグとして作成（divではなくstyleを使うのが正解）
     const styleTag = document.createElement('style'); 
     styleTag.id = 'dynamic-reader-style';
     
-    // 2. コードを取得。タグが含まれている場合は中身だけにする
     let customCode = (prof && prof.reader_custom_code) 
                        ? prof.reader_custom_code 
                        : defaultReaderTemplate;
     
-    // <style>タグが入力に含まれていても、CSSとして正しく解釈されるよう中身だけ抽出
-    styleTag.textContent = customCode.replace(/<style>|<\/style>/g, '');
+    // 背景が暗い原因（.overlay-contentなど）を強制的に透明にする一文をJS側で合体させる
+    const resetHelper = `
+        #reader-overlay, .overlay-content, #reader-overlay div { background-color: transparent; border:none; box-shadow:none; }
+    `;
 
-    // 3. headの一番最後に追加（これでサイトの共通CSSより優先順位が確実に上になる）
+    styleTag.textContent = resetHelper + customCode.replace(/<style>|<\/style>/g, '');
+
     document.head.appendChild(styleTag);
-    // --- ★ここまで修正 ---
-        
-    document.getElementById('reader-overlay').style.display = 'block';
-    document.getElementById('reader-interactive-zone').classList.remove('hidden');
+
     loadComments(id);
     loadLikeCount(id);
 
