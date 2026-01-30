@@ -1118,8 +1118,8 @@ document.getElementById('author-link-zone').innerHTML = `
                 `;
             }
             
-            // 返信ボタン（親コメントにのみ表示）
-            const replyBtn = !isReply ? `<span onclick="prepareReply('${c.id}', '${name}')" style="cursor:pointer; color:#666; font-size:0.8em; margin-left:12px; text-decoration: underline;">返信する</span>` : '';
+            // 返信ボタン
+            const replyBtn = `<span onclick="prepareReply('${c.id}', '${name}')" style="cursor:pointer; color:#666; font-size:0.8em; margin-left:12px; text-decoration: underline;">返信する</span>`;
 
             const style = isReply ? 'margin-left: 30px; border-left: 2px solid #ddd; padding-left: 10px; margin-top: 8px;' : 'margin-bottom: 8px;';
             
@@ -1194,7 +1194,7 @@ async function startEditComment(commentId, oldBody) {
             await api.from('notifications').insert({
                 target_user_id: currentOpenedNovel.author_id,
                 from_user_name: displayName,
-                type: 'comment',
+                type: currentReplyId ? 'reply' : 'comment', // 返信時はタイプを変える                
                 novel_title: currentOpenedNovel.title, // ★ここにカンマが必要！
                 is_private: isPrivate
             });
@@ -1563,7 +1563,7 @@ function forceProfileSetup() {
             if (note.type === 'like') message += `「${note.novel_title}」にいいねしました！`;
             if (note.type === 'comment') message += `「${note.novel_title}」にコメントしました！`;
             // ★【追加】返信タイプのメッセージ
-            if (note.type === 'reply') message += `${privateTag}「${note.novel_title}」のあなたのコメントに返信しました！`;
+            if (note.type === 'reply') message += `「${note.novel_title}」のあなたのコメントに返信しました！`;
             if (note.type === 'follow') message += `あなたをフォローしました！`;
             return `<div style="margin-bottom: 2px;">・ ${message}</div>`;
         }).join('');
