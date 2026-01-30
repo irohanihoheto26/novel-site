@@ -500,7 +500,7 @@ aside button, #auth-form button:first-of-type {
         </button>
 
         <button id="like-btn" onclick="toggleLike()" style="width:auto; padding: 10px 30px; background: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
-            ♥ <span id="read-like-text">いいね</span> <span id="read-like-count">0</span>
+            ♥ <span id="read-like-text"></span> <span id="read-like-count">0</span>
         </button>
     </div>
     <span id="author-link-zone" style="font-size: 0.9em; color: #666;"></span>
@@ -1389,11 +1389,11 @@ async function startEditComment(commentId, oldBody) {
                 likeBtn.style.background = "#ff4d4d";
                 likeBtn.style.color = "#fff";
                 // innerTextを丸ごと変えると中のspan(count用)が消えるので注意
-                document.getElementById('read-like-text').innerText = "いいね済み";
+                document.getElementById('read-like-text').innerText = "";
             } else {
                 likeBtn.style.background = "#fff";
                 likeBtn.style.color = "#000";
-                document.getElementById('read-like-text').innerText = "いいね";
+                document.getElementById('read-like-text').innerText = "";
             }
         }
     }
