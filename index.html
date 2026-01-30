@@ -1199,7 +1199,26 @@ async function startEditComment(commentId, oldBody) {
                 is_private: isPrivate
             });
         }
+// 2. 【新規】返信の場合、親コメントの投稿者にも通知
+        if (currentReplyId) {
+            // 親コメントのデータを取得して、誰が書いたか調べる
+            const { data: parentC } = await api
+                .from('comments')
+                .select('user_id')
+                .eq('id', currentReplyId)
+                .single();
 
+            // 親コメントの主が自分以外、かつ作者とも違う場合に通知を送る
+            if (parentC && parentC.user_id !== currentUser.id && parentC.user_id !== currentOpenedNovel.author_id) {
+                await api.from('notifications').insert({
+                    target_user_id: parentC.user_id,
+                    from_user_name: displayName,
+                    type: 'reply', // 通知タイプを返信にする
+                    novel_title: currentOpenedNovel.title,
+                    is_private: isPrivate
+                });
+            }
+        }
         // --- ★3. 送信後の後片付け ---
         document.getElementById('comment-input').value = "";
         // プレースホルダーを「感想を書く...」に戻す
@@ -1543,6 +1562,8 @@ function forceProfileSetup() {
             let message = `<strong>${note.from_user_name}</strong> さんが `;
             if (note.type === 'like') message += `「${note.novel_title}」にいいねしました！`;
             if (note.type === 'comment') message += `「${note.novel_title}」にコメントしました！`;
+            // ★【追加】返信タイプのメッセージ
+            if (note.type === 'reply') message += `${privateTag}「${note.novel_title}」のあなたのコメントに返信しました！`;
             if (note.type === 'follow') message += `あなたをフォローしました！`;
             return `<div style="margin-bottom: 2px;">・ ${message}</div>`;
         }).join('');
