@@ -500,10 +500,11 @@ aside button, #auth-form button:first-of-type {
                 <div id="comment-form-area" class="hidden" style="margin-top: 20px;">
                     <textarea id="comment-input" placeholder="感想を書く..." rows="3"></textarea>
     
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                        <button onclick="postComment()" class="btn-outline" style="width:auto; margin:0;">コメントを送信</button>
-                        <label style="font-size: 0.8em; color: #666; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                            <input type="checkbox" id="comment-is-private"> 作者だけに公開
+                    <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: nowrap;">
+                        <button onclick="postComment()" class="btn-outline" style="width:auto; margin:0; flex-shrink: 0;">コメントを送信</button>
+                        <label style="font-size: 0.85em; color: #666; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; user-select: none;">
+                            <input type="checkbox" id="comment-is-private" style="cursor: pointer;"> 
+                            <span>作者だけに公開</span>
                         </label>
                     </div>
                 </div>
@@ -1085,35 +1086,47 @@ document.getElementById('author-link-zone').innerHTML = `
         return;
     }
 
-    // 作品の作者かどうかを判定（currentOpenedNovel は openReader でセットされている想定）
-    const isAuthor = currentOpenedNovel && currentUser && currentOpenedNovel.author_id === currentUser.id;
-
-    listEl.innerHTML = data.filter(c => {
-        // ★ 非公開フィルタリング
-        if (c.is_private) {
-            const isMine = currentUser && c.user_id === currentUser.id;
-            // 「自分（閲覧者）が作者」または「自分（閲覧者）が書いたコメント」なら表示
-            return isAuthor || isMine;
-        }
-        return true; // 公開コメントは全員に表示
-    }).map(c => {
+    // RLSのおかげで、ここに来る data には「見ていいコメント」しか入っていません！
+    listEl.innerHTML = data.map(c => {
         const isMine = currentUser && c.user_id === currentUser.id;
         const name = c.user_name || "名無し";
         
-        // 非公開コメントには目印をつける
-        const privateMark = c.is_private ? '<span style="color:#ff4d4d; font-size:0.8em;">[非公開]</span> ' : '';
+        // 非公開目印
+        const privateMark = c.is_private ? '<span style="color:#ff4d4d; font-size:0.8em; font-weight:bold;">[非公開]</span> ' : '';
 
-        const manageBtns = isMine ? `
-            <span onclick="deleteComment('${c.id}')" 
-                  style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">
-                  [削除]
-            </span>` : '';
+        // 自分のコメントなら「編集」と「削除」を出す
+        let manageBtns = '';
+        if (isMine) {
+            manageBtns = `
+                <span onclick="startEditComment('${c.id}', \`${c.body}\`)" 
+                      style="cursor:pointer; color:blue; font-size:0.8em; margin-left:10px;">[編集]</span>
+                <span onclick="deleteComment('${c.id}')" 
+                      style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">[削除]</span>
+            `;
+        }
 
         return `
-            <div class="comment-item">
-                ${privateMark}<strong>${name}</strong>: ${c.body} ${manageBtns}
+            <div class="comment-item" style="margin-bottom: 8px;">
+                ${privateMark}<strong>${name}</strong>: <span>${c.body}</span> ${manageBtns}
             </div>`;
     }).join('');
+}
+
+// 編集用関数（promptでパッと入力）
+async function startEditComment(commentId, oldBody) {
+    const newBody = prompt("コメントを編集しますか？", oldBody);
+    if (newBody === null || newBody.trim() === "" || newBody === oldBody) return;
+
+    const { error } = await api
+        .from('comments')
+        .update({ body: newBody.trim() })
+        .eq('id', commentId);
+
+    if (error) {
+        alert("編集に失敗しました: " + error.message);
+    } else {
+        loadComments(currentReadingId);
+    }
 }
 
    async function postComment() {
