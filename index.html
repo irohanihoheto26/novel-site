@@ -366,7 +366,7 @@ aside button, #auth-form button:first-of-type {
 ">WEB小説投稿サイト</p>
     
     <span class="rule-link" onclick="openRules()">ルール（必読）</span>
-<span class="rule-link" onclick="openAboutPage()" style="display: block; margin-top: -5px;">このサイトについて</span>    
+    <span class="rule-link" onclick="openAboutPage()" style="display: block; margin-top: -5px;">このサイトについて</span>    
     
     <input type="text" style="display:none" aria-hidden="true">
     <input type="search" 
@@ -1301,7 +1301,11 @@ document.getElementById('author-link-zone').innerHTML = `
 }
 
     function toggleSettings() { const s = document.getElementById('profile-edit-area'); s.style.display = s.style.display==='block'?'none':'block'; }
-    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; }
+    function closeReader() { document.getElementById('reader-overlay').style.display = 'none'; 
+                           // ★ これだけ追加：作者が残していったCSSの「ゴミ」を捨てる
+                            const oldStyle = document.getElementById('dynamic-reader-style');
+                            if (oldStyle) oldStyle.remove();
+}
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
     async function doLogOut() {
         await api.auth.signOut();
@@ -1614,13 +1618,24 @@ function resetReaderUI() {
     const interactiveZone = document.getElementById('reader-interactive-zone');
     const nameChanger = document.getElementById('name-changer-group');
 
-    // 1. 名前変換などのボタン類を一旦すべて隠す
+    // ★ 追加：以前の作者が残していった CSS を完全に削除する
+    const oldStyle = document.getElementById('dynamic-reader-style');
+    if (oldStyle) {
+        oldStyle.remove();
+    }
+
     if (interactiveZone) interactiveZone.classList.add('hidden');
     if (nameChanger) nameChanger.classList.add('hidden');
 
-    // 2. インデント設定を一旦リセット（これがないと混ざる）
     bodyEl.classList.remove('indent-text');
     bodyEl.classList.remove('hanging-indent');
+    
+    // タイトルの装飾（下線など）もリセット
+    const titleEl = document.getElementById('read-title');
+    if (titleEl) {
+        titleEl.style.textDecoration = "none";
+        titleEl.style.color = ""; // 文字色も元に戻す
+    }
 }
     
     async function deleteAccount() {
