@@ -1618,6 +1618,18 @@ function resetReaderUI() {
         alert("エラーが発生しました。時間を置いて再度お試しください。");
     }
 }
+
+    // ページが読み込まれたとき（リロード後）に自動で動く
+window.addEventListener('DOMContentLoaded', async () => {
+    // ログイン状態を確認
+    const { data: { session } } = await api.auth.getSession();
+    
+    if (session) {
+        currentUser = session.user;
+        // ログインしていたら、通知があるかチェック
+        await checkNotifications();
+    }
+});
     
     
 document.addEventListener('DOMContentLoaded', () => {
