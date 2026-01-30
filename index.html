@@ -819,7 +819,7 @@ const promises = filtered.map(async (n) => {
 // 全作品の「いいね数」などがすべて揃うのを待ってから、並び替えを実行する
 await Promise.all(promises);
 
-const sortType = document.getElementById('sort-order').value;
+sortType = document.getElementById('sort-order').value;
 if (sortType === 'likes' || sortType === 'char_count') {
     // データが揃ったので並び替える
     if (sortType === 'likes') {
