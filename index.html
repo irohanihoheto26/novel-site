@@ -415,7 +415,7 @@ aside button, #auth-form button:first-of-type {
     <input type="text" id="prof-name" placeholder="作者名">
     <textarea id="prof-bio" placeholder="自己紹介" rows="3"></textarea>
     
-    <label>マイページデザインのカスタマイズ (HTML/CSS)</label>
+    <h3 style="font-size: 0.9em; margin-bottom: 10px;">マイページデザインのカスタマイズ (HTML/CSS)</h3>
     <span style="color: red; font-size: 0.75em; font-weight: bold; margin-left: 5px;">
         ※以下の欄は、CSS等の知識がある方のみ編集してください。画面表示が崩れる恐れがあります。
     </span>
@@ -425,7 +425,7 @@ aside button, #auth-form button:first-of-type {
     <textarea id="prof-css" style="width:100%; height:150px;"></textarea>
 
     <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
-        <h3 style="font-size: 0.9em; margin-bottom: 10px;">文章画面のカスタマイズ (HTML/CSS)</h3>
+        <h3 style="font-size: 0.9em; margin-bottom: 10px;">文章画面のカスタマイズ (CSS)</h3>
         <p style="font-size: 0.75em; color: #666;">読書画面の見た目を変更できます。</p>
         
         <button type="button" onclick="resetReaderDesign()" style="font-size: 0.8em; margin-bottom: 5px;">
@@ -990,6 +990,24 @@ document.getElementById('author-link-zone').innerHTML = `
         checkFollowStatus(n.author_id);
     }
 
+        // --- ★ここから追加：作者のカスタムデザインを適用 ---
+    // 以前のカスタムスタイルがあれば削除してリセット
+    const oldStyle = document.getElementById('dynamic-reader-style');
+    if (oldStyle) oldStyle.remove();
+
+    // 新しいスタイルタグを作成
+    const styleTag = document.createElement('div'); 
+    styleTag.id = 'dynamic-reader-style';
+    
+    // 作者が設定したコードがあればそれを使う、なければデフォルトを適用
+    const customStyle = (prof && prof.reader_custom_code) 
+                        ? prof.reader_custom_code 
+                        : defaultReaderTemplate;
+
+    styleTag.innerHTML = customStyle; 
+    document.head.appendChild(styleTag);
+    // --- ★ここまで追加 ---
+        
     document.getElementById('reader-overlay').style.display = 'block';
     document.getElementById('reader-interactive-zone').classList.remove('hidden');
     loadComments(id);
