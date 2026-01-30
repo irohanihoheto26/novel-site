@@ -1074,7 +1074,7 @@ document.getElementById('author-link-zone').innerHTML = `
     async function loadComments(id) {
     const { data, error } = await api
         .from('comments')
-        .select(` *,profiles:id (display_name)`)
+        .select('*') // 結合エラーを避けるため、動いていた時と同じくシンプルに
         .eq('novel_id', id)
         .order('created_at', {ascending: true});
 
@@ -1090,36 +1090,34 @@ document.getElementById('author-link-zone').innerHTML = `
         return;
     }
 
-    // RLSのおかげで、ここに来る data には「見ていいコメント」しか入っていません！
     listEl.innerHTML = data.map(c => {
-        const isMine = currentUser && c.id === currentUser.id;
-        const name = c.profiles?.display_name || c.user_name || "名無し";
+        // 判定は c.user_id を使う（これが投稿者のID）
+        const isMine = currentUser && c.user_id === currentUser.id;
+        const name = c.user_name || "名無し";
         
-        // 非公開目印
+        // 1. 非公開バッジ（背景グレー、文字黒）
         const privateMark = c.is_private 
-            ? '<span style="background:#eee; color:#333; font-size:0.75em; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold; border:1px solid #ccc;">非公開</span> ' 
+            ? '<span style="background:#e0e0e0; color:#000; font-size:0.75em; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold; border:1px solid #ccc;">非公開</span> ' 
             : '';
-        // --- 2. 名前から作者ページへのリンク ---
-        // user_id を使って openAuthorPage を呼び出すようにします
-        const nameLink = `<strong onclick="openAuthorPage('${c.id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
 
-        // 修正版：manageBtns の作り方
+        // 2. 名前のリンク（作者ページへ飛ぶ）
+        const nameLink = `<strong onclick="openAuthorPage('${c.user_id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
+
+        // 3. 管理ボタン（編集と削除）
         let manageBtns = '';
         if (isMine) {
-            // .replace(/`/g, '\\`') を入れることで、コメント内のバッククォートを無効化（エスケープ）します
-        const safeBody = c.body.replace(/`/g, '\\`');
-    
-        manageBtns = `
-            <span onclick="startEditComment('${c.id}', \`${safeBody}\`)" 
-                  style="cursor:pointer; color:#007bff; font-size:0.8em; margin-left:12px; text-decoration: underline;">編集</span>
-            <span onclick="deleteComment('${c.id}')" 
-                  style="cursor:pointer; color:#dc3545; font-size:0.8em; margin-left:8px; text-decoration: underline;">削除</span>
-        `;
+            const safeBody = c.body.replace(/`/g, '\\`');
+            manageBtns = `
+                <span onclick="startEditComment('${c.id}', \`${safeBody}\`)" 
+                      style="cursor:pointer; color:#007bff; font-size:0.8em; margin-left:12px; text-decoration: underline;">編集</span>
+                <span onclick="deleteComment('${c.id}')" 
+                      style="cursor:pointer; color:#dc3545; font-size:0.8em; margin-left:8px; text-decoration: underline;">削除</span>
+            `;
         }
 
         return `
             <div class="comment-item" style="margin-bottom: 8px;">
-                ${privateMark}<strong>${name}</strong>: <span>${c.body}</span> ${manageBtns}
+                ${privateMark}${nameLink}: <span>${c.body}</span> ${manageBtns}
             </div>`;
     }).join('');
 }
