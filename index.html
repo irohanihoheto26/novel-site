@@ -450,16 +450,23 @@ aside button, #auth-form button:first-of-type {
         <div id="my-works-list">読み込み中...</div>
     </div>
     
-    <div id="library-section-header">
-    <h2>ライブラリ</h2>
-    <span id="search-result-count" style="font-size: 0.8em; color: #666; margin-left: 10px;"></span>
-</div>
-    <div class="filter-bar">
-    <select id="sort-order" onchange="getList()">
-        <option value="created_at">最新順</option>
-        <option value="likes">いいね順</option>
-        <option value="char_count">文字数順</option>
-    </select>
+    <div id="library-section-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+    <h2 style="margin: 0;">ライブラリ</h2>
+    
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <select id="sort-order" onchange="getList()" style="padding: 2px 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85em;">
+            <option value="created_at">最新順</option>
+            <option value="likes">いいね順</option>
+            <option value="char_count">文字数順</option>
+        </select>
+
+        <label style="font-size: 0.8em; color: #666; display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="exclude-r18" onchange="getList()" style="cursor: pointer; margin: 0;"> 
+            R18を除く
+        </label>
+    </div>
+
+    <span id="search-result-count" style="font-size: 0.8em; color: #666;"></span>
 </div>
     <div class="tab-bar">
         <button id="tab-all" class="tab-btn active" onclick="switchTab('all')">すべて</button>
@@ -723,6 +730,11 @@ const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自�
             baseNovels = baseNovels.filter(n => n.author_id !== currentUser.id);
         }
 
+        // ★【追加】R18除外フィルタ
+    const r18Check = document.getElementById('exclude-r18');
+    if (r18Check && r18Check.checked) {
+    baseNovels = baseNovels.filter(n => !n.is_r18);
+}
         // 2. フィルタリング（検索・タブ）
         const sw = document.getElementById('search-input').value.toLowerCase();
         let filtered = baseNovels;
