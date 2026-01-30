@@ -499,12 +499,12 @@ aside button, #auth-form button:first-of-type {
                     <textarea id="comment-input" placeholder="感想を書く..." rows="3" style="width: 100%; border: 1px solid #ccc; border-radius: 4px; padding: 8px;"></textarea>
 
                     <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: nowrap;">
-                        <button onclick="postComment()" class="btn-outline" style="width:auto; margin:0; flex-shrink: 0;">コメントを送信</button>
-                        <label style="font-size: 0.85em; color: #666; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; user-select: none;">
-                            <input type="checkbox" id="comment-is-private" style="cursor: pointer;"> 
-                            <span>作者だけに公開</span>
-                        </label>
-                    </div>
+    <button onclick="postComment()" class="btn-outline" style="width:auto; margin:0; flex-shrink: 0;">コメントを送信</button>
+    <label style="font-size: 0.85em; color: #666; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; user-select: none;">
+        <input type="checkbox" id="comment-is-private" style="cursor: pointer; margin: 0;"> 
+        <span>作者だけに公開</span>
+    </label>
+</div>
                 </div>
                 <div id="comment-guest-msg" class="hidden" style="margin-top: 20px; padding: 20px; background: #f9f9f9; text-align: center;">
                     <p>コメントにはログインが必要です。</p>
@@ -1072,9 +1072,9 @@ document.getElementById('author-link-zone').innerHTML = `
 }
 
     async function loadComments(id) {
-    const { data, error } = await api
+    const { data: comments, error } = await api
         .from('comments')
-        .select('*') // 結合エラーを避けるため、動いていた時と同じくシンプルに
+        .select('*')
         .eq('novel_id', id)
         .order('created_at', {ascending: true});
 
@@ -1085,41 +1085,68 @@ document.getElementById('author-link-zone').innerHTML = `
     }
 
     const listEl = document.getElementById('comment-list');
-    if (!data || data.length === 0) {
+    if (!comments || comments.length === 0) {
         listEl.innerHTML = "コメントはありません";
         return;
     }
 
-    listEl.innerHTML = data.map(c => {
-        // 判定は c.user_id を使う（これが投稿者のID）
-        const isMine = currentUser && c.user_id === currentUser.id;
-        const name = c.user_name || "名無し";
-        
-        // 1. 非公開バッジ（背景グレー、文字黒）
-        const privateMark = c.is_private 
-            ? '<span style="background:#e0e0e0; color:#000; font-size:0.75em; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold; border:1px solid #ccc;">非公開</span> ' 
-            : '';
+    // --- 【修正1】他人の最新の名前を取得する処理 ---
+    const userIds = [...new Set(comments.map(c => c.user_id))];
+    const { data: profiles } = await api.from('profiles').select('id, display_name').in('id', userIds);
+    const nameMap = {};
+    profiles?.forEach(p => { nameMap[p.id] = p.display_name; });
 
-        // 2. 名前のリンク（作者ページへ飛ぶ）
-        const nameLink = `<strong onclick="openAuthorPage('${c.user_id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
+    // --- 【修正2】親子関係を分ける ---
+    const parents = comments.filter(c => !c.parent_id);
+    const replies = comments.filter(c => c.parent_id);
 
-        // 3. 管理ボタン（編集と削除）
-        let manageBtns = '';
-        if (isMine) {
-            const safeBody = c.body.replace(/`/g, '\\`');
-            manageBtns = `
-                <span onclick="startEditComment('${c.id}', \`${safeBody}\`)" 
-                      style="cursor:pointer; color:#007bff; font-size:0.8em; margin-left:12px; text-decoration: underline;">編集</span>
-                <span onclick="deleteComment('${c.id}')" 
-                      style="cursor:pointer; color:#dc3545; font-size:0.8em; margin-left:8px; text-decoration: underline;">削除</span>
-            `;
-        }
+    listEl.innerHTML = parents.map(p => {
+        // --- 共通の描画ロジック (親用) ---
+        const renderComment = (c, isReply) => {
+            const isMine = currentUser && c.user_id === currentUser.id;
+            // nameMapにあればそれを、なければ保存されている名前を使う
+            const name = nameMap[c.user_id] || c.user_name || "名無し";
+            const privateMark = c.is_private ? '<span style="background:#e0e0e0; color:#000; font-size:0.75em; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold; border:1px solid #ccc;">非公開</span> ' : '';
+            const nameLink = `<strong onclick="openAuthorPage('${c.user_id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
+            
+            let manageBtns = '';
+            if (isMine) {
+                const safeBody = c.body.replace(/`/g, '\\`');
+                manageBtns = `
+                    <span onclick="startEditComment('${c.id}', \`${safeBody}\` )" style="cursor:pointer; color:#007bff; font-size:0.8em; margin-left:12px; text-decoration: underline;">編集</span>
+                    <span onclick="deleteComment('${c.id}')" style="cursor:pointer; color:#dc3545; font-size:0.8em; margin-left:8px; text-decoration: underline;">削除</span>
+                `;
+            }
+            
+            // 返信ボタン（親コメントにのみ表示）
+            const replyBtn = !isReply ? `<span onclick="prepareReply('${c.id}', '${name}')" style="cursor:pointer; color:#666; font-size:0.8em; margin-left:12px; text-decoration: underline;">返信する</span>` : '';
 
-        return `
-            <div class="comment-item" style="margin-bottom: 8px;">
-                ${privateMark}${nameLink}: <span>${c.body}</span> ${manageBtns}
-            </div>`;
+            const style = isReply ? 'margin-left: 30px; border-left: 2px solid #ddd; padding-left: 10px; margin-top: 8px;' : 'margin-bottom: 8px;';
+            
+            return `
+                <div class="comment-item" style="${style}">
+                    ${privateMark}${nameLink}: <span>${c.body}</span> ${replyBtn}${manageBtns}
+                </div>`;
+        };
+
+        // 親のHTML
+        const parentHtml = renderComment(p, false);
+        // この親に紐づく返信のHTML
+        const replyHtml = replies
+            .filter(r => String(r.parent_id) === String(p.id))
+            .map(r => renderComment(r, true))
+            .join('');
+
+        return `<div style="margin-bottom: 15px;">${parentHtml}${replyHtml}</div>`;
     }).join('');
+}
+
+    let currentReplyId = null; 
+function prepareReply(parentId, targetName) {
+    currentReplyId = parentId;
+    const input = document.getElementById('comment-input');
+    input.placeholder = `${targetName} さんへの返信...`;
+    input.focus();
 }
 
 // 編集用関数（promptでパッと入力）
@@ -1155,7 +1182,8 @@ async function startEditComment(commentId, oldBody) {
         user_id: currentUser.id, 
         user_name: displayName, 
         body: b,
-        is_private: isPrivate // カンマはOK！
+        is_private: isPrivate, // カンマはOK！
+        parent_id: currentReplyId
     });
 
     if (error) {
@@ -1172,11 +1200,17 @@ async function startEditComment(commentId, oldBody) {
             });
         }
 
+        // --- ★3. 送信後の後片付け ---
         document.getElementById('comment-input').value = "";
-        // チェックボックスをリセット
+        // プレースホルダーを「感想を書く...」に戻す
+        document.getElementById('comment-input').placeholder = "感想を書く...";
+        // チェックボックスを外す
         if (document.getElementById('comment-is-private')) {
             document.getElementById('comment-is-private').checked = false;
         }
+        // 返信モードを終了する
+        currentReplyId = null; 
+
         loadComments(currentReadingId);
     }
 }
