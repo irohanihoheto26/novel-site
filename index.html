@@ -499,7 +499,13 @@ aside button, #auth-form button:first-of-type {
                 <div id="comment-list"></div>
                 <div id="comment-form-area" class="hidden" style="margin-top: 20px;">
                     <textarea id="comment-input" placeholder="感想を書く..." rows="3"></textarea>
-                    <button onclick="postComment()" class="btn-outline" style="width:auto">コメントを送信</button>
+    
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                        <button onclick="postComment()" class="btn-outline" style="width:auto; margin:0;">コメントを送信</button>
+                        <label style="font-size: 0.8em; color: #666; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" id="comment-is-private"> 作者だけに公開
+                        </label>
+                    </div>
                 </div>
                 <div id="comment-guest-msg" class="hidden" style="margin-top: 20px; padding: 20px; background: #f9f9f9; text-align: center;">
                     <p>コメントにはログインが必要です。</p>
@@ -1061,41 +1067,54 @@ document.getElementById('author-link-zone').innerHTML = `
 }
 
     async function loadComments(id) {
-        const { data, error } = await api
-            .from('comments')
-            .select('*') // profilesとの結合をやめてシンプルにする
-            .eq('novel_id', id)
-            .order('created_at', {ascending: true});
+    const { data, error } = await api
+        .from('comments')
+        .select('*')
+        .eq('novel_id', id)
+        .order('created_at', {ascending: true});
 
-        if (error) {
-            console.error("コメント取得エラー:", error.message);
-            document.getElementById('comment-list').innerHTML = "エラーが発生しました";
-            return;
-        }
-
-        const listEl = document.getElementById('comment-list');
-        if (!data || data.length === 0) {
-            listEl.innerHTML = "コメントはありません";
-            return;
-        }
-
-        listEl.innerHTML = data.map(c => {
-            const isMine = currentUser && c.user_id === currentUser.id;
-            // 名前は保存されている user_name を使用する
-            const name = c.user_name || "名無し";
-            
-            const manageBtns = isMine ? `
-                <span onclick="deleteComment('${c.id}')" 
-                      style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">
-                      [削除]
-                </span>` : '';
-
-            return `
-                <div class="comment-item">
-                    <strong>${name}</strong>: ${c.body} ${manageBtns}
-                </div>`;
-        }).join('');
+    if (error) {
+        console.error("コメント取得エラー:", error.message);
+        document.getElementById('comment-list').innerHTML = "エラーが発生しました";
+        return;
     }
+
+    const listEl = document.getElementById('comment-list');
+    if (!data || data.length === 0) {
+        listEl.innerHTML = "コメントはありません";
+        return;
+    }
+
+    // 作品の作者かどうかを判定（currentOpenedNovel は openReader でセットされている想定）
+    const isAuthor = currentOpenedNovel && currentUser && currentOpenedNovel.author_id === currentUser.id;
+
+    listEl.innerHTML = data.filter(c => {
+        // ★ 非公開フィルタリング
+        if (c.is_private) {
+            const isMine = currentUser && c.user_id === currentUser.id;
+            // 「自分（閲覧者）が作者」または「自分（閲覧者）が書いたコメント」なら表示
+            return isAuthor || isMine;
+        }
+        return true; // 公開コメントは全員に表示
+    }).map(c => {
+        const isMine = currentUser && c.user_id === currentUser.id;
+        const name = c.user_name || "名無し";
+        
+        // 非公開コメントには目印をつける
+        const privateMark = c.is_private ? '<span style="color:#ff4d4d; font-size:0.8em;">[非公開]</span> ' : '';
+
+        const manageBtns = isMine ? `
+            <span onclick="deleteComment('${c.id}')" 
+                  style="cursor:pointer; color:red; font-size:0.8em; margin-left:5px;">
+                  [削除]
+            </span>` : '';
+
+        return `
+            <div class="comment-item">
+                ${privateMark}<strong>${name}</strong>: ${c.body} ${manageBtns}
+            </div>`;
+    }).join('');
+}
 
     async function postComment() {
         const b = document.getElementById('comment-input').value.trim();
@@ -1111,6 +1130,7 @@ document.getElementById('author-link-zone').innerHTML = `
             user_id: currentUser.id, 
             user_name: displayName, 
             body: b 
+            is_private: isPrivate
         });
 
         if (error) {
@@ -1124,10 +1144,12 @@ document.getElementById('author-link-zone').innerHTML = `
                 from_user_name: displayName, // 設定した名前で通知
                 type: 'comment',
                 novel_title: currentOpenedNovel.title
+                is_private: isPrivate
             });
         }
 
         document.getElementById('comment-input').value = "";
+        document.getElementById('comment-is-private').checked = false;
         loadComments(currentReadingId);
     }
 }
