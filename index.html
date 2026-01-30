@@ -564,7 +564,7 @@ const api = window.supabase.createClient(u, k, {
     let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
     let editingNovelId = null, allMyNovels = [], originalContent = "";
 
-        // 文章画面の初期デザイン
+ // 文章画面の初期デザイン
 const defaultReaderTemplate = `<style>
 #reader-overlay {
     background-color: #ffffff;
@@ -1014,15 +1014,21 @@ document.getElementById('author-link-zone').innerHTML = `
     // 背景が暗い原因（.overlay-contentなど）を強制的に透明にする一文をJS側で合体させる
     const resetHelper = `
         #reader-overlay, 
-        .overlay-content, 
-        #reader-overlay button,
-        #reader-overlay .close-btn-style { 
-            /* 背景や枠線を一度クリアして、ユーザーのデザインを邪魔しないようにする */
+        .overlay-content { 
             background-color: transparent; 
-            border: none; 
-            box-shadow: none;
-            /* 色の指定を「継承（親の設定に従う）」にして、ユーザーの指定を通りやすくする */
-            color: inherit; }
+        }
+        
+        #reader-overlay .close-btn-style { 
+            /* background-color: transparent; ← これを削除 */
+            
+            /* background を「未設定」に戻す。
+               これで、作者のカスタム(prof.reader_custom_code)があればそれが、
+               なければCSSの .close-btn-style が適用されます。 */
+            background-color: unset; 
+            border: unset;
+            box-shadow: unset;
+            color: inherit; 
+        }
     `;
 
     styleTag.textContent = resetHelper + customCode.replace(/<style>|<\/style>/g, '');
@@ -1068,7 +1074,7 @@ document.getElementById('author-link-zone').innerHTML = `
     async function loadComments(id) {
     const { data, error } = await api
         .from('comments')
-        .select('*')
+        .select(` *,profiles:user_id (display_name)`)
         .eq('novel_id', id)
         .order('created_at', {ascending: true});
 
@@ -1087,10 +1093,15 @@ document.getElementById('author-link-zone').innerHTML = `
     // RLSのおかげで、ここに来る data には「見ていいコメント」しか入っていません！
     listEl.innerHTML = data.map(c => {
         const isMine = currentUser && c.user_id === currentUser.id;
-        const name = c.user_name || "名無し";
+        const name = c.profiles?.display_name || c.user_name || "名無し";
         
         // 非公開目印
-        const privateMark = c.is_private ? '<span style="color:#ff4d4d; font-size:0.8em; font-weight:bold;">[非公開]</span> ' : '';
+        const privateMark = c.is_private 
+            ? '<span style="background:#eee; color:#333; font-size:0.75em; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold; border:1px solid #ccc;">非公開</span> ' 
+            : '';
+        // --- 2. 名前から作者ページへのリンク ---
+        // user_id を使って openAuthorPage を呼び出すようにします
+        const nameLink = `<strong onclick="openAuthorPage('${c.user_id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
 
         // 修正版：manageBtns の作り方
         let manageBtns = '';
