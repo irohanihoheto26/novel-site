@@ -1560,11 +1560,20 @@ function forceProfileSetup() {
     if (data && data.length > 0) {
         listArea.innerHTML = data.map(note => {
             let message = `<strong>${note.from_user_name}</strong> さんが `;
-            if (note.type === 'like') message += `「${note.novel_title}」にいいねしました！`;
-            if (note.type === 'comment') message += `「${note.novel_title}」にコメントしました！`;
-            // ★【追加】返信タイプのメッセージ
-            if (note.type === 'reply') message += `「${note.novel_title}」のあなたのコメントに返信しました！`;
-            if (note.type === 'follow') message += `あなたをフォローしました！`;
+            // else if を使って、一つの通知に一つのメッセージだけを確実に適用する
+            if (note.type === 'reply') {
+        // 「返信しました」を優先的に判定
+        message += `「${note.novel_title}」で返信しました！`;
+    } 
+            else if (note.type === 'comment') {
+        message += `「${note.novel_title}」にコメントしました！`;
+    } 
+    else if (note.type === 'like') {
+        message += `「${note.novel_title}」にいいねしました！`;
+    } 
+    else if (note.type === 'follow') {
+        message += `あなたをフォローしました！`;
+    }
             return `<div style="margin-bottom: 2px;">・ ${message}</div>`;
         }).join('');
 
