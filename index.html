@@ -460,7 +460,7 @@ aside button, #auth-form button:first-of-type {
             <option value="char_count">文字数順</option>
         </select>
 
-        <label style="font-size: 0.8em; color: #666; display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none;">
+        <label style="font-size: 0.8em; color: #666; display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none; white-space: nowrap;">
             <input type="checkbox" id="exclude-r18" onchange="getList()" style="cursor: pointer; margin: 0;"> 
             R18を除く
         </label>
@@ -789,43 +789,87 @@ listEl.innerHTML = filtered.map(n => {
 }).join('') || '<div style="padding:20px; text-align:center; color:#888;">作品がありません</div>';
 
         // 5. 非同期で統計データを取ってきて、後から数字を埋める
-        filtered.forEach(async (n) => {
-            try {
-                // --- ★ここから追加：最新の名前を取得して書き換える ---
+// mapを使って、すべての「データ取得の約束(Promise)」を配列にします
+const promises = filtered.map(async (n) => {
+    try {
         const { data: p } = await api.from('profiles').select('display_name').eq('id', n.author_id).maybeSingle();
         if (p?.display_name) {
             const nameEl = document.getElementById(`author-name-${n.id}`);
             if (nameEl) nameEl.innerText = p.display_name;
         }
-        // --- ★ここまで追加 ---
-                
-                const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-                const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-                
-                n.like_count = lCount || 0;
-                n.comment_count = cCount || 0;
-                n.char_count = (n.content || "").length;
+        
+        const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+        
+        n.like_count = lCount || 0;
+        n.comment_count = cCount || 0;
+        n.char_count = (n.content || "").length;
 
-                // 画面上の数字だけを更新（ピンポイントで書き換え）
-                const likeEl = document.getElementById(`like-count-${n.id}`);
-                const commEl = document.getElementById(`comm-count-${n.id}`);
-                if (likeEl) likeEl.innerText = `♥ ${n.like_count}`;
-                if (commEl) commEl.innerText = `💬 ${n.comment_count}`;
+        // とりあえず見つかった順に数字を画面に反映（今の挙動を維持）
+        const likeEl = document.getElementById(`like-count-${n.id}`);
+        const commEl = document.getElementById(`comm-count-${n.id}`);
+        if (likeEl) likeEl.innerText = `♥ ${n.like_count}`;
+        if (commEl) commEl.innerText = `💬 ${n.comment_count}`;
+    } catch (err) {
+        console.warn("統計取得に失敗:", n.title);
+    }
+});
 
-                // もし「いいね順」「文字数順」が選ばれていたら
-                // 全件取得後に並び替えるロジックを入れる場合はここで行いますが、
-                // まずはリストが出ることを優先しましょう。
-            } catch (err) {
-                console.warn("統計取得に失敗:", n.title);
-            }
-        });
+// ★ ここが魔法のスパイス！
+// 全作品の「いいね数」などがすべて揃うのを待ってから、並び替えを実行する
+await Promise.all(promises);
+
+const sortType = document.getElementById('sort-order').value;
+if (sortType === 'likes' || sortType === 'char_count') {
+    // データが揃ったので並び替える
+    if (sortType === 'likes') {
+        filtered.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+    } else {
+        filtered.sort((a, b) => (b.char_count || 0) - (a.char_count || 0));
+    }
+    
+    // 並び替えた結果を反映させるため、もう一度「枠」を描画する部分（手順4）を実行します
+    // (renderList(filtered) のような共通関数にしていればそれを呼ぶだけです)
+    renderFinalList(filtered); 
+}
 
     } catch (e) {
         console.error("getList全体エラー:", e);
         listEl.innerHTML = `<div style="padding:20px; text-align:center;">作品の取得に失敗しました。<br><button onclick="getList()">再試行</button></div>`;
     }
 }
+function renderFinalList(sortedNovels) {
+    const listEl = document.getElementById('list');
+    if (!listEl) return;
 
+    listEl.innerHTML = sortedNovels.map(n => {
+        const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
+        return `        
+        <div class="novel-row">
+            <div class="novel-info">
+                <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
+                ${r18Badge}
+                <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;">
+                    / <span id="author-name-${n.id}">${n.author_name}</span>
+                </span>
+                <div style="margin-top:5px;">
+                    ${(n.tags && n.tags.length > 0) 
+                        ? n.tags
+                            .filter(t => t.trim() !== "") 
+                            .map(t => `<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`)
+                            .join('') 
+                        : ''}
+                </div>
+            </div>
+            <div class="novel-stats" id="stats-${n.id}">
+                <span class="count-badge">${(n.char_count || 0).toLocaleString()}文字</span>
+                <span class="stat-item" id="like-count-${n.id}">♥ ${n.like_count || 0}</span>
+                <span class="stat-item" id="comm-count-${n.id}">💬 ${n.comment_count || 0}</span>
+            </div>
+        </div>`;
+    }).join('') || '<div style="padding:20px; text-align:center; color:#888;">作品がありません</div>';
+}
+    
     function setSearchTag(tagName) {
     // 1. 検索窓にタグ名を入れる
     const searchInput = document.getElementById('search-input');
