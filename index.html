@@ -1074,7 +1074,7 @@ document.getElementById('author-link-zone').innerHTML = `
     async function loadComments(id) {
     const { data, error } = await api
         .from('comments')
-        .select(` *,profiles:user_id (display_name)`)
+        .select(` *,profiles:id (display_name)`)
         .eq('novel_id', id)
         .order('created_at', {ascending: true});
 
@@ -1092,7 +1092,7 @@ document.getElementById('author-link-zone').innerHTML = `
 
     // RLSのおかげで、ここに来る data には「見ていいコメント」しか入っていません！
     listEl.innerHTML = data.map(c => {
-        const isMine = currentUser && c.user_id === currentUser.id;
+        const isMine = currentUser && c.id === currentUser.id;
         const name = c.profiles?.display_name || c.user_name || "名無し";
         
         // 非公開目印
@@ -1101,7 +1101,7 @@ document.getElementById('author-link-zone').innerHTML = `
             : '';
         // --- 2. 名前から作者ページへのリンク ---
         // user_id を使って openAuthorPage を呼び出すようにします
-        const nameLink = `<strong onclick="openAuthorPage('${c.user_id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
+        const nameLink = `<strong onclick="openAuthorPage('${c.id}')" style="cursor:pointer; text-decoration:underline;">${name}</strong>`;
 
         // 修正版：manageBtns の作り方
         let manageBtns = '';
