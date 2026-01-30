@@ -758,7 +758,7 @@ const defaultAuthorTemplate = `/* 【ベーステンプレート】ここを自�
         if (countEl) countEl.innerText = sw ? `${filtered.length} 件見つかりました` : "";
 
        // 4. まず「枠」を描画する（これでスマホでも即座に作品名が出る！）
-const sortType = document.getElementById('sort-order').value;
+let sortType = document.getElementById('sort-order').value;
 listEl.innerHTML = filtered.map(n => {
     // 【追加】R18バッジの判定
     const r18Badge = n.is_r18 ? `<span class="r18-badge">R18</span>` : "";
