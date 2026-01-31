@@ -709,8 +709,13 @@
                 </div>
                 <div class="novel-stats">
                     <span class="count-badge">${(n.char_count || 0).toLocaleString()}文字</span>
-                    <span class="stat-item">♥ ${n.like_count || 0}</span>
-                    <span class="stat-item">💬 ${n.comment_count || 0}</span>
+                    <span class="stat-item" style="display:flex; align-items:center;"><span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite</span> 
+                        ${n.like_count || 0}
+                    </span>                    
+                    <span class="stat-item" style="display:flex; align-items:center;">
+                        <span class="material-icons" style="font-size:1.1em; color:#888; margin-right:2px;">chat_bubble_outline</span> 
+                        ${n.comment_count || 0}
+                    </span>
                 </div>
             </div>`;
         }).join('') || '<div style="padding:20px; text-align:center; color:#888;">作品がありません</div>'; // ★最後に } を閉じる
@@ -798,7 +803,16 @@
 
             // 個別のいいね・コメント数更新
             const el = document.getElementById(`my-stats-${n.id}`);
-            if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
+            if(el) {
+                // ★ここを修正：アイコンをGoogle Fontsに変更
+                el.innerHTML = `
+                    <span class="stat-item" style="display:inline-flex; align-items:center; margin-right:10px;">
+                        <span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite</span> ${l||0}
+                    </span> 
+                    <span class="stat-item" style="display:inline-flex; align-items:center;">
+                        <span class="material-icons" style="font-size:1.1em; color:#888; margin-right:2px;">chat_bubble_outline</span> ${c||0}
+                    </span>`;
+            }
         });
     }
     async function openEditor(id = null) {
