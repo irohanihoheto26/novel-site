@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragment Library</title>
     <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
         /* =========================================
@@ -367,6 +368,21 @@
         <div id="list">読み込み中...</div>
     </main>
 
+    <div id="series-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2500; overflow-y:auto;">
+        <div class="overlay-content">
+            <button class="btn-outline" onclick="closeSeriesPage()" style="width:auto; margin:0;">← 戻る</button>
+            
+            <div style="margin-top:20px; border-bottom:1px solid #eee; padding-bottom:20px;">
+                <small style="color:#888;">シリーズ</small>
+                <h1 id="series-page-title" style="margin:5px 0;"></h1>
+                <div id="series-page-desc" style="color:#666; font-size:0.9em; margin-top:10px;"></div>
+                <div id="series-author-area" style="margin-top:10px; font-size:0.9em;"></div>
+            </div>
+
+            <h3 style="margin-top:30px;">目次</h3>
+            <div id="series-episode-list"></div>
+        </div>
+    </div>
     <div id="reader-overlay">
         <div class="sticky-close">
             <div id="name-changer-group" class="hidden">
@@ -631,7 +647,11 @@
                 if (p && p.display_name) {
                     n.author_name = p.display_name; // ここで上書き！
                 }
-
+                // ★ 追加：シリーズ名を取得する
+                if (n.series_id) {
+                    const { data: s } = await api.from('series').select('title').eq('id', n.series_id).single();
+                    if (s) n.series_title = s.title;
+                }
                 // 2. いいね・コメント数
                 const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
                 const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
@@ -650,9 +670,18 @@
     }
 
     function renderFinalList(sortedNovels) {
-        document.getElementById('list').innerHTML = sortedNovels.map(n => `
+        document.getElementById('list').innerHTML = sortedNovels.map(n => { // ★ここに { を追加
+            
+            // シリーズ名のHTMLを作成
+            const seriesLink = n.series_title 
+                ? `<span onclick="openSeriesPage('${n.series_id}')" style="display:inline-block; background:#efefef; color:#555; font-size:0.75em; padding:2px 6px; border-radius:4px; cursor:pointer; margin-right:5px; vertical-align:middle;"><span class="material-icons" style="font-size:1.2em; vertical-align:text-bottom;">library_books</span> ${n.series_title}</span>` 
+                : '';
+
+            return `
             <div class="novel-row">
                 <div class="novel-info">
+                    <div style="margin-bottom:4px;">${seriesLink}</div>
+
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     ${n.is_r18 ? '<span class="r18-badge">R18</span>' : ''}
                     <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;"> / <span id="author-name-${n.id}">${n.author_name}</span></span>
@@ -663,7 +692,8 @@
                     <span class="stat-item">♥ ${n.like_count || 0}</span>
                     <span class="stat-item">💬 ${n.comment_count || 0}</span>
                 </div>
-            </div>`).join('') || '<div style="padding:20px; text-align:center; color:#888;">作品がありません</div>';
+            </div>`;
+        }).join('') || '<div style="padding:20px; text-align:center; color:#888;">作品がありません</div>'; // ★最後に } を閉じる
     }
     function switchTab(t) { currentTab = t; document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.id === 'tab-'+t)); getList(); }
     function setSearchTag(tagName) { document.getElementById('search-input').value = tagName; getList(); document.getElementById('library-section-header').scrollIntoView({ behavior: 'smooth' }); }
@@ -770,6 +800,54 @@
             document.getElementById('default-name-area').classList.add('hidden');
         }
         document.getElementById('editor-overlay').style.display = 'block';
+    }
+
+    // ★ 追加：シリーズ目次ページを開く関数
+    async function openSeriesPage(seriesId) {
+        // オーバーレイを表示
+        const overlay = document.getElementById('series-overlay');
+        overlay.classList.remove('hidden');
+        
+        // 1. シリーズ情報の取得
+        const { data: s } = await api.from('series').select('*').eq('id', seriesId).single();
+        if (!s) return alert("シリーズが見つかりません");
+
+        // 2. 作者情報の取得
+        const { data: p } = await api.from('profiles').select('display_name').eq('id', s.author_id).maybeSingle();
+        const authorName = p ? p.display_name : "名無し";
+
+        // 画面にセット
+        document.getElementById('series-page-title').innerText = s.title;
+        document.getElementById('series-page-desc').innerText = s.description || "あらすじはありません";
+        document.getElementById('series-author-area').innerHTML = `作者: <strong onclick="openAuthorPage('${s.author_id}')" style="cursor:pointer; text-decoration:underline;">${authorName}</strong>`;
+
+        // 3. エピソード一覧の取得（話数順）
+        const { data: episodes } = await api.from('novels')
+            .select('id, title, episode_number, is_r18, updated_at')
+            .eq('series_id', seriesId)
+            .eq('is_private', false) // 下書きは出さない
+            .order('episode_number', { ascending: true });
+
+        // リスト描画
+        const listDiv = document.getElementById('series-episode-list');
+        if (episodes && episodes.length > 0) {
+            listDiv.innerHTML = episodes.map(e => `
+                <div style="padding:15px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px;">
+                    <span style="font-weight:bold; color:#ccc; font-family:'Antonio', sans-serif; font-size:1.2em; width:30px; text-align:right;">${e.episode_number}</span>
+                    <div style="flex:1;">
+                        <div onclick="openReader('${e.id}')" style="cursor:pointer; font-weight:bold; font-size:1.05em; text-decoration:underline;">${e.title}</div>
+                        <div style="font-size:0.75em; color:#999; margin-top:3px;">${new Date(e.updated_at).toLocaleDateString()} ${e.is_r18 ? '<span style="color:red;">(R18)</span>' : ''}</div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            listDiv.innerHTML = '<div style="padding:20px; color:#888;">まだエピソードがありません</div>';
+        }
+    }
+
+    // ★ 追加：閉じるボタン
+    function closeSeriesPage() {
+        document.getElementById('series-overlay').classList.add('hidden');
     }
 
     async function doPost() {
