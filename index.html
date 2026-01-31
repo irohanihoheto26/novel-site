@@ -207,94 +207,44 @@
                 border-right: none; border-bottom: 2px solid #000; padding: 15px; z-index: 10; 
             }
             main { margin-left: 0; padding: 15px; width: 100%; }
-            #logged-in-nav { display: flex; gap: 10px; }/* --- Mobile Responsive (< 800px) --- */
-        @media screen and (max-width: 800px) {
-            body { flex-direction: column; }
-            aside { 
-                width: 100%; height: auto; position: static; 
-                border-right: none; border-bottom: 2px solid #000; padding: 15px; z-index: 10; 
-            }
-            main { margin-left: 0; padding: 15px; width: 100%; }
             #logged-in-nav { display: flex; gap: 10px; }
             #logged-in-nav button { margin-bottom: 0; }
             .novel-row { flex-direction: column; align-items: flex-start; gap: 5px; }
 
-            /* ★ スマホ用：下に浮くオーバーレイ (1行に収める修正) */
+            /* スマホ用：下に浮くオーバーレイ */
             .sticky-close {
                 position: fixed !important;
                 top: auto !important; bottom: 30px !important; left: 50% !important;
                 transform: translateX(-50%);
-                /* 幅を少し広げて余裕を持たせる */
-                width: 90% !important; max-width: 380px; 
-                height: 50px !important; /* 高さを固定 */
-                
-                background: rgba(255, 255, 255, 0.95) !important;
+                width: auto !important; min-width: 280px; height: auto !important;
+                background: rgba(255, 255, 255, 0.9) !important;
                 backdrop-filter: blur(5px);
+                padding: 10px 15px !important;
                 border-radius: 30px;
                 border: 1px solid rgba(0,0,0,0.1);
                 box-shadow: 0 4px 15px rgba(0,0,0,0.15);
                 z-index: 9999 !important;
                 transition: transform 0.3s ease-out, opacity 0.3s ease;
                 
-                /* ★ここが重要：絶対に横並びにする設定 */
+                /* 横並び・中央寄せ・間隔調整 */
                 display: flex !important;
-                flex-direction: row !important; 
-                flex-wrap: nowrap !important; /* 折り返し禁止 */
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 8px !important; /* 間隔を少し詰める */
-                padding: 0 10px !important;
+                gap: 40px; /* ここでボタン間の距離を調整 */
             }
             
-            /* スクロール時に隠すクラス */
             .sticky-close.nav-hidden {
                 transform: translateX(-50%) translateY(150%) !important;
                 opacity: 0;
             }
             
-            /* ★ 名前変換グループの設定 */
-            #name-changer-group { 
-                display: flex !important;
-                align-items: center !important;
-                gap: 5px !important;
-                flex-shrink: 1; /* 狭いときはここを縮める */
-                margin: 0 !important;
-            }
-
-            /* ★ 入力欄を小さくしてスペース確保 */
-            #user-custom-name {
-                width: 80px !important; /* 幅を固定して小さく */
-                font-size: 0.8em !important;
-                padding: 6px !important;
-                margin: 0 !important;
+            /* スマホ用ボタン調整（共通設定を引き継ぐのでこれだけでOK） */
+            .close-btn-style { 
+                /* PC用のマージンをリセット（gapで調整するため） */
+                margin-left: 0 !important; 
             }
             
-            /* 変換ボタン */
-            #name-changer-group button {
-                padding: 6px 10px !important;
-                font-size: 0.8em !important;
-                white-space: nowrap; /* 文字改行禁止 */
-                margin: 0 !important;
-            }
-
-            /* ★ 戻るボタンの設定（大きくならないようにする） */
-            .close-btn-style { 
-                background: #e0e0e0 !important;
-                color: #333 !important; 
-                font-size: 0.8em !important; 
-                padding: 8px 15px !important;
-                border-radius: 30px !important;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                font-weight: bold;
-                border: none !important;
-                margin: 0 !important;
-                
-                flex-shrink: 0;      /* ボタンは縮ませない */
-                white-space: nowrap; /* 文字改行禁止 */
-                height: auto !important; /* 高さが伸びるのを防ぐ */
-                align-self: center !important;
-            }
-            .close-btn-style:hover { background: #d0d0d0 !important; }
+            #name-changer-group { height: 100%; align-items: center; }
         }
 
         /* Reader Specific */
