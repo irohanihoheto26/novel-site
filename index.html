@@ -835,7 +835,7 @@
 
         // 3. エピソード一覧の取得（話数順）
         const { data: episodes } = await api.from('novels')
-            .select('id, title, episode_number, is_r18, updated_at')
+            .select('id, title, episode_number, is_r18, created_at')
             .eq('series_id', seriesId)
             .eq('is_private', false) // 下書きは出さない
             .order('episode_number', { ascending: true });
@@ -848,7 +848,7 @@
                     <span style="font-weight:bold; color:#ccc; font-family:'Antonio', sans-serif; font-size:1.2em; width:30px; text-align:right;">${e.episode_number}</span>
                     <div style="flex:1;">
                         <div onclick="openReader('${e.id}')" style="cursor:pointer; font-weight:bold; font-size:1.05em; text-decoration:underline;">${e.title}</div>
-                        <div style="font-size:0.75em; color:#999; margin-top:3px;">${new Date(e.updated_at).toLocaleDateString()} ${e.is_r18 ? '<span style="color:red;">(R18)</span>' : ''}</div>
+                        <div style="font-size:0.75em; color:#999; margin-top:3px;">${new Date(e.created_at).toLocaleDateString()} ${e.is_r18 ? '<span style="color:red;">(R18)</span>' : ''}</div>
                     </div>
                 </div>
             `).join('');
