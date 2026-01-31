@@ -148,6 +148,16 @@
             background: #fff; z-index: 2000; overflow-y: auto; 
         }
         .overlay-content { max-width: 700px; margin: 40px auto; padding: 20px; }
+        
+        /* ★ 通知内のリンク用スタイル */
+        .notification-link {
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .notification-link:hover {
+            color: var(--main-color); /* マウスを乗せたらオレンジに */
+        }
 
         /* --- Reader Sticky Nav (Mobile Floating Style) --- */
         .sticky-close { 
@@ -860,7 +870,7 @@
             const { error: insertError } = await api.from('likes').insert({ novel_id: currentReadingId, user_id: currentUser.id });
             if (insertError) { alert("いいねに失敗しました。"); return; }
             if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
-                await api.from('notifications').insert({ target_user_id: currentOpenedNovel.author_id, from_user_name: userProfile?.display_name || "名無しさん", type: 'like', novel_title: currentOpenedNovel.title });
+                await api.from('notifications').insert({ target_user_id: currentOpenedNovel.author_id, from_user_name: userProfile?.display_name || "名無しさん", type: 'like', novel_title: currentOpenedNovel.title, novel_id: currentOpenedNovel.id });
             }
         }
         loadLikeCount(currentReadingId);
@@ -903,7 +913,8 @@
                     target_user_id: currentOpenedNovel.author_id,
                     from_user_name: userProfile?.display_name || "名無しさん",
                     type: 'bookmark',
-                    novel_title: currentOpenedNovel.title
+                    novel_title: currentOpenedNovel.title,
+                    novel_id: currentOpenedNovel.id
                 });
             }
         }
@@ -950,16 +961,58 @@
     async function postComment() {
         const b = document.getElementById('comment-input').value.trim();
         const isPrivate = document.getElementById('comment-is-private').checked;
+        
         if(!b || !currentUser) return;
+        
         const displayName = (userProfile && userProfile.display_name) ? userProfile.display_name : currentUser.email.split('@')[0];
-        const { error } = await api.from('comments').insert({ novel_id: currentReadingId, user_id: currentUser.id, user_name: displayName, body: b, is_private: isPrivate, parent_id: currentReplyId });
-        if (error) { alert("コメントに失敗しました。"); } else {
-            if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) await api.from('notifications').insert({ target_user_id: currentOpenedNovel.author_id, from_user_name: displayName, type: currentReplyId ? 'reply' : 'comment', novel_title: currentOpenedNovel.title, is_private: isPrivate });
+        
+        const { error } = await api.from('comments').insert({ 
+            novel_id: currentReadingId, 
+            user_id: currentUser.id, 
+            user_name: displayName, 
+            body: b, 
+            is_private: isPrivate, 
+            parent_id: currentReplyId 
+        });
+
+        if (error) { 
+            alert("コメントに失敗しました。"); 
+        } else {
+            // 1. 作者への通知
+            if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
+                await api.from('notifications').insert({ 
+                    target_user_id: currentOpenedNovel.author_id, 
+                    from_user_name: displayName, 
+                    type: currentReplyId ? 'reply' : 'comment', 
+                    novel_title: currentOpenedNovel.title, 
+                    novel_id: currentOpenedNovel.id, // ★追加：リンク用ID
+                    is_private: isPrivate 
+                });
+            }
+
+            // 2. 返信相手への通知
             if (currentReplyId) {
                 const { data: parentC } = await api.from('comments').select('user_id').eq('id', currentReplyId).single();
-                if (parentC && parentC.user_id !== currentUser.id && parentC.user_id !== currentOpenedNovel.author_id) await api.from('notifications').insert({ target_user_id: parentC.user_id, from_user_name: displayName, type: 'reply', novel_title: currentOpenedNovel.title, is_private: isPrivate });
+                
+                // 親コメ主が自分でもなく、作者でもない場合のみ通知
+                if (parentC && parentC.user_id !== currentUser.id && parentC.user_id !== currentOpenedNovel.author_id) {
+                    await api.from('notifications').insert({ 
+                        target_user_id: parentC.user_id, 
+                        from_user_name: displayName, 
+                        type: 'reply', 
+                        novel_title: currentOpenedNovel.title, 
+                        novel_id: currentOpenedNovel.id, // ★追加：リンク用ID
+                        is_private: isPrivate 
+                    });
+                }
             }
-            document.getElementById('comment-input').value = ""; document.getElementById('comment-input').placeholder = "感想を書く..."; document.getElementById('comment-is-private').checked = false; currentReplyId = null; loadComments(currentReadingId);
+
+            // フォームのリセットと再読み込み
+            document.getElementById('comment-input').value = ""; 
+            document.getElementById('comment-input').placeholder = "感想を書く..."; 
+            document.getElementById('comment-is-private').checked = false; 
+            currentReplyId = null; 
+            loadComments(currentReadingId);
         }
     }
     async function deleteComment(id) {
