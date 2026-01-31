@@ -171,7 +171,7 @@
         .close-btn-style { 
             background: #e0e0e0; /* 背景を少し濃いグレーに */
             color: #333 !important; 
-            padding: 5px 15px;   /* 大きさ */
+            padding: 4px 15px;   /* 大きさ */
             border-radius: 20px; /* 丸く */
             font-size: 0.85em; 
             font-weight: bold; 
@@ -185,6 +185,8 @@
             margin-left: 40px; 
             height: fit-content; /* ★高さを中身に合わせる */
             align-self: center;  /* ★上下中央揃え */
+            position: relative;
+            top: 1px; /* 物理的に1px下げる */
         }
         .close-btn-style:hover { 
             background: #d0d0d0;
@@ -235,7 +237,7 @@
                 flex-wrap: nowrap !important; /* 折り返し禁止 */
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 15px !important; /* ★間隔を狭める (40px -> 15px) */
+                gap: 25px !important; /* ★間隔を狭める (40px -> 15px) */
                 
             }
             
