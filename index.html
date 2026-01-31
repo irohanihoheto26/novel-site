@@ -893,16 +893,17 @@
     // ==========================================
     async function toggleLike() {
         if(!currentUser) return alert("ログインが必要です");
-        const { data: existingLike, error: checkError } = await api.from('likes').select('*').eq('novel_id', currentReadingId).eq('user_id', currentUser.id).maybeSingle();
+        const safeId = String(currentReadingId); // ★ID確保
+
+        const { data: existingLike, error: checkError } = await api.from('likes').select('*').eq('novel_id', safeId).eq('user_id', currentUser.id).maybeSingle();
         if (checkError) return;
         
         if (existingLike) {
             await api.from('likes').delete().eq('id', existingLike.id);
         } else {
-            const { error: insertError } = await api.from('likes').insert({ novel_id: currentReadingId, user_id: currentUser.id });
-            if (insertError) { 
-                alert("いいねに失敗しました。"); return; 
-            }
+            const { error: insertError } = await api.from('likes').insert({ novel_id: safeId, user_id: currentUser.id });
+            if (insertError) { return alert("いいね失敗"); }
+            
             // 通知
             if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
                 await api.from('notifications').insert({ 
@@ -910,12 +911,13 @@
                     from_user_name: userProfile?.display_name || "名無しさん", 
                     type: 'like', 
                     novel_title: currentOpenedNovel.title, 
-                    novel_id: currentReadingId // ★修正
+                    novel_id: safeId // ★確実にIDを入れる
                 });
             }
         }
-        loadLikeCount(currentReadingId);
+        loadLikeCount(safeId);
     }
+    
     async function loadLikeCount(id) {
         const countEl = document.getElementById('read-like-count');
         const likeBtn = document.getElementById('like-btn');
@@ -938,12 +940,14 @@
     }
     async function toggleBookmark() {
         if (!currentUser) return alert("ログインが必要です。");
-        const { data } = await api.from('bookmarks').select('id').eq('user_id', currentUser.id).eq('novel_id', currentReadingId).maybeSingle();
+        const safeId = String(currentReadingId); // ★ID確保
+
+        const { data } = await api.from('bookmarks').select('id').eq('user_id', currentUser.id).eq('novel_id', safeId).maybeSingle();
         
         if (data) {
              await api.from('bookmarks').delete().eq('id', data.id);
         } else {
-            const { error } = await api.from('bookmarks').insert({ user_id: currentUser.id, novel_id: currentReadingId });
+            const { error } = await api.from('bookmarks').insert({ user_id: currentUser.id, novel_id: safeId });
             
             // 通知
             if (!error && currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
@@ -952,12 +956,13 @@
                     from_user_name: userProfile?.display_name || "名無しさん",
                     type: 'bookmark',
                     novel_title: currentOpenedNovel.title,
-                    novel_id: currentReadingId // ★修正
+                    novel_id: safeId // ★確実にIDを入れる
                 });
             }
         }
-        checkBookmarkStatus(currentReadingId);
+        checkBookmarkStatus(safeId);
     }
+    
     async function loadComments(id) {
         const { data: comments, error } = await api.from('comments').select('*').eq('novel_id', id).order('created_at', {ascending: true});
         if (error) { document.getElementById('comment-list').innerHTML = "エラーが発生しました"; return; }
@@ -999,14 +1004,23 @@
         const b = document.getElementById('comment-input').value.trim();
         const isPrivate = document.getElementById('comment-is-private').checked;
         if(!b || !currentUser) return;
+        
+        // ★ IDを確実に確保
+        const safeId = String(currentReadingId); 
+
         const displayName = (userProfile && userProfile.display_name) ? userProfile.display_name : currentUser.email.split('@')[0];
         
         const { error } = await api.from('comments').insert({ 
-            novel_id: currentReadingId, user_id: currentUser.id, user_name: displayName, body: b, is_private: isPrivate, parent_id: currentReplyId 
+            novel_id: safeId, 
+            user_id: currentUser.id, 
+            user_name: displayName, 
+            body: b, 
+            is_private: isPrivate, 
+            parent_id: currentReplyId 
         });
 
         if (error) { 
-            alert("コメントに失敗しました。"); 
+            alert("コメント失敗: " + error.message); 
         } else {
             // 作者への通知
             if (currentOpenedNovel && currentOpenedNovel.author_id !== currentUser.id) {
@@ -1015,7 +1029,7 @@
                     from_user_name: displayName, 
                     type: currentReplyId ? 'reply' : 'comment', 
                     novel_title: currentOpenedNovel.title, 
-                    novel_id: currentReadingId, // ★ currentOpenedNovel.id ではなく currentReadingId を使用
+                    novel_id: safeId, // ★確実にIDを入れる
                     is_private: isPrivate 
                 });
             }
@@ -1028,7 +1042,7 @@
                         from_user_name: displayName, 
                         type: 'reply', 
                         novel_title: currentOpenedNovel.title, 
-                        novel_id: currentReadingId, // ★ここも修正
+                        novel_id: safeId, // ★確実にIDを入れる
                         is_private: isPrivate 
                     });
                 }
@@ -1037,7 +1051,7 @@
             document.getElementById('comment-input').placeholder = "感想を書く..."; 
             document.getElementById('comment-is-private').checked = false; 
             currentReplyId = null; 
-            loadComments(currentReadingId);
+            loadComments(safeId);
         }
     }
     
@@ -1063,11 +1077,11 @@
         }
         checkFollowStatus(authorId);
     }
-    // ★ 通知確認関数を修正（リスト表示とブックマーク対応）
+
     async function checkNotifications() {
         if (!currentUser) return;
         
-        // 未読の通知を全件取得
+        // novel_id も含めて取得
         const { data } = await api.from('notifications')
             .select('*')
             .eq('target_user_id', currentUser.id)
@@ -1079,19 +1093,19 @@
         if (data && data.length > 0) {
             document.getElementById('notification-list').innerHTML = data.map(n => {
                 let message = `<strong>${n.from_user_name}</strong> さんが `;
-                // ★ IDがある場合はリンク（クリックできる文字）にする
-                const titleHtml = n.novel_id 
+                
+                // ★ ここでリンクを作成
+                // DBにIDが入っていればリンク、なければただの文字
+                const titleHtml = (n.novel_id && n.novel_id !== "null")
                     ? `<span class="notification-link" onclick="openReader('${n.novel_id}')">「${n.novel_title}」</span>` 
                     : `「${n.novel_title}」`;
-                
-                // タイプ別のメッセージ分岐
-                if (n.type === 'reply') message += `「${n.novel_title}」で返信しました！`;
-                else if (n.type === 'comment') message += `「${n.novel_title}」にコメントしました！`;
-                else if (n.type === 'like') message += `「${n.novel_title}」にいいねしました！`;
+
+                if (n.type === 'reply') message += `${titleHtml} で返信しました！`;
+                else if (n.type === 'comment') message += `${titleHtml} にコメントしました！`;
+                else if (n.type === 'like') message += `${titleHtml} にいいねしました！`;
+                else if (n.type === 'bookmark') message += `${titleHtml} をブックマークしました！`;
                 else if (n.type === 'follow') message += `あなたをフォローしました！`;
-                else if (n.type === 'bookmark') message += `「${n.novel_title}」をブックマークしました！`; // ★追加
                 
-                // リストとして表示するためのdiv
                 return `<div style="margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #ffeeba;">・ ${message}</div>`;
             }).join('');
             
