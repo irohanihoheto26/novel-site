@@ -1053,6 +1053,10 @@
         if (data && data.length > 0) {
             document.getElementById('notification-list').innerHTML = data.map(n => {
                 let message = `<strong>${n.from_user_name}</strong> さんが `;
+                // ★ IDがある場合はリンク（クリックできる文字）にする
+                const titleHtml = n.novel_id 
+                    ? `<span class="notification-link" onclick="openReader('${n.novel_id}')">「${n.novel_title}」</span>` 
+                    : `「${n.novel_title}」`;
                 
                 // タイプ別のメッセージ分岐
                 if (n.type === 'reply') message += `「${n.novel_title}」で返信しました！`;
