@@ -255,11 +255,13 @@
             
             #name-changer-group { height: 100%; align-items: center; }
 
+            /* --- ★ リストの並び・大きさ・位置の再調整 --- */
+            
             /* タイトル・バッジ・統計情報を包む箱 */
             .novel-info {
                 display: flex !important;
-                flex-wrap: wrap !important; /* 折り返し許可 */
-                align-items: baseline !important; /* ★重要：文字の下のラインを揃える */
+                flex-wrap: wrap !important;
+                align-items: flex-start !important; /* ★ご希望通り「上揃え」に変更 */
                 gap: 8px !important; 
                 line-height: 1.5 !important;
             }
@@ -267,28 +269,31 @@
             /* タイトル */
             .novel-title {
                 display: inline-block;
-                font-size: 1.1em !important; /* タイトルの大きさ維持 */
+                font-size: 1.1em !important;
+                margin-top: -2px !important; /* 上揃え時の微調整（少し下げる） */
+            }
+
+            /* バッジの位置微調整（上揃えだと浮くことがあるので） */
+            .r18-badge, .draft-badge {
+                margin-top: 4px !important; /* 文字の高さに合わせて少し下げる */
+                transform: none !important;
             }
 
             /* 統計エリア（ハートなど） */
             .novel-stats {
                 display: inline-flex !important;
-                align-items: baseline !important; /* ここも下揃え */
-                margin: 0 !important;
-                font-size: 1em !important; /* ★修正：小さくせず、元の大きさ(100%)に戻す */
-                color: #666 !important;
+                align-items: center !important; /* アイコンと数字は中心揃え */
+                margin-top: 2px !important; /* 少し隙間を空ける */
+                font-size: 0.85em !important; /* ★サイズを少し小さく戻す */
+                color: #777 !important;
             }
 
             /* 個々の統計アイテム（♥ 1 など） */
             .stat-item {
                 display: inline-flex !important;
-                align-items: baseline !important; /* アイコンと数字の下を揃える */
-                margin-right: 10px !important;
-            }
-            
-            /* R18などのバッジ位置微調整 */
-            .r18-badge, .draft-badge {
-                transform: translateY(-1px); /* 少しだけ上に持ち上げてバランスを取る */
+                align-items: center !important;
+                margin-right: 12px !important; /* 間隔を少し広げる */
+                height: auto !important;
             }
         }
 
