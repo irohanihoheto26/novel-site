@@ -378,7 +378,10 @@
         <div class="overlay-content">
             <h2 id="read-title" style="text-align:center; margin-bottom:5px;"></h2>            
             <div id="read-body" class="indent-text" style="white-space: pre-wrap; margin: 40px 0;"></div>
-            
+            <div id="series-nav" class="hidden" style="display:flex; justify-content:space-between; margin: 30px 0; padding: 20px 0; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc;">
+                <button id="prev-episode-btn" style="width:48%; margin:0;" onclick="">« 前の話</button>
+                <button id="next-episode-btn" style="width:48%; margin:0;" onclick="">次の話 »</button>
+            </div>
             <div id="reader-interactive-zone" style="border-top: 1px solid #000; padding-top: 20px; margin-top:50px; text-align:center;">
                 <div style="margin-bottom:30px;">
                     <div style="display: flex; justify-content: center; gap: 15px; margin-bottom:15px;">
@@ -416,6 +419,12 @@
         <div class="overlay-content">
             <h2>新規投稿</h2>
             <input type="text" id="title-input" placeholder="タイトル">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <select id="series-select" style="flex:1; margin-bottom:0; padding:10px; border:1px solid #ddd; border-radius:4px;">
+                    <option value="">（シリーズなし）</option>
+                </select>
+                <button onclick="createNewSeries()" style="width:auto; margin:0; font-size:0.8em; padding:0 15px; white-space:nowrap;">＋ シリーズ作成</button>
+            </div>
             <input type="text" id="tags-input" placeholder="タグ (カンマ区切り)">
             <textarea id="caption-input" placeholder="キャプション（あらすじ等）" rows="3"></textarea>
             
@@ -723,10 +732,13 @@
     }
     function openEditor(id = null) {
         editingNovelId = id;
+        await loadSeriesOptions(); // ★ロード
+        
         if (id) {
             const n = allMyNovels.find(x => String(x.id) === String(id));
             if (!n) return;
             document.getElementById('title-input').value = n.title || "";
+            document.getElementById('series-select').value = n.series_id || ""; // ★選択
             document.getElementById('tags-input').value = (n.tags || []).join(', ');
             document.getElementById('caption-input').value = n.caption || "";
             document.getElementById('content-input').value = n.content || "";
@@ -745,6 +757,7 @@
             }
         } else {
             document.getElementById('title-input').value = "";
+            document.getElementById('series-select').value = ""; // ★リセット
             document.getElementById('tags-input').value = "";
             document.getElementById('caption-input').value = "";
             document.getElementById('content-input').value = "";
@@ -758,14 +771,30 @@
     }
 
     async function doPost() {
+        // 1. プロフィール確認
         if (!userProfile || !userProfile.display_name || userProfile.display_name === "名無し") {
             alert("投稿するにはプロフィール設定で「作者名」を登録してください。");
             forceProfileSetup(); 
             return; 
         }
+
+        // 2. 名前変換設定の取得
         const isNameConvert = document.getElementById('name-convert-check').checked;
         const defaultName = isNameConvert ? document.getElementById('default-name-input').value.trim() : "";
+
+        // 3. シリーズ情報の取得
+        const seriesId = document.getElementById('series-select').value || null;
+        let nextOrder = 0;
+
+        // 新規投稿で、かつシリーズが選ばれていたら、自動で番号（話数）を振る
+        if (!editingNovelId && seriesId) {
+            const { count } = await api.from('novels')
+                .select('*', { count: 'exact', head: true })
+                .eq('series_id', seriesId);
+            nextOrder = (count || 0) + 1;
+        }
         
+        // 4. 保存データの作成
         const payload = {
             title: document.getElementById('title-input').value,
             content: document.getElementById('content-input').value,
@@ -775,10 +804,25 @@
             is_private: document.getElementById('private-check').checked,
             default_name: defaultName,
             author_id: currentUser.id,
-            author_name: userProfile?.display_name || "名無し"
+            author_name: userProfile?.display_name || "名無し",
+            series_id: seriesId // ★追加
         };
-        const { error } = editingNovelId ? await api.from('novels').update(payload).eq('id', editingNovelId) : await api.from('novels').insert(payload);
-        if(error) alert(error.message); else location.reload();
+
+        // 新規投稿のときだけ、計算した話数をセット（編集時は順番を変えないため）
+        if (!editingNovelId && seriesId) {
+            payload.episode_number = nextOrder; // ★ episode_number に保存
+        }
+
+        // 5. データベースへ送信（★ここを1回だけに修正しました）
+        const { error } = editingNovelId 
+            ? await api.from('novels').update(payload).eq('id', editingNovelId) 
+            : await api.from('novels').insert(payload);
+            
+        if(error) {
+            alert(error.message); 
+        } else {
+            location.reload();
+        }
     }
 
     async function deleteNovel(id, title) {
@@ -788,6 +832,39 @@
     }
 
     function closeEditor() { document.getElementById('editor-overlay').style.display = 'none'; }
+
+    // ★ 追加：シリーズ一覧をロード
+    async function loadSeriesOptions() {
+        if (!currentUser) return;
+        const { data } = await api.from('series').select('*').eq('author_id', currentUser.id).order('created_at', { ascending: false });
+        const select = document.getElementById('series-select');
+        select.innerHTML = '<option value="">（シリーズなし - 短編）</option>';
+        if (data) {
+            data.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = s.title;
+                select.appendChild(opt);
+            });
+        }
+    }
+
+    // ★ 追加：シリーズ新規作成
+    async function createNewSeries() {
+        const title = prompt("新しいシリーズのタイトルを入力してください");
+        if (!title) return;
+        const { error } = await api.from('series').insert({ author_id: currentUser.id, title: title });
+        if (error) alert("作成失敗: " + error.message);
+        else {
+            alert("シリーズを作成しました！");
+            loadSeriesOptions();
+        }
+    }
+    
+    // ★ 追加：前後移動用の関数
+    function goNeighborEpisode(direction) {
+        // ボタンのonclickで動的にIDをセットするため、ここは空でも機能します
+    }
 
     // ==========================================
     // 7. READER FUNCTIONS
