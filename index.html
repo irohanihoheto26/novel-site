@@ -615,9 +615,18 @@
             
             // 統計取得
             const promises = filtered.map(async (n) => {
+                // ★ 1. プロフィールから最新の名前を取得
+                const { data: p } = await api.from('profiles').select('display_name').eq('id', n.author_id).maybeSingle();
+                if (p && p.display_name) {
+                    n.author_name = p.display_name; // ここで上書き！
+                }
+
+                // 2. いいね・コメント数
                 const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
                 const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-                n.like_count = lCount || 0; n.comment_count = cCount || 0; n.char_count = (n.content || "").length;
+                n.like_count = lCount || 0; 
+                n.comment_count = cCount || 0; 
+                n.char_count = (n.content || "").length;
             });
             await Promise.all(promises);
 
