@@ -171,9 +171,9 @@
         .close-btn-style { 
             background: #e0e0e0; /* 背景を少し濃いグレーに */
             color: #333 !important; 
-            padding: 8px 20px;   /* 大きさ */
-            border-radius: 30px; /* 丸く */
-            font-size: 0.9em; 
+            padding: 5px 15px;   /* 大きさ */
+            border-radius: 20px; /* 丸く */
+            font-size: 0.85em; 
             font-weight: bold; 
             cursor: pointer; 
             border: none; 
@@ -183,6 +183,8 @@
             
             /* PCでは左に隙間を空ける */
             margin-left: 40px; 
+            height: fit-content; /* ★高さを中身に合わせる */
+            align-self: center;  /* ★上下中央揃え */
         }
         .close-btn-style:hover { 
             background: #d0d0d0;
@@ -216,10 +218,11 @@
                 position: fixed !important;
                 top: auto !important; bottom: 30px !important; left: 50% !important;
                 transform: translateX(-50%);
-                width: auto !important; min-width: 280px; height: auto !important;
-                background: rgba(255, 255, 255, 0.9) !important;
+                width: 95% !important; max-width: 400px;
+                height: 54px !important; /* ★高さを固定 */                
+                background: rgba(255, 255, 255, 0.95) !important;
                 backdrop-filter: blur(5px);
-                padding: 10px 15px !important;
+                padding: 0 10px !important;
                 border-radius: 30px;
                 border: 1px solid rgba(0,0,0,0.1);
                 box-shadow: 0 4px 15px rgba(0,0,0,0.15);
@@ -228,9 +231,12 @@
                 
                 /* 横並び・中央寄せ・間隔調整 */
                 display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important; /* 折り返し禁止 */
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 40px; /* ここでボタン間の距離を調整 */
+                gap: 15px !important; /* ★間隔を狭める (40px -> 15px) */
+                
             }
             
             .sticky-close.nav-hidden {
