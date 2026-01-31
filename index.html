@@ -168,7 +168,6 @@
         }
         
         /* 戻るボタンのスタイル */
-        /* 戻るボタンのスタイル */
         .close-btn-style { 
             background: #e0e0e0; /* 背景を少し濃いグレーに */
             color: #333 !important; 
@@ -179,7 +178,7 @@
             cursor: pointer; 
             border: none; 
             width: auto; 
-            margin-left: 20px; /* ★左側にマージンを入れて、名前変換と距離を離す */
+            margin-left: 40px; /* ★左側にマージンを入れて、名前変換と距離を離す */
             text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 影をつけて目立たせる */
         }
@@ -228,7 +227,7 @@
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 20px; /* ★ 名前変換との距離を少し広げました (12px -> 20px) */
+                gap: 40px; /* ★ 名前変換との距離を少し広げました (12px -> 20px) */
             }
             
             /* スクロール時に隠すクラス */
@@ -247,7 +246,6 @@
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 少し影をつける */
                 font-weight: bold;
                 border: none !important;
-                margin: 0 !important; /* 余計なマージン削除 */
             }
             .close-btn-style:hover { background: #d0d0d0 !important; }
             
@@ -368,11 +366,12 @@
 
     <div id="reader-overlay">
         <div class="sticky-close">
-                <div id="name-changer-group" class="hidden">
+            <div id="name-changer-group" class="hidden">
                 <input type="text" id="user-custom-name" placeholder="あなたの名前">
                 <button onclick="applyNameChange()">変換</button>
-                    <button class="close-btn-style" onclick="closeReader()">← 戻る</button>
             </div>
+            
+            <button class="close-btn-style" onclick="closeReader()">← 戻る</button>
         </div>
 
         <div class="overlay-content">
