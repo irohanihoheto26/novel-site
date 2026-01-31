@@ -255,37 +255,40 @@
             
             #name-changer-group { height: 100%; align-items: center; }
 
-            /* --- ★ リストの並びと高さズレを修正 --- */
-            
-            /* タイトル・バッジ・統計情報をフレックスボックスで包む */
+            /* タイトル・バッジ・統計情報を包む箱 */
             .novel-info {
                 display: flex !important;
-                flex-wrap: wrap !important; /* 長いタイトルは折り返す */
-                align-items: center !important; /* ★これで上下のズレを強制補正！ */
-                gap: 8px !important; /* 要素ごとの隙間 */
+                flex-wrap: wrap !important; /* 折り返し許可 */
+                align-items: baseline !important; /* ★重要：文字の下のラインを揃える */
+                gap: 8px !important; 
+                line-height: 1.5 !important;
             }
 
-            /* タイトル自体の調整 */
+            /* タイトル */
             .novel-title {
                 display: inline-block;
-                line-height: 1.4;
+                font-size: 1.1em !important; /* タイトルの大きさ維持 */
             }
 
-            /* 統計エリア（ハートなど）の調整 */
+            /* 統計エリア（ハートなど） */
             .novel-stats {
                 display: inline-flex !important;
-                align-items: center !important; /* ハートと数字の高さを揃える */
-                margin-top: 0 !important; /* 余計な隙間を削除 */
-                font-size: 0.8em !important;
+                align-items: baseline !important; /* ここも下揃え */
+                margin: 0 !important;
+                font-size: 1em !important; /* ★修正：小さくせず、元の大きさ(100%)に戻す */
+                color: #666 !important;
             }
 
             /* 個々の統計アイテム（♥ 1 など） */
             .stat-item {
                 display: inline-flex !important;
-                align-items: center !important; /* ここでも念押しで中央揃え */
-                height: 20px; /* 高さを確保 */
-                line-height: 1; /* 行間を締める */
-                margin-right: 8px;
+                align-items: baseline !important; /* アイコンと数字の下を揃える */
+                margin-right: 10px !important;
+            }
+            
+            /* R18などのバッジ位置微調整 */
+            .r18-badge, .draft-badge {
+                transform: translateY(-1px); /* 少しだけ上に持ち上げてバランスを取る */
             }
         }
 
@@ -1282,9 +1285,9 @@
         titleEl.innerText = "このサイトについて";
         bodyEl.innerHTML = `
         <div class="about-section" style="margin-top: -110px;"> 
-        <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">サイトの特色</h3>
+        <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: -50px 0 -15px 0;">サイトの特色</h3>
         <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　当サイトは、かつて隆盛を誇った「個人サイト」のような自由な空気感を大切にしています。他の投稿サイトでは難しい細かなデザインカスタマイズが可能で、あなたの作品をあなたらしい空間で公開できるのが最大の特徴です。</p>
-        <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: -50px 0 -15px 0;">創設経緯</h3>
+        <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">創設経緯</h3>
         <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　SNSや大手プラットフォームの普及により、自分だけの「城」である個人サイトは激減しました。しかし、流れていくタイムラインではなく、自分の作品を自分の好きな色で飾り、静かに置いておける場所が今こそ必要だと感じています。</p>
         <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">機能について</h3>
         <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">◎いいね：作者に、誰が何にいいねしたか知らされます。いいねの数は公開されますが、誰が何にいいねしているかは非公開です。</p>
