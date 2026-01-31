@@ -391,32 +391,19 @@
                 <h3 style="margin-top:30px;">目次</h3>
                 <div id="series-episode-list"></div>
             </div>
-            <div id="series-edit-area" class="hidden" style="margin-top:20px; background:#f9f9f9; padding:20px; border-radius:8px;">
-                    <h3>シリーズ情報の編集</h3>
-                    <label style="font-weight:bold; font-size:0.9em;">基本情報</label>
-                    <input type="text" id="edit-series-title" placeholder="シリーズタイトル">
-                    <textarea id="edit-series-desc" placeholder="あらすじ（一覧ページなどに表示されます）" rows="3"></textarea>
-                    
-                    <h4 style="margin-top:20px; margin-bottom:10px;">デザインカスタマイズ (HTML/CSS)</h4>
-                    
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                        <p style="font-size:0.8em; color:#666; margin:0; line-height:1.4;">
-                            ここに書いたコードがシリーズページになります。<br>
-                            ※ <code>&lt;div id="series-works-area"&gt;&lt;/div&gt;</code> の場所に小説リストが出ます。
-                        </p>
-                        <button onclick="resetSeriesTemplate()" style="width:auto; font-size:0.8em; padding:4px 10px; margin:0;">初期デザインに戻す</button>
-                    </div>
-            
-                    <textarea id="edit-series-css" style="width:100%; height:200px; font-family:monospace;" placeholder="<style>...</style>..."></textarea>
-                    
-                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                        <button class="btn-outline" onclick="toggleSeriesEditMode(false)" style="width:auto; margin:0;">キャンセル</button>
-                        <button onclick="saveSeriesData()" style="width:auto; background:#fcaf17; color:#fff; border:none; font-weight:bold; margin:0;">保存する</button>
-                    </div>
-            
-                    <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:15px; text-align:right;">
-                         <button onclick="deleteSeries()" style="width:auto; background:none; border:none; color:red; text-decoration:underline; font-size:0.8em; padding:0;">このシリーズを削除</button>
-                    </div>
+            <div id="series-edit-area" class="hidden" style="margin-top:20px; background:#f9f9f9; padding:20px; border:radius:8px;">
+                <h3>シリーズ情報の編集</h3>
+                <input type="text" id="edit-series-title" placeholder="シリーズタイトル">
+                <textarea id="edit-series-desc" placeholder="あらすじ" rows="3"></textarea>
+                
+                <h4 style="margin-top:20px;">デザインカスタマイズ (HTML/CSS)</h4>
+                <p style="font-size:0.8em; color:#666;">ここに書いたHTMLや &lt;style&gt; は、このシリーズページにのみ適用されます。</p>
+                <textarea id="edit-series-css" style="width:100%; height:150px; font-family:monospace;" placeholder="<style>...</style> <div>...</div>"></textarea>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button onclick="saveSeriesData()">保存する</button>
+                    <button class="btn-outline" onclick="toggleSeriesEditMode(false)">キャンセル</button>
+                </div>
             </div>
             </div>
     </div>
@@ -525,90 +512,6 @@
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    <script>
-    // ==========================================
-    // 1. CONFIGURATION & GLOBALS
-    // ==========================================
-    const u = 'https://fnobmngpstzolphexluc.supabase.co'.trim();
-    const k = 'sb_publishable_wczOfUdvKuScZQJ0Lklx0w_D9XtJPqE'.trim();
-    const api = window.supabase.createClient(u, k, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-        }
-    });
-
-    let currentUser = null, userProfile = null, currentTab = 'all', currentReadingId = null;
-    let editingNovelId = null, allMyNovels = [], originalContent = "";
-    let currentReplyId = null; 
-    let lastScrollTop = 0;
-    
-    // シリーズ編集用のID保存変数
-    let currentOpenedSeriesId = null;
-
-    // 初期デザインテンプレート (Reader)
-    const defaultReaderTemplate = `<style>
-    #reader-overlay { background-color: #ffffff; color: #333333; }
-    #read-body { max-width: 700px; margin: 0 auto; font-size: 1.1em; line-height: 2; }
-    </style>`;
-
-    // 初期デザインテンプレート (Author Page)
-    const defaultAuthorTemplate = `/* 【ベーステンプレート】 */
-    <h1 class="default-title">サイトタイトル</h1>
-    <div class="default-bio">ここに自己紹介を入力してください。</div>
-    <div id="custom-works-area"></div>
-    <style>
-    #author-page-name { display: none; }
-    .default-title { font-family: 'Yu Gothic', 'YuGothic', sans-serif; font-weight: bold; font-size: 1.8em; margin: 10px 0; color: #333; }
-    .default-bio { font-size: 1em; color: #666; margin-bottom: 30px; line-height: 1.6; }
-    .novel-row { padding: 15px 0; border-bottom: 1px solid #eee; }
-    .novel-title { font-size: 1.1em; color: #333 !important; text-decoration: none; font-weight: bold; }
-    .count-badge { font-size: 0.8em; color: #999; margin-left: 10px; }
-    </style>`;
-
-    // ★ シリーズ用 初期デザインテンプレート（ID埋め込み版）
-    const defaultSeriesTemplate = `/* 【シリーズページ テンプレート】 */
-    <div class="series-header">
-        <div class="series-label">シリーズ</div>
-        <h1 class="series-title">シリーズタイトル</h1>
-        <div class="series-meta">
-            作者: <span id="series-author-display" class="author-name">...</span>
-        </div>
-        <div class="series-desc">ここにシリーズのあらすじや説明を入力してください。<br>全○話完結予定です。</div>
-    </div>
-    
-    <div class="toc-container">
-        <h3 class="toc-heading">目次</h3>
-        <div id="series-works-area"></div>
-    </div>
-
-    <style>
-    /* 全体の枠組み */
-    .series-header { border-bottom: 2px solid #fcaf17; padding-bottom: 20px; margin-bottom: 30px; }
-    
-    /* 「シリーズ」ラベル */
-    .series-label { display: inline-block; background: #fcaf17; color: #fff; font-size: 0.8em; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; }
-
-    /* タイトル */
-    .series-title { font-size: 1.6em; margin: 5px 0 10px 0; color: #333; line-height: 1.4; }
-
-    /* 情報エリア */
-    .series-meta { font-size: 0.9em; color: #666; margin-bottom: 15px; }
-    .author-name { color: #333; font-weight: bold; cursor: pointer; text-decoration: underline; }
-
-    /* あらすじ */
-    .series-desc { color: #444; font-size: 0.95em; line-height: 1.8; background: #f9f9f9; padding: 15px; border-radius: 8px; }
-
-    /* 目次 */
-    .toc-container { margin-top: 20px; }
-    .toc-heading { font-size: 1.2em; border-left: 4px solid #ccc; padding-left: 10px; margin-bottom: 15px; color: #333; }
-
-    /* リスト部分 */
-    .novel-row { border-bottom: 1px dashed #eee; padding: 12px 5px; transition: background 0.2s; }
-    .novel-row:hover { background: #fafafa; }
-    </style>`;
 <script>
     // ==========================================
     // 1. CONFIGURATION & GLOBALS
@@ -1660,6 +1563,7 @@
         else stickyEl.classList.remove('nav-hidden');
         lastScrollTop = st;
     }, { passive: true });
-</script>
+    
+</script>   
 </body>
 </html>
