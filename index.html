@@ -725,10 +725,21 @@
         let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
         allMyNovels = novels || [];
         let totalLikesSum = 0;
-        
+
+        // ★ 追加：自分の作品のシリーズ名を取得
+        // (一件ずつ確認して、データに埋め込みます)
+        for (let n of allMyNovels) {
+            if (n.series_id) {
+                const { data: s } = await api.from('series').select('title').eq('id', n.series_id).single();
+                if (s) n.series_title = s.title;
+            }
+        }        
         document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => {
             // バッジ作成
             const badge = n.is_private ? '<span class="draft-badge">下書き</span>' : (n.is_r18 ? '<span class="r18-badge">R18</span>' : '');
+            const seriesLink = n.series_title 
+                ? `<span onclick="openSeriesPage('${n.series_id}')" style="display:inline-block; background:#efefef; color:#555; font-size:0.75em; padding:2px 6px; border-radius:4px; cursor:pointer; margin-right:5px; vertical-align:middle;"><span class="material-icons" style="font-size:1.2em; vertical-align:text-bottom;">library_books</span> ${n.series_title}</span>` 
+                : '';
 
             return `
             <div class="novel-row">
