@@ -167,26 +167,28 @@
             display: flex; align-items: center; justify-content: center; gap: 15px;
         }
         
-        /* 戻るボタンのスタイル */
+        /* --- 戻るボタンのスタイル（PC・スマホ共通） --- */
         .close-btn-style { 
             background: #e0e0e0; /* 背景を少し濃いグレーに */
             color: #333 !important; 
-            padding: 8px 20px; /* パディングを増やして大きく */
-            border-radius: 30px; /* 角丸を強めに */
+            padding: 8px 20px;   /* 大きさ */
+            border-radius: 30px; /* 丸く */
             font-size: 0.9em; 
             font-weight: bold; 
             cursor: pointer; 
             border: none; 
             width: auto; 
-            margin-left: 40px; /* ★左側にマージンを入れて、名前変換と距離を離す */
             text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 影をつけて目立たせる */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 影 */
+            
+            /* PCでは左に隙間を空ける */
+            margin-left: 40px; 
         }
         .close-btn-style:hover { 
-            background: #d0d0d0; /* ホバー時はさらに濃く */
+            background: #d0d0d0;
         }
 
-        /* 名前変換フォームのスタイル (元のデザイン) */
+        /* 名前変換フォーム（共通） */
         #name-changer-group {
             display: flex; align-items: center; gap: 5px;
         }
@@ -197,7 +199,6 @@
             margin: 0; padding: 5px 15px; font-size: 0.8em; border-radius: 20px; width: auto; background: var(--main-color); color: #fff; border: none;
         }
 
-        /* --- Mobile Responsive (< 800px) --- */
         /* --- Mobile Responsive (< 800px) --- */
         @media screen and (max-width: 800px) {
             body { flex-direction: column; }
@@ -210,7 +211,7 @@
             #logged-in-nav button { margin-bottom: 0; }
             .novel-row { flex-direction: column; align-items: flex-start; gap: 5px; }
 
-            /* ★ スマホ用：下に浮くオーバーレイ (位置調整済み) */
+            /* スマホ用：下に浮くオーバーレイ */
             .sticky-close {
                 position: fixed !important;
                 top: auto !important; bottom: 30px !important; left: 50% !important;
@@ -224,30 +225,24 @@
                 box-shadow: 0 4px 15px rgba(0,0,0,0.15);
                 z-index: 9999 !important;
                 transition: transform 0.3s ease-out, opacity 0.3s ease;
+                
+                /* 横並び・中央寄せ・間隔調整 */
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 40px; /* ★ 名前変換との距離を少し広げました (12px -> 20px) */
+                gap: 40px; /* ここでボタン間の距離を調整 */
             }
             
-            /* スクロール時に隠すクラス */
             .sticky-close.nav-hidden {
                 transform: translateX(-50%) translateY(150%) !important;
                 opacity: 0;
             }
             
-            /* ★ スマホでもボタンをグレーにして目立たせる設定 */
+            /* スマホ用ボタン調整（共通設定を引き継ぐのでこれだけでOK） */
             .close-btn-style { 
-                background: #e0e0e0 !important; /* グレー背景 */
-                color: #333 !important; 
-                font-size: 0.9em; 
-                padding: 8px 20px !important;   /* ボタンの大きさ確保 */
-                border-radius: 30px !important; /* 丸く */
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 少し影をつける */
-                font-weight: bold;
-                border: none !important;
+                /* PC用のマージンをリセット（gapで調整するため） */
+                margin-left: 0 !important; 
             }
-            .close-btn-style:hover { background: #d0d0d0 !important; }
             
             #name-changer-group { height: 100%; align-items: center; }
         }
