@@ -368,7 +368,7 @@
         <div id="list">読み込み中...</div>
     </main>
 
-    <div id="series-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2500; overflow-y:auto;">
+    <div id="series-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2000; overflow-y:auto;">
         <style id="series-dynamic-style"></style>
 
         <div class="overlay-content">
@@ -835,65 +835,78 @@
     }
 
     // ★ 追加：シリーズ目次ページを開く関数
+    // ★ 修正：編集ボタンを表示し、クリックで編集モードを開くように変更
     async function openSeriesPage(seriesId) {
-        // オーバーレイを表示
         const overlay = document.getElementById('series-overlay');
         overlay.classList.remove('hidden');
         
+        // 編集エリアを閉じておく（リセット）
+        if (typeof toggleSeriesEditMode === 'function') toggleSeriesEditMode(false);
+
         // 1. シリーズ情報の取得
         const { data: s } = await api.from('series').select('*').eq('id', seriesId).single();
         if (!s) return alert("シリーズが見つかりません");
 
-        // ★ 現在開いているシリーズIDを一時保存（保存時に使うため）
+        // ★ ID保存（保存処理で使うため必須）
         window.currentSeriesId = s.id;
 
-        // 2. 作者情報の取得
         const { data: p } = await api.from('profiles').select('display_name').eq('id', s.author_id).maybeSingle();
         const authorName = p ? p.display_name : "名無し";
 
-        // --- ★ デザインの反映処理 ---
+        // --- デザイン反映 ---
         const styleTag = document.getElementById('series-dynamic-style');
         const customArea = document.getElementById('series-custom-html-area');
         const fullCode = s.custom_css || "";
-        // CSSを抽出してstyleタグへ
         const cssMatch = fullCode.match(/<style>([\s\S]*?)<\/style>/);
-        styleTag.innerHTML = cssMatch ? cssMatch[1] : ""; 
+        if (styleTag) styleTag.innerHTML = cssMatch ? cssMatch[1] : ""; 
+        if (customArea) customArea.innerHTML = fullCode.replace(/<style>[\s\S]*?<\/style>/g, ""); 
         
-        // HTML部分（styleタグ以外）を表示エリアへ
-        customArea.innerHTML = fullCode.replace(/<style>[\s\S]*?<\/style>/g, ""); 
-        // ---------------------------
+        // 編集フォーム初期値セット
+        if (document.getElementById('edit-series-title')) document.getElementById('edit-series-title').value = s.title;
+        if (document.getElementById('edit-series-desc')) document.getElementById('edit-series-desc').value = s.description || "";
+        if (document.getElementById('edit-series-css')) document.getElementById('edit-series-css').value = s.custom_css || "";
 
-        // ★ ここを変更：作者なら編集ボタンを表示
+        // ★ ボタン作成（toggleSeriesEditModeを呼ぶ）
         const editBtn = (currentUser && currentUser.id === s.author_id) 
-            ? `<button onclick="editSeries('${s.id}')" style="font-size:0.7em; padding:2px 8px; margin-left:10px; vertical-align:middle;">編集</button>` 
+            ? `<button onclick="toggleSeriesEditMode(true)" style="font-size:0.7em; padding:2px 8px; margin-left:10px; vertical-align:middle; width:auto; display:inline-block;">編集</button>` 
             : '';
 
-        // 画面にセット
-        document.getElementById('series-page-title').innerText = s.title;
+        // ★ ここが修正点：innerHTML で editBtn を表示
+        document.getElementById('series-page-title').innerHTML = `${s.title} ${editBtn}`;
+        
         document.getElementById('series-page-desc').innerText = s.description || "あらすじはありません";
         document.getElementById('series-author-area').innerHTML = `作者: <strong onclick="openAuthorPage('${s.author_id}')" style="cursor:pointer; text-decoration:underline;">${authorName}</strong>`;
 
-        // 3. エピソード一覧の取得（話数順）
-        const { data: episodes } = await api.from('novels')
-            .select('id, title, episode_number, is_r18, created_at')
+        // 2. エピソード一覧の取得
+        let query = api.from('novels')
+            .select('id, title, episode_number, is_r18, is_private, created_at')
             .eq('series_id', seriesId)
-            .eq('is_private', false) // 下書きは出さない
             .order('episode_number', { ascending: true });
 
-        // リスト描画
+        if (!currentUser || currentUser.id !== s.author_id) {
+            query = query.eq('is_private', false);
+        }
+
+        const { data: episodes } = await query;
+
+        // 3. リスト描画
         const listDiv = document.getElementById('series-episode-list');
         if (episodes && episodes.length > 0) {
-            listDiv.innerHTML = episodes.map(e => `
+            listDiv.innerHTML = episodes.map(e => {
+                const draftBadge = e.is_private ? '<span style="background:#e0f2ff; color:#004080; font-size:0.7em; padding:2px 6px; border-radius:4px; margin-left:5px;">下書き</span>' : '';
+                const r18Badge = e.is_r18 ? '<span style="color:red; font-size:0.8em; margin-left:5px;">(R18)</span>' : '';
+
+                return `
                 <div style="padding:15px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px;">
                     <span style="font-weight:bold; color:#ccc; font-family:'Antonio', sans-serif; font-size:1.2em; width:30px; text-align:right;">${e.episode_number}</span>
                     <div style="flex:1;">
-                        <div onclick="openReader('${e.id}')" style="cursor:pointer; font-weight:bold; font-size:1.05em; text-decoration:underline;">${e.title}</div>
-                        <div style="font-size:0.75em; color:#999; margin-top:3px;">${new Date(e.created_at).toLocaleDateString()} ${e.is_r18 ? '<span style="color:red;">(R18)</span>' : ''}</div>
+                        <div onclick="openReader('${e.id}')" style="cursor:pointer; font-weight:bold; font-size:1.05em; text-decoration:underline;">${e.title} ${draftBadge}</div>
+                        <div style="font-size:0.75em; color:#999; margin-top:3px;">${new Date(e.created_at).toLocaleDateString()} ${r18Badge}</div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } else {
-            listDiv.innerHTML = '<div style="padding:20px; color:#888;">まだエピソードがありません</div>';
+            listDiv.innerHTML = '<div style="padding:20px; color:#888;">エピソードがありません</div>';
         }
     }
 
