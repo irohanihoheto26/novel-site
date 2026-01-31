@@ -254,6 +254,39 @@
             }
             
             #name-changer-group { height: 100%; align-items: center; }
+
+            /* --- ★ リストの並びと高さズレを修正 --- */
+            
+            /* タイトル・バッジ・統計情報をフレックスボックスで包む */
+            .novel-info {
+                display: flex !important;
+                flex-wrap: wrap !important; /* 長いタイトルは折り返す */
+                align-items: center !important; /* ★これで上下のズレを強制補正！ */
+                gap: 8px !important; /* 要素ごとの隙間 */
+            }
+
+            /* タイトル自体の調整 */
+            .novel-title {
+                display: inline-block;
+                line-height: 1.4;
+            }
+
+            /* 統計エリア（ハートなど）の調整 */
+            .novel-stats {
+                display: inline-flex !important;
+                align-items: center !important; /* ハートと数字の高さを揃える */
+                margin-top: 0 !important; /* 余計な隙間を削除 */
+                font-size: 0.8em !important;
+            }
+
+            /* 個々の統計アイテム（♥ 1 など） */
+            .stat-item {
+                display: inline-flex !important;
+                align-items: center !important; /* ここでも念押しで中央揃え */
+                height: 20px; /* 高さを確保 */
+                line-height: 1; /* 行間を締める */
+                margin-right: 8px;
+            }
         }
 
         /* Reader Specific */
