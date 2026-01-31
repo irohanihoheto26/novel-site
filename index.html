@@ -7,125 +7,167 @@
     <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300&display=swap" rel="stylesheet">
     
     <style>
-        /* --- Base Variables & Layout --- */
-        :root { --sidebar-width: 280px; }
-        body { font-family: "Yu Gothic", "YuGothic", sans-serif; background: #fff; color: #000; margin: 0; display: flex; min-height: 100vh; }
-        
-        /* フォント設定 (Base) */
-        body, h2, h3, .novel-title, #display-current-name {
-            font-family: "Yu Gothic Medium", "Yu Gothic", "游ゴシック体", "游ゴシック", sans-serif;
-        }
+    /* =======================================================
+   MODERN THEME OVERRIDE (今風デザインへの上書き)
+   ======================================================= */
 
-        /* --- Sidebar (Aside) --- */
-        aside { width: var(--sidebar-width); height: 100vh; border-right: 2px solid #000; padding: 40px 20px; box-sizing: border-box; position: fixed; left: 0; top: 0; overflow-y: auto; background: #fff; display: flex; flex-direction: column; z-index: 100; }
-        main { margin-left: var(--sidebar-width); flex: 1; padding: 40px; max-width: 900px; box-sizing: border-box; }
-        
-        aside h1 { font-family: 'Dela Gothic One', sans-serif !important; font-size: 2.2em; margin: 0 0 10px; text-transform: uppercase; cursor: pointer; }
-        aside button, #auth-form button:first-of-type { background: #fcaf17; border: 1px solid #fcaf17; }
-        
-        .rule-link { font-size: 0.85em; color: #666; text-decoration: underline; cursor: pointer; margin-bottom: 30px; display: block; }
-        
-        /* --- Search Box --- */
-        .search-box-side {
-            padding: 10px 10px 10px 30px;
-            border: 1px solid #000;
-            width: 100%;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-            background: url('https://api.iconify.design/mdi/magnify.svg') no-repeat 8px center;
-            background-size: 18px;
-        }
+/* 1. 全体の背景と基本設定 */
+body {
+    background-color: #f4f5f7; /* 薄いグレー背景にして白を目立たせる */
+    color: #333; /* 真っ黒(#000)より少し柔らかい黒で見やすく */
+}
 
-        /* --- Components: Buttons, Inputs, Tabs --- */
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
-        button { background: #000; color: #fff; border: none; padding: 12px; cursor: pointer; width: 100%; margin-bottom: 5px; }
-        .btn-outline { background: #fff; color: #000; border: 1px solid #000; }
-        
-        .tab-bar { display: flex; gap: 15px; border-bottom: 2px solid #eee; margin-bottom: 25px; }
-        .tab-btn { background: none; border: none; color: #888; padding: 10px 0; cursor: pointer; font-weight: bold; }
-        .tab-btn.active { color: #fcaf17; border-bottom: 2px solid #fcaf17; }
+/* 2. サイドバー（PC）をスタイリッシュに */
+aside {
+    border-right: none;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.03); /* 線ではなく影で区切る */
+}
 
-        .checkbox-group { display: flex; gap: 25px; margin-bottom: 20px; align-items: center; }
-        .checkbox-group label { display: flex; align-items: center; font-size: 0.9em; font-weight: bold; cursor: pointer; }
+/* 3. ボタンを今風に（角丸・グラデーションなし・フラット） */
+button, .btn-outline {
+    border-radius: 50px; /* 丸みのあるボタン */
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+button:active {
+    transform: scale(0.98); /* 押したときに少し凹むアニメーション */
+}
+/* メインカラーの調整（少し鮮やかに） */
+button, aside button {
+    background: #FFB300; /* 鮮やかなオレンジイエロー */
+    border: none;
+}
+/* アウトラインボタン */
+.btn-outline {
+    background: #fff;
+    border: 2px solid #eee;
+    color: #555;
+    box-shadow: none;
+}
+.btn-outline:hover {
+    border-color: #FFB300;
+    color: #FFB300;
+}
 
-        /* --- Toggle Switch --- */
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-right: 8px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #000; }
-        #r18-check:checked + .slider { background-color: #d00; }
-        input:checked + .slider:before { transform: translateX(20px); }
+/* 4. 入力欄のデザイン */
+input, textarea, select {
+    background: #fff;
+    border: 2px solid #eee;
+    border-radius: 12px; /* 入力欄も丸く */
+    padding: 14px;
+    transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: #FFB300; /* フォーカス時にテーマカラーに */
+}
 
-        /* --- User Page & Profile --- */
-        .section-header { display: flex; align-items: baseline; gap: 15px; border-bottom: 2px solid #000; margin-bottom: 20px; }
-        .settings-link { font-size: 0.7em; color: #666; text-decoration: underline; cursor: pointer; }
-        .profile-edit-area { background: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 30px; display: none; }
-        
-        /* マイページリスト */
-        #my-works-list { max-width: 600px; margin: 0 auto 0 0; border: 1px solid #eee; padding: 0 15px; background: #fff; }
+/* 5. 作品リストを「カードデザイン」に変更 */
+.novel-row {
+    background: #fff;
+    border: none;
+    border-radius: 16px; /* カードの角丸 */
+    padding: 20px;
+    margin-bottom: 20px; /* カード同士の間隔 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* ふんわりした影 */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-        /* --- Novel List --- */
-        #library-section-header { margin-top: 80px; padding-top: 40px; border-top: 3px double #000; display: flex; align-items: baseline; gap: 15px; margin-bottom: 20px; }
-        #list { background: #fafafa; padding: 10px; border-radius: 8px; }
-        
-        .novel-row { padding: 15px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; }
-        .novel-title { font-weight: bold; cursor: pointer; text-decoration: underline; }
-        .novel-info { flex: 1; min-width: 0; }
-        .novel-stats { font-size: 0.85em; color: #888; margin-left: 10px; display: inline-flex; gap: 8px; }
-        .stat-item { display: inline-flex; align-items: center; gap: 3px; }
-        .count-badge { font-size: 0.75em; background: #eee; padding: 2px 6px; border-radius: 4px; color: #444; margin-right: 5px; }
+/* ホバー時に少し浮き上がる演出 */
+.novel-row:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
 
-        /* Badges */
-        .draft-badge { background-color: #e0f2ff; color: #004080; font-size: 0.75em; font-weight: bold; padding: 3px 10px; border-radius: 15px; margin-left: 8px; display: inline-block; vertical-align: middle; }
-        .r18-badge { background-color: #ff6347; color: #ffffff; font-size: 0.7em; font-weight: bold; padding: 2px 8px; border-radius: 12px; margin-left: 8px; display: inline-block; vertical-align: middle; white-space: nowrap; }
-        .btn-delete { cursor: pointer; color: #cc0000; font-size: 0.8em; margin-left: 10px; text-decoration: underline; }
-        .btn-delete:hover { color: #ff0000; }
+.novel-title {
+    font-size: 1.2em;
+    text-decoration: none; /* 下線を消す */
+    color: #222;
+    display: block;
+    margin-bottom: 5px;
+}
 
-        /* Tags */
-        .tag-link { display: inline-block; background: #f0f0f0; color: #666; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; cursor: pointer; margin-right: 5px; transition: all 0.2s ease; text-decoration: none; }
-        .tag-link:hover { background: #e0e0e0; color: #333; }
-        .author-page-tags { display: inline-flex; flex-wrap: wrap; gap: 5px; vertical-align: middle; }
+/* タグのデザイン */
+.tag-link {
+    background: #f0f2f5;
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 20px; /* タグをカプセル型に */
+    font-size: 0.8em;
+}
+.tag-link:hover {
+    background: #FFB300;
+    color: #fff;
+}
 
-        /* --- Overlays (Editor, Reader, Author) --- */
-        #editor-overlay, #reader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; }
-        .overlay-content { max-width: 700px; margin: 40px auto; padding: 20px; }
-        #word-count-display { font-size: 0.8em; color: #666; text-align: right; margin-bottom: 10px; }
+/* 6. タブメニューのデザイン */
+.tab-bar {
+    border-bottom: none;
+    gap: 10px;
+}
+.tab-btn {
+    padding: 8px 20px;
+    border-radius: 30px;
+    background: #fff;
+    color: #888;
+    border: 1px solid #eee;
+    font-weight: normal;
+}
+.tab-btn.active {
+    background: #333; /* 選択中は黒背景 */
+    color: #fff;
+    border-color: #333;
+    border-bottom: 1px solid #333; /* 元のスタイルを打ち消し */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
 
-        /* Reader Specific */
-        #reader-overlay { z-index: 7000 !important; }
-        #author-page-overlay { z-index: 6000 !important; }
-        .indent-text { text-indent: 1em; }
-        .comment-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.9em; }
-        
-        /* Sticky Close Header */
-        .sticky-close { position: sticky; top: 0; background: rgba(255, 255, 255, 0.8); padding: 10px 0; z-index: 2100; border: none; display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 15px; line-height: 1; }
-        .close-btn-style { background: #c0c0c0; color: #444 !important; padding: 5px 15px; border-radius: 6px; font-size: 0.85em; font-weight: bold; cursor: pointer; border: 0px solid #ccc; display: inline-block; width: auto; text-align: center; transition: background 0.2s; pointer-events: auto; }
-        .close-btn-style:hover { background: #d0d0d0; }
-        #name-changer-group { display: flex; align-items: center !important; gap: 8px; margin: 0 !important; }
+/* 7. 読書画面（オーバーレイ） */
+#reader-overlay .overlay-content {
+    max-width: 800px;
+    background: #fff;
+    /* 本文以外を薄くグレーにして紙面を際立たせる */
+    box-shadow: 0 0 30px rgba(0,0,0,0.1);
+    min-height: 100vh; 
+    margin: 0 auto;
+    padding: 60px 40px;
+}
+.sticky-close {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(5px); /* すりガラス効果 */
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
 
-        /* Utility */
-        .hidden { display: none !important; }
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-        .filter-bar select { padding: 5px; border: 1px solid #000; font-family: inherit; }
-
-        /* --- Mobile Responsive (< 800px) --- */
-        @media screen and (max-width: 800px) {
-            body { flex-direction: column; }
-            aside { width: 100%; height: auto; position: static; border-right: none; border-bottom: 2px solid #000; padding: 15px; z-index: 10; }
-            main { margin-left: 0; padding: 15px; width: 100%; box-sizing: border-box; }
-            #logged-in-nav { display: flex; gap: 10px; }
-            #logged-in-nav button { flex: 1; padding: 8px; font-size: 0.9em; }
-
-            /* Sticky Close Floating Action */
-            .sticky-close { position: fixed !important; top: auto !important; bottom: 30px !important; left: 50% !important; transform: translateX(-50%) translateY(0); width: 320px !important; height: 48px !important; display: flex !important; gap: 12px; background: rgba(255, 255, 255, 0.9) !important; padding: 0 15px !important; border-radius: 30px; border: 1px solid rgba(0,0,0,0.1); z-index: 9999 !important; transition: transform 0.3s ease-out, opacity 0.3s ease; pointer-events: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-            .sticky-close.nav-hidden { transform: translateX(-50%) translateY(120%) !important; opacity: 0; }
-            .sticky-close > * { pointer-events: auto; flex: none !important; }
-            #name-changer-group { height: 100% !important; margin: 0 !important; }
-            
-            /* Author Back Button */
-            #author-back-btn { position: fixed !important; bottom: 30px !important; right: 20px !important; z-index: 4000 !important; background: #333 !important; color: #fff !important; padding: 12px 20px !important; border-radius: 30px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important; font-weight: bold !important; border: none !important; }
-        }
+/* 8. スマホ表示の最適化 */
+@media screen and (max-width: 800px) {
+    /* サイドバーをヘッダー風に */
+    aside {
+        padding: 15px 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        border-bottom: none;
+    }
+    aside h1 {
+        font-size: 1.5em;
+        margin-bottom: 0;
+    }
+    
+    /* カードの余白調整 */
+    main {
+        padding: 20px 15px;
+    }
+    .novel-row {
+        padding: 15px;
+        border-radius: 12px;
+    }
+    
+    /* 検索窓のデザイン */
+    .search-box-side {
+        margin-top: 15px;
+        background-color: #f9f9f9;
+        border: none;
+    }
+}
     </style>
 
     <style id="user-custom-style"></style>
