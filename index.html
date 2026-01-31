@@ -701,17 +701,20 @@
             <div class="novel-row">
                 <div class="novel-info">
                     <div style="margin-bottom:4px;">${seriesLink}</div>
-
                     <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span>
                     ${n.is_r18 ? '<span class="r18-badge">R18</span>' : ''}
                     <span onclick="openAuthorPage('${n.author_id}')" style="font-size:0.8em; color:#888; cursor:pointer; text-decoration:underline;"> / <span id="author-name-${n.id}">${n.author_name}</span></span>
                     <div style="margin-top:5px;">${(n.tags||[]).filter(t=>t.trim()).map(t=>`<span class="tag-link" onclick="setSearchTag('${t}')">#${t}</span>`).join('')}</div>
                 </div>
-                <div class="novel-stats">
+                
+                <div class="novel-stats" style="display:flex; align-items:center; gap:10px; flex-shrink:0; white-space:nowrap;">
                     <span class="count-badge">${(n.char_count || 0).toLocaleString()}文字</span>
-                    <span class="stat-item" style="display:flex; align-items:center;"><span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite</span> 
+                    
+                    <span class="stat-item" style="display:flex; align-items:center;">
+                        <span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite_border</span> 
                         ${n.like_count || 0}
-                    </span>                    
+                    </span>
+                    
                     <span class="stat-item" style="display:flex; align-items:center;">
                         <span class="material-icons" style="font-size:1.1em; color:#888; margin-right:2px;">chat_bubble_outline</span> 
                         ${n.comment_count || 0}
@@ -731,37 +734,49 @@
     async function loadUserContent() {
         if (!currentUser) return;
 
-        // 1. フォロー・フォロワー数の取得 (Headリクエストで数だけ数える)
-        const { count: following } = await api.from('follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('follower_id', currentUser.id); // 自分がフォローしている数
-
-        const { count: followers } = await api.from('follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('following_id', currentUser.id); // 自分をフォローしている数
+        // 1. フォロー・フォロワー数の取得
+        const { count: following } = await api.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', currentUser.id);
+        const { count: followers } = await api.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', currentUser.id);
         
-        // 画面に反映 (HTML側の id="following-count" などに入れる)
         const fEl = document.getElementById('following-count');
         const frEl = document.getElementById('follower-count');
         if (fEl) fEl.innerText = following || 0;
         if (frEl) frEl.innerText = followers || 0;
 
-        // 2. 作品リストと合計いいねの取得
+        // 2. 作品リスト取得
         let { data: novels } = await api.from('novels').select('*').eq('author_id', currentUser.id).order('created_at', {ascending: false});
         allMyNovels = novels || [];
         let totalLikesSum = 0;
 
-        // ★ 追加：自分の作品のシリーズ名を取得
-        // (一件ずつ確認して、データに埋め込みます)
-        for (let n of allMyNovels) {
+        // ★★★ ここが重要！「長い理由」はこれです ★★★
+        // 先に全データの集計が終わるのを待ちます (Promise.all)
+        // これをしないと「...」のままになったりします
+        const promises = allMyNovels.map(async (n) => {
+            // シリーズ名取得
             if (n.series_id) {
                 const { data: s } = await api.from('series').select('title').eq('id', n.series_id).single();
                 if (s) n.series_title = s.title;
             }
-        }        
+            // いいね・コメント数取得
+            const { count: l } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            const { count: c } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
+            n.like_count = l || 0;
+            n.comment_count = c || 0;
+            totalLikesSum += n.like_count;
+        });
+
+        // 全部のデータが揃うまでここでストップ！
+        await Promise.all(promises);
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        // 合計いいね数の更新
+        const totalLikesEl = document.getElementById('total-likes');
+        if(totalLikesEl) totalLikesEl.innerText = totalLikesSum.toLocaleString();
+
+        // 3. リスト描画（データが揃っているので一発で表示）
         document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => {
-            // バッジ作成
             const badge = n.is_private ? '<span class="draft-badge">下書き</span>' : (n.is_r18 ? '<span class="r18-badge">R18</span>' : '');
+            
             const seriesLink = n.series_title 
                 ? `<span onclick="openSeriesPage('${n.series_id}')" style="display:inline-block; background:#efefef; color:#555; font-size:0.75em; padding:2px 6px; border-radius:4px; cursor:pointer; margin-right:5px; vertical-align:middle;"><span class="material-icons" style="font-size:1.2em; vertical-align:text-bottom;">library_books</span> ${n.series_title}</span>` 
                 : '';
@@ -777,8 +792,13 @@
                             ${badge}
                         </span>
                         
-                        <span id="my-stats-${n.id}" class="novel-stats" style="font-size:0.85em; color:#777; white-space: nowrap;">
-                            <span class="stat-item">...</span>
+                        <span class="novel-stats" style="font-size:0.85em; color:#777; white-space: nowrap;">
+                             <span class="stat-item" style="display:inline-flex; align-items:center; margin-right:10px;">
+                                <span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite_border</span> ${n.like_count}
+                            </span> 
+                            <span class="stat-item" style="display:inline-flex; align-items:center;">
+                                <span class="material-icons" style="font-size:1.1em; color:#888; margin-right:2px;">chat_bubble_outline</span> ${n.comment_count}
+                            </span>
                         </span>
                     </div>
                 </div>
@@ -789,31 +809,6 @@
                 </div>
             </div>`;
         }).join('') || '<div style="padding:20px; color:#888;">作品はありません</div>';
-
-        // 各作品のいいね数を集計
-        allMyNovels.forEach(async (n) => {
-            const { count: lCount } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-            const { count: cCount } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
-            
-            totalLikesSum += (lCount || 0);
-            
-            // 合計いいね数の更新
-            const totalLikesEl = document.getElementById('total-likes');
-            if(totalLikesEl) totalLikesEl.innerText = totalLikesSum.toLocaleString();
-
-            // 個別のいいね・コメント数更新
-            const el = document.getElementById(`my-stats-${n.id}`);
-            if(el) {
-                // ★ここを修正：アイコンをGoogle Fontsに変更
-                el.innerHTML = `
-                    <span class="stat-item" style="display:inline-flex; align-items:center; margin-right:10px;">
-                        <span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite</span> ${l||0}
-                    </span> 
-                    <span class="stat-item" style="display:inline-flex; align-items:center;">
-                        <span class="material-icons" style="font-size:1.1em; color:#888; margin-right:2px;">chat_bubble_outline</span> ${c||0}
-                    </span>`;
-            }
-        });
     }
     async function openEditor(id = null) {
         editingNovelId = id;
@@ -1258,7 +1253,10 @@
         <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　当サイトは、かつて隆盛を誇った「個人サイト」のような自由な空気感を大切にしています。他の投稿サイトでは難しい細かなデザインカスタマイズが可能で、あなたの作品をあなたらしい空間で公開できるのが最大の特徴です。</p>
         <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: -50px 0 -15px 0;">創設経緯</h3>
         <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">　SNSや大手プラットフォームの普及により、自分だけの「城」である個人サイトは激減しました。しかし、流れていくタイムラインではなく、自分の作品を自分の好きな色で飾り、静かに置いておける場所が今こそ必要だと感じています。</p>
-        <p style="font-size: 0.95em; margin: 0; line-height: 1.2;">　数行の短い創作文から設定資料、日記代わりの文章まで、肩の力を抜いて自由にお楽しみください。</p>
+        <h3 style="color: #fcaf17; font-size: 1.05em; border-left: 4px solid #fcaf17; padding-left: 10px; margin: 0 0 -15px 0;">機能について</h3>
+        <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">◎いいね：作者に、誰が何にいいねしたか知らされます。いいねの数は公開されますが、誰が何にいいねしているかは非公開です。</p>
+        <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">◎お気に入り：作者に、誰が何をお気に入りしたか知らされます。お気に入りの数も、誰が何をお気に入りしたかも非公開です。</p>
+        <p style="font-size: 0.95em; margin: -20px 0 -10px 0; line-height: 1.2;">◎コメント：公開・非公開を選んで作者に送ることができます。コメントへの返信も同様です。</p>
         </div>`;
         document.getElementById('reader-overlay').style.display = 'block';
         document.getElementById('reader-overlay').scrollTop = 0;
