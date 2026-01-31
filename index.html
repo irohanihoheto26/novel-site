@@ -730,7 +730,7 @@
             if(el) el.innerHTML = `<span class="stat-item">♥ ${lCount||0}</span> <span class="stat-item">💬 ${cCount||0}</span>`;
         });
     }
-    function openEditor(id = null) {
+    async function openEditor(id = null) {
         editingNovelId = id;
         await loadSeriesOptions(); // ★ロード
         
@@ -784,14 +784,25 @@
 
         // 3. シリーズ情報の取得
         const seriesId = document.getElementById('series-select').value || null;
-        let nextOrder = 0;
+        let updateOrder = null; // 更新する番号（nullなら更新しない）
 
-        // 新規投稿で、かつシリーズが選ばれていたら、自動で番号（話数）を振る
-        if (!editingNovelId && seriesId) {
-            const { count } = await api.from('novels')
-                .select('*', { count: 'exact', head: true })
-                .eq('series_id', seriesId);
-            nextOrder = (count || 0) + 1;
+        // ★ ここを賢くしました！
+        // シリーズが選ばれている場合
+        if (seriesId) {
+            // A. 新規投稿なら、無条件で一番後ろに追加
+            if (!editingNovelId) {
+                const { count } = await api.from('novels').select('*', { count: 'exact', head: true }).eq('series_id', seriesId);
+                updateOrder = (count || 0) + 1;
+            } 
+            // B. 編集の場合、「元々このシリーズじゃなかった」なら一番後ろに追加
+            else {
+                const { data: current } = await api.from('novels').select('series_id').eq('id', editingNovelId).single();
+                // 前と違うシリーズ（または無所属）から移動してきた場合のみ番号を振る
+                if (current.series_id !== seriesId) {
+                    const { count } = await api.from('novels').select('*', { count: 'exact', head: true }).eq('series_id', seriesId);
+                    updateOrder = (count || 0) + 1;
+                }
+            }
         }
         
         // 4. 保存データの作成
@@ -805,15 +816,19 @@
             default_name: defaultName,
             author_id: currentUser.id,
             author_name: userProfile?.display_name || "名無し",
-            series_id: seriesId // ★追加
+            series_id: seriesId
         };
 
-        // 新規投稿のときだけ、計算した話数をセット（編集時は順番を変えないため）
-        if (!editingNovelId && seriesId) {
-            payload.episode_number = nextOrder; // ★ episode_number に保存
+        // 番号の更新が必要なときだけセット（並び順を壊さないため）
+        if (updateOrder !== null) {
+            payload.episode_number = updateOrder;
+        }
+        // シリーズから外す（短編に戻す）場合は、番号を0かnullにしておく
+        if (!seriesId) {
+            payload.episode_number = 0;
         }
 
-        // 5. データベースへ送信（★ここを1回だけに修正しました）
+        // 5. データベースへ送信
         const { error } = editingNovelId 
             ? await api.from('novels').update(payload).eq('id', editingNovelId) 
             : await api.from('novels').insert(payload);
