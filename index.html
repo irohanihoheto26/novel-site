@@ -766,15 +766,19 @@
                 <div class="novel-info">
                     <div style="margin-bottom:4px;">${seriesLink}</div>
                     
-                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span> 
-                    ${badge}
-                    
-                    <span id="my-stats-${n.id}" class="novel-stats" style="margin-left:70px; font-size:0.85em; color:#777;">
-                        <span class="stat-item">...</span>
-                    </span>
+                    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
+                        <span>
+                            <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span> 
+                            ${badge}
+                        </span>
+                        
+                        <span id="my-stats-${n.id}" class="novel-stats" style="font-size:0.85em; color:#777; white-space: nowrap;">
+                            <span class="stat-item">...</span>
+                        </span>
+                    </div>
                 </div>
                 
-                <div>
+                <div style="white-space: nowrap; margin-left: 10px;">
                     <span style="cursor:pointer; text-decoration:underline; font-size:0.8em; margin-right:10px;" onclick="openEditor('${n.id}')">[編集]</span>
                     <span style="cursor:pointer; text-decoration:underline; font-size:0.8em; color:red;" onclick="deleteNovel('${n.id}', '${n.title}')">[削除]</span>
                 </div>
