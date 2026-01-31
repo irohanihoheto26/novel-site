@@ -752,16 +752,12 @@
         allMyNovels = novels || [];
         let totalLikesSum = 0;
 
-        // ★★★ ここが重要！「長い理由」はこれです ★★★
-        // 先に全データの集計が終わるのを待ちます (Promise.all)
-        // これをしないと「...」のままになったりします
+        // 集計処理
         const promises = allMyNovels.map(async (n) => {
-            // シリーズ名取得
             if (n.series_id) {
                 const { data: s } = await api.from('series').select('title').eq('id', n.series_id).single();
                 if (s) n.series_title = s.title;
             }
-            // いいね・コメント数取得
             const { count: l } = await api.from('likes').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             const { count: c } = await api.from('comments').select('*', { count: 'exact', head: true }).eq('novel_id', n.id);
             n.like_count = l || 0;
@@ -769,42 +765,36 @@
             totalLikesSum += n.like_count;
         });
 
-        // 全部のデータが揃うまでここでストップ！
         await Promise.all(promises);
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★
 
         // 合計いいね数の更新
         const totalLikesEl = document.getElementById('total-likes');
         if(totalLikesEl) totalLikesEl.innerText = totalLikesSum.toLocaleString();
 
-        // 3. リスト描画（データが揃っているので一発で表示）
+        // 3. リスト描画（★Googleアイコンを使う形に修正）
         document.getElementById('my-works-list').innerHTML = allMyNovels.map(n => {
             const badge = n.is_private ? '<span class="draft-badge">下書き</span>' : (n.is_r18 ? '<span class="r18-badge">R18</span>' : '');
             
+            // シリーズリンク (Google Icon: library_books)
             const seriesLink = n.series_title 
-                ? `<span onclick="openSeriesPage('${n.series_id}')" style="display:inline-block; background:#efefef; color:#555; font-size:0.75em; padding:2px 6px; border-radius:4px; cursor:pointer; margin-right:5px; vertical-align:middle;"><span class="material-icons" style="font-size:1.2em; vertical-align:text-bottom;">library_books</span> ${n.series_title}</span>` 
+                ? `<div style="width:100%; margin-bottom:4px;"><span onclick="openSeriesPage('${n.series_id}')" style="background:#efefef; color:#555; font-size:0.75em; padding:2px 6px; border-radius:4px; cursor:pointer;"><span class="material-icons" style="font-size:1.2em; vertical-align:text-bottom;">library_books</span> ${n.series_title}</span></div>` 
                 : '';
 
             return `
             <div class="novel-row">
                 <div class="novel-info">
-                    <div style="margin-bottom:4px;">${seriesLink}</div>
+                    ${seriesLink}
+                    <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span> 
+                    ${badge}
                     
-                    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
-                        <span>
-                            <span class="novel-title" onclick="openReader('${n.id}')">${n.title}</span> 
-                            ${badge}
+                    <span class="novel-stats">
+                        <span class="stat-item">
+                            <span class="material-icons" style="font-size:1.1em; margin-right:2px; color:#ff4d4d; vertical-align:middle;">favorite_border</span> ${n.like_count}
                         </span>
-                        
-                        <span class="novel-stats" style="font-size:0.85em; color:#777; white-space: nowrap;">
-                             <span class="stat-item" style="display:inline-flex; align-items:center; margin-right:10px;">
-                                <span class="material-icons" style="font-size:1.1em; color:#ff4d4d; margin-right:2px;">favorite_border</span> ${n.like_count}
-                            </span> 
-                            <span class="stat-item" style="display:inline-flex; align-items:center;">
-                                <span class="material-icons" style="font-size:1.1em; color:#888; margin-right:2px;">chat_bubble_outline</span> ${n.comment_count}
-                            </span>
+                        <span class="stat-item">
+                            <span class="material-icons" style="font-size:1.1em; margin-right:2px; color:#888; vertical-align:middle;">chat_bubble_outline</span> ${n.comment_count}
                         </span>
-                    </div>
+                    </span>
                 </div>
                 
                 <div style="white-space: nowrap; margin-left: 10px;">
