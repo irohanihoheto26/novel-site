@@ -369,19 +369,39 @@
     </main>
 
     <div id="series-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2500; overflow-y:auto;">
+        <style id="series-dynamic-style"></style>
+
         <div class="overlay-content">
             <button class="btn-outline" onclick="closeSeriesPage()" style="width:auto; margin:0;">← 戻る</button>
             
-            <div style="margin-top:20px; border-bottom:1px solid #eee; padding-bottom:20px;">
-                <small style="color:#888;">シリーズ</small>
-                <h1 id="series-page-title" style="margin:5px 0;"></h1>
-                <div id="series-page-desc" style="color:#666; font-size:0.9em; margin-top:10px;"></div>
-                <div id="series-author-area" style="margin-top:10px; font-size:0.9em;"></div>
-            </div>
+            <div id="series-view-area">
+                <div style="margin-top:20px; border-bottom:1px solid #eee; padding-bottom:20px;">
+                    <small style="color:#888;">シリーズ</small>
+                    <h1 id="series-page-title" style="margin:5px 0;"></h1>
+                    
+                    <div id="series-custom-html-area"></div>
 
-            <h3 style="margin-top:30px;">目次</h3>
-            <div id="series-episode-list"></div>
-        </div>
+                    <div id="series-page-desc" style="color:#666; font-size:0.9em; margin-top:10px; white-space: pre-wrap;"></div>
+                    <div id="series-author-area" style="margin-top:10px; font-size:0.9em;"></div>
+                </div>
+                <h3 style="margin-top:30px;">目次</h3>
+                <div id="series-episode-list"></div>
+            </div>
+            <div id="series-edit-area" class="hidden" style="margin-top:20px; background:#f9f9f9; padding:20px; border:radius:8px;">
+                <h3>シリーズ情報の編集</h3>
+                <input type="text" id="edit-series-title" placeholder="シリーズタイトル">
+                <textarea id="edit-series-desc" placeholder="あらすじ" rows="3"></textarea>
+                
+                <h4 style="margin-top:20px;">デザインカスタマイズ (HTML/CSS)</h4>
+                <p style="font-size:0.8em; color:#666;">ここに書いたHTMLや &lt;style&gt; は、このシリーズページにのみ適用されます。</p>
+                <textarea id="edit-series-css" style="width:100%; height:150px; font-family:monospace;" placeholder="<style>...</style> <div>...</div>"></textarea>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button onclick="saveSeriesData()">保存する</button>
+                    <button class="btn-outline" onclick="toggleSeriesEditMode(false)">キャンセル</button>
+                </div>
+            </div>
+            </div>
     </div>
     <div id="reader-overlay">
         <div class="sticky-close">
@@ -824,9 +844,29 @@
         const { data: s } = await api.from('series').select('*').eq('id', seriesId).single();
         if (!s) return alert("シリーズが見つかりません");
 
+        // ★ 現在開いているシリーズIDを一時保存（保存時に使うため）
+        window.currentSeriesId = s.id;
+
         // 2. 作者情報の取得
         const { data: p } = await api.from('profiles').select('display_name').eq('id', s.author_id).maybeSingle();
         const authorName = p ? p.display_name : "名無し";
+
+        // --- ★ デザインの反映処理 ---
+        const styleTag = document.getElementById('series-dynamic-style');
+        const customArea = document.getElementById('series-custom-html-area');
+        const fullCode = s.custom_css || "";
+        // CSSを抽出してstyleタグへ
+        const cssMatch = fullCode.match(/<style>([\s\S]*?)<\/style>/);
+        styleTag.innerHTML = cssMatch ? cssMatch[1] : ""; 
+        
+        // HTML部分（styleタグ以外）を表示エリアへ
+        customArea.innerHTML = fullCode.replace(/<style>[\s\S]*?<\/style>/g, ""); 
+        // ---------------------------
+
+        // ★ ここを変更：作者なら編集ボタンを表示
+        const editBtn = (currentUser && currentUser.id === s.author_id) 
+            ? `<button onclick="editSeries('${s.id}')" style="font-size:0.7em; padding:2px 8px; margin-left:10px; vertical-align:middle;">編集</button>` 
+            : '';
 
         // 画面にセット
         document.getElementById('series-page-title').innerText = s.title;
@@ -858,8 +898,77 @@
     }
 
     // ★ 追加：閉じるボタン
+    // ★ 追加：編集モードと表示モードの切り替え
+    function toggleSeriesEditMode(isEdit) {
+        const viewArea = document.getElementById('series-view-area');
+        const editArea = document.getElementById('series-edit-area');
+        if (isEdit) {
+            viewArea.classList.add('hidden');
+            editArea.classList.remove('hidden');
+        } else {
+            viewArea.classList.remove('hidden');
+            editArea.classList.add('hidden');
+        }
+    }
+
+    // ★ 追加：シリーズ情報の保存
+    async function saveSeriesData() {
+        const sId = window.currentSeriesId;
+        const title = document.getElementById('edit-series-title').value.trim();
+        const desc = document.getElementById('edit-series-desc').value.trim();
+        const css = document.getElementById('edit-series-css').value;
+
+        if (!title) return alert("タイトルは必須です");
+
+        const { error } = await api.from('series').update({
+            title: title,
+            description: desc,
+            custom_css: css
+        }).eq('id', sId);
+
+        if (error) {
+            alert("保存失敗: " + error.message);
+        } else {
+            alert("保存しました！");
+            openSeriesPage(sId); // 画面を再読み込みして反映
+            getList(); // リストも更新
+        }
+    }
+
+    // ★ 修正：閉じるときにスタイルをリセットする
     function closeSeriesPage() {
         document.getElementById('series-overlay').classList.add('hidden');
+        document.getElementById('series-dynamic-style').innerHTML = ""; // スタイル消去
+        document.getElementById('series-custom-html-area').innerHTML = "";
+    }
+    // ★ 追加：シリーズ編集機能
+    async function editSeries(seriesId) {
+        // 現在のデータを取得
+        const { data: s, error } = await api.from('series').select('title, description').eq('id', seriesId).single();
+        if (error) return alert("データ取得エラー");
+
+        // 入力を求める
+        const newTitle = prompt("新しいシリーズタイトル", s.title);
+        if (newTitle === null) return; // キャンセル
+
+        const newDesc = prompt("新しいあらすじ", s.description || "");
+        if (newDesc === null) return; // キャンセル
+
+        if (!newTitle.trim()) return alert("タイトルは必須です");
+
+        // 更新実行
+        const { error: updateError } = await api.from('series').update({ 
+            title: newTitle.trim(), 
+            description: newDesc.trim() 
+        }).eq('id', seriesId);
+
+        if (updateError) {
+            alert("更新に失敗しました: " + updateError.message);
+        } else {
+            alert("シリーズ情報を更新しました！");
+            openSeriesPage(seriesId); // 画面をリロードして反映
+            getList(); // リスト側も更新しておく
+        }
     }
 
     async function doPost() {
